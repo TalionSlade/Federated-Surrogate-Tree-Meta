@@ -1,0 +1,56 @@
+name: adult_dp_laplace_dirichlet
+output_dir: experiments/results/adult_dp_laplace
+n_rounds: 10
+random_state: 42
+
+data:
+  name: adult
+  test_fraction: 0.2
+  random_state: 0
+
+partition:
+  strategy: dirichlet
+  n_clients: 10
+  alpha: 0.5
+  seed: 0
+
+proxy:
+  source: synthetic_uniform
+  n_samples: 2000
+  seed: 0
+
+model:
+  teacher_framework: sklearn_rf
+  teacher_kwargs:
+    n_estimators: 100
+    max_depth: 12
+    min_samples_leaf: 2
+  student_framework: sklearn_dt
+  student_kwargs:
+    max_depth: 6
+    min_samples_leaf: 5
+
+distillation:
+  mode: argmax_weighted
+  temperature: 1.0
+  floor: 0.0
+
+dp:
+  mechanism: laplace
+  epsilon_per_round: 1.0
+  delta_per_round: 0.0
+  target_epsilon: 8.0
+  target_delta: 1.0e-5
+  accountant: basic
+  seed: 0
+
+aggregator:
+  strategy: proxy_redistillation
+  student_framework: sklearn_dt
+  student_kwargs:
+    max_depth: 6
+
+meta:
+  enabled: true
+  strategy: stacking
+  standardise_proba_cols: false

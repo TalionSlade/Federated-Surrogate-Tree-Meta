@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Sequence Diagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1700px; min-height: 1380px; }
+
+  .seq-wrap {
+    margin-top: 20px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 28px 30px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .seq-svg { display: block; width: 100%; }
+
+  .seq-svg .lifeline { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 5 4; }
+  .seq-svg .actor-box {
+    fill: white;
+    stroke: var(--luminate-primary);
+    stroke-width: 1.5;
+  }
+  .seq-svg .actor-box.client { fill: var(--luminate-light); }
+  .seq-svg .actor-box.server { fill: #fff5dd; stroke: var(--amber); }
+  .seq-svg .actor-box.privacy { fill: #fdecec; stroke: var(--red); }
+  .seq-svg .actor-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    font-weight: 700; fill: var(--ink-strong);
+  }
+  .seq-svg .msg-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    fill: var(--luminate-primary);
+  }
+  .seq-svg .ret-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    fill: var(--ink-muted); font-style: italic;
+  }
+  .seq-svg .msg { stroke: var(--luminate-primary); stroke-width: 1.7; fill: none; marker-end: url(#seqArrow); }
+  .seq-svg .ret { stroke: var(--ink-faint); stroke-width: 1.4; stroke-dasharray: 5 4; fill: none; marker-end: url(#seqArrowRet); }
+  .seq-svg .activation {
+    fill: var(--luminate-light); stroke: var(--luminate-medium); stroke-width: 1;
+  }
+  .seq-svg .activation.amber { fill: #fff5dd; stroke: var(--amber); }
+  .seq-svg .activation.red { fill: #fdecec; stroke: var(--red); }
+  .seq-svg .note {
+    fill: #fff9e0; stroke: var(--amber); stroke-width: 1;
+  }
+  .seq-svg .note-text {
+    font-family: Inter; font-size: 11px; fill: var(--amber);
+  }
+  .seq-svg .round-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    font-weight: 700; fill: var(--luminate-primary);
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Sequence Diagram — One Federation Round</h1>
+      <div class="subtitle">UML sequence across Client_k, Coordinator, Aggregator, Accountant — DP highlighted in red</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 16 / 16</div>
+  </div>
+
+  <div class="seq-wrap">
+    <svg class="seq-svg" viewBox="0 0 1620 1200" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="seqArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--luminate-primary)"/>
+        </marker>
+        <marker id="seqArrowRet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/>
+        </marker>
+      </defs>
+
+      <!-- Actor heads -->
+      <g>
+        <rect class="actor-box client"  x="80"   y="20" width="180" height="40" rx="6"/>
+        <text class="actor-text" x="170"  y="46" text-anchor="middle">Client_k</text>
+
+        <rect class="actor-box privacy" x="340"  y="20" width="180" height="40" rx="6"/>
+        <text class="actor-text" x="430"  y="46" text-anchor="middle" fill="var(--red)">DPMechanism</text>
+
+        <rect class="actor-box client"  x="600"  y="20" width="180" height="40" rx="6"/>
+        <text class="actor-text" x="690"  y="46" text-anchor="middle">SurrogateDistiller</text>
+
+        <rect class="actor-box server" x="860"  y="20" width="180" height="40" rx="6"/>
+        <text class="actor-text" x="950"  y="46" text-anchor="middle" fill="var(--amber)">Coordinator</text>
+
+        <rect class="actor-box server" x="1120" y="20" width="180" height="40" rx="6"/>
+        <text class="actor-text" x="1210" y="46" text-anchor="middle" fill="var(--amber)">Aggregator</text>
+
+        <rect class="actor-box privacy" x="1380" y="20" width="180" height="40" rx="6"/>
+        <text class="actor-text" x="1470" y="46" text-anchor="middle" fill="var(--red)">Accountant</text>
+      </g>
+
+      <!-- Lifelines (down to y=1160) -->
+      <line class="lifeline" x1="170"  y1="60" x2="170"  y2="1160"/>
+      <line class="lifeline" x1="430"  y1="60" x2="430"  y2="1160"/>
+      <line class="lifeline" x1="690"  y1="60" x2="690"  y2="1160"/>
+      <line class="lifeline" x1="950"  y1="60" x2="950"  y2="1160"/>
+      <line class="lifeline" x1="1210" y1="60" x2="1210" y2="1160"/>
+      <line class="lifeline" x1="1470" y1="60" x2="1470" y2="1160"/>
+
+      <!-- Round label -->
+      <rect x="50" y="78" width="120" height="22" rx="4" fill="var(--luminate-light)"/>
+      <text class="round-label" x="60" y="94">loop [t = 0..T-1]</text>
+
+      <!-- =============== PHASE 1: LOCAL TRAIN =============== -->
+      <!-- (1) Client trains teacher (self) -->
+      <rect class="activation" x="166" y="115" width="8" height="55"/>
+      <path class="msg" d="M180 130 Q 220 130 200 155 Q 180 168 180 165"/>
+      <text class="msg-text" x="180" y="125">teacher.fit(X_local, y_local)</text>
+
+      <!-- (2) predict_proba -->
+      <rect class="activation" x="166" y="180" width="8" height="35"/>
+      <path class="msg" d="M180 195 Q 220 195 200 210 Q 180 215 180 215"/>
+      <text class="msg-text" x="180" y="190">teacher.predict_proba(X_local) → P</text>
+
+      <!-- (3) Client → DPMechanism : privatize -->
+      <path class="msg" d="M174 240 L 425 240"/>
+      <text class="msg-text" x="220" y="234">privatize(P, ε, δ)</text>
+      <rect class="activation red" x="426" y="240" width="8" height="45"/>
+      <path class="ret"  d="M425 280 L 174 280"/>
+      <text class="ret-text" x="220" y="274">→ P̃ (DP-noised)</text>
+
+      <!-- (4) Client → SurrogateDistiller -->
+      <path class="msg" d="M174 310 L 685 310"/>
+      <text class="msg-text" x="240" y="304">distill(X_local, P̃, classes)</text>
+      <rect class="activation" x="686" y="310" width="8" height="55"/>
+      <path class="ret"  d="M685 360 L 174 360"/>
+      <text class="ret-text" x="240" y="354">→ student (ModelAdapter, ~10 KB)</text>
+
+      <!-- Note: bundle ClientUpdate -->
+      <rect class="note" x="40" y="390" width="200" height="36" rx="4"/>
+      <text class="note-text" x="50" y="412">build ClientUpdate(blob, class_path, ε, δ)</text>
+
+      <!-- Lifeline activation client -->
+      <rect class="activation" x="166" y="115" width="8" height="320"/>
+
+      <!-- =============== PHASE 2: UPLOAD =============== -->
+      <!-- Client → Coordinator: upload ClientUpdate -->
+      <path class="msg" d="M174 450 L 945 450"/>
+      <text class="msg-text" x="320" y="444">upload(ClientUpdate)</text>
+
+      <!-- Coordinator collects K updates -->
+      <rect class="note" x="820" y="470" width="240" height="32" rx="4"/>
+      <text class="note-text" x="830" y="490">… repeats for k = 0 … K-1 …</text>
+
+      <!-- =============== PHASE 3: AGGREGATE =============== -->
+      <!-- Coordinator.round(updates, t, budget) -->
+      <rect class="activation amber" x="946" y="520" width="8" height="280"/>
+      <text class="msg-text" x="800" y="535">coordinator.round([updates], t, budget)</text>
+
+      <!-- Coordinator → Aggregator.aggregate -->
+      <path class="msg" d="M954 560 L 1205 560"/>
+      <text class="msg-text" x="990" y="554">aggregate(updates, proxy_X, classes)</text>
+      <rect class="activation amber" x="1206" y="560" width="8" height="80"/>
+
+      <!-- Aggregator internal: avg + distill -->
+      <rect class="note" x="1100" y="585" width="180" height="34" rx="4"/>
+      <text class="note-text" x="1110" y="607">avg(predict_proba) + distill → G</text>
+
+      <path class="ret"  d="M1205 640 L 954 640"/>
+      <text class="ret-text" x="990" y="634">→ G : ModelAdapter</text>
+
+      <!-- Coordinator → Accountant -->
+      <path class="msg" d="M954 680 L 1465 680"/>
+      <text class="msg-text" x="990" y="674">accountant.record(round_idx=t, [ε_k, δ_k])</text>
+      <rect class="activation red" x="1466" y="680" width="8" height="40"/>
+      <path class="ret"  d="M1465 718 L 954 718"/>
+      <text class="ret-text" x="990" y="712">→ (ε_cum, δ_cum)</text>
+
+      <!-- Budget check -->
+      <rect class="note" x="820" y="735" width="290" height="38" rx="4"/>
+      <text class="note-text" x="830" y="757">if ε_cum &gt; target_budget: raise PrivacyBudgetExhausted</text>
+
+      <!-- =============== PHASE 4: BROADCAST =============== -->
+      <!-- Coordinator → Client_k -->
+      <path class="msg" d="M945 800 L 174 800"/>
+      <text class="msg-text" x="320" y="794">broadcast(GlobalArtifact)</text>
+
+      <!-- Client deserialize -->
+      <rect class="activation" x="166" y="830" width="8" height="55"/>
+      <path class="msg" d="M180 845 Q 220 845 200 870 Q 180 880 180 880"/>
+      <text class="msg-text" x="180" y="840">cls.deserialize(blob) → G</text>
+
+      <!-- =============== PHASE 5: META REFINE =============== -->
+      <!-- Client → SurrogateDistiller : refine via stacking inside StackingMetaLearner -->
+      <path class="msg" d="M174 910 L 685 910"/>
+      <text class="msg-text" x="240" y="904">meta_learner.refine(X_local, y_local, G)</text>
+      <rect class="activation" x="686" y="910" width="8" height="50"/>
+      <path class="ret"  d="M685 955 L 174 955"/>
+      <text class="ret-text" x="240" y="949">→ StackedAdapter (refined local model)</text>
+
+      <!-- Evaluate locally -->
+      <rect class="activation" x="166" y="980" width="8" height="40"/>
+      <path class="msg" d="M180 995 Q 220 995 200 1015 Q 180 1020 180 1020"/>
+      <text class="msg-text" x="180" y="990">refined.evaluate_local(X_test, y_test)</text>
+
+      <!-- End of round -->
+      <rect x="50" y="1050" width="160" height="22" rx="4" fill="var(--luminate-light)"/>
+      <text class="round-label" x="60" y="1066">end loop · next t</text>
+
+      <!-- Final round: Coordinator returns history -->
+      <path class="msg" d="M810 1100 L 945 1100"/>
+      <text class="msg-text" x="700" y="1094" text-anchor="end">caller.run() —</text>
+      <rect class="activation amber" x="946" y="1100" width="8" height="40"/>
+      <path class="ret"  d="M945 1138 L 810 1138"/>
+      <text class="ret-text" x="700" y="1132" text-anchor="end">→ ExperimentResult{history, ledger, mia}</text>
+
+    </svg>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background: var(--luminate-light); border: 1px solid var(--luminate-medium);"></div>Client-side activation</div>
+    <div class="legend-item"><div class="legend-swatch" style="background: #fff5dd; border: 1px solid var(--amber);"></div>Server-side activation</div>
+    <div class="legend-item"><div class="legend-swatch" style="background: #fdecec; border: 1px solid var(--red);"></div>DP component (Hook A)</div>
+  </div>
+
+</div>
+</body>
+</html>

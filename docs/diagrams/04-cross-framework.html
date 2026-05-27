@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Cross-Framework Heterogeneity (Hook B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1600px; min-height: 1080px; }
+
+  .clients-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px;
+    margin-top: 30px;
+  }
+  .fwk-card {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 22px; position: relative;
+    box-shadow: 0 2px 4px rgba(19, 1, 74, 0.04), 0 14px 32px -14px rgba(19, 1, 74, 0.12);
+  }
+  .fwk-card::before {
+    content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 4px;
+    background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 0 0 4px 4px;
+  }
+  .fwk-card.green::before { background: linear-gradient(90deg, var(--green), #34c759); }
+  .fwk-card.amber::before { background: linear-gradient(90deg, var(--amber), #f0a500); }
+  .fwk-card.blue::before  { background: linear-gradient(90deg, var(--blue), #3677d1); }
+  .fwk-card.pink::before  { background: linear-gradient(90deg, var(--pink), #d5499f); }
+
+  .fwk-card .head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .fwk-card .logo {
+    width: 38px; height: 38px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; color: white;
+    font-size: 13px;
+  }
+  .fwk-card.green .logo { background: var(--green); }
+  .fwk-card.amber .logo { background: var(--amber); }
+  .fwk-card.blue .logo { background: var(--blue); }
+  .fwk-card.pink .logo { background: var(--pink); }
+
+  .fwk-card h4 { font-size: 16px; font-weight: 700; color: var(--ink-strong); }
+  .fwk-card .tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    padding: 3px 8px; border-radius: 5px;
+    background: var(--surface-3); color: var(--ink-muted);
+    margin-top: 4px; display: inline-block;
+  }
+  .fwk-card p { font-size: 12.5px; line-height: 1.55; color: var(--ink); margin: 10px 0 12px; }
+  .fwk-card .api {
+    background: #11122e; color: #d6e0ff; padding: 12px 14px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    line-height: 1.6;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .fwk-card .api .k { color: #ff9bcd; }
+  .fwk-card .api .s { color: #9bdc7c; }
+
+  .adapter-bar {
+    margin-top: 36px;
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 16px; padding: 30px 32px; color: white;
+    box-shadow: 0 12px 36px -8px rgba(19, 1, 74, 0.3);
+  }
+  .adapter-bar .h {
+    font-size: 18px; font-weight: 700; margin-bottom: 4px;
+  }
+  .adapter-bar .sh { font-size: 13px; opacity: 0.85; margin-bottom: 16px; }
+  .adapter-api {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px;
+    margin-top: 6px;
+  }
+  .adapter-api .method {
+    background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.25);
+    padding: 8px 10px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-align: center; font-weight: 600;
+  }
+
+  .wire-fmt {
+    margin-top: 36px; background: white; border: 1px solid var(--line);
+    border-radius: 16px; padding: 24px 26px;
+  }
+  .wire-fmt h4 { font-size: 16px; font-weight: 700; color: var(--ink-strong); margin-bottom: 14px; }
+  .wire-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  .wire-cell {
+    border: 1px dashed var(--line); border-radius: 10px; padding: 14px 16px;
+    background: var(--surface-2);
+  }
+  .wire-cell .key {
+    font-family: 'JetBrains Mono', monospace; color: var(--luminate-primary);
+    font-size: 12px; font-weight: 700; margin-bottom: 4px;
+  }
+  .wire-cell .val { font-size: 12px; color: var(--ink); line-height: 1.5; }
+
+  .flow-svg path { stroke: var(--luminate-medium); stroke-width: 2; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <svg class="flow-svg" viewBox="0 0 1600 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--luminate-medium)"/>
+      </marker>
+    </defs>
+    <path d="M250 365 V 510" class="dashed"/>
+    <path d="M620 365 V 510" class="dashed"/>
+    <path d="M990 365 V 510" class="dashed"/>
+    <path d="M1360 365 V 510" class="dashed"/>
+  </svg>
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Cross-Framework Heterogeneity (Hook B)</h1>
+      <div class="subtitle">Every client may pick its own tree backend — yet upload a wire-compatible ClientUpdate</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 04 / 16</div>
+  </div>
+
+  <div class="clients-row">
+    <div class="fwk-card green">
+      <div class="head">
+        <div class="logo">SK</div>
+        <div>
+          <h4>scikit-learn</h4>
+          <span class="tag">sklearn_rf, sklearn_dt</span>
+        </div>
+      </div>
+      <p>The default teacher. Always available — sklearn is a hard dep. Also provides the <em>student</em> (DecisionTree depth 6) used by every other framework.</p>
+      <div class="api"><span class="k">class</span> SklearnRandomForestAdapter:
+  framework = <span class="s">"sklearn_rf"</span>
+  _fit_impl(X, y)
+  _predict_proba_impl(X)</div>
+    </div>
+
+    <div class="fwk-card amber">
+      <div class="head">
+        <div class="logo">XB</div>
+        <div>
+          <h4>XGBoost</h4>
+          <span class="tag">xgboost, xgb</span>
+        </div>
+      </div>
+      <p>Optional extra. Handles label-remap to 0..k-1 internally so any class set works. Native JSON serialise reserved for future wire optimisation.</p>
+      <div class="api"><span class="k">class</span> XGBoostAdapter:
+  framework = <span class="s">"xgboost"</span>
+  _fit_impl(X, y)  <span style="color:#888">#  remap labels</span>
+  _predict_proba_impl(X)</div>
+    </div>
+
+    <div class="fwk-card blue">
+      <div class="head">
+        <div class="logo">LB</div>
+        <div>
+          <h4>LightGBM</h4>
+          <span class="tag">lightgbm, lgbm</span>
+        </div>
+      </div>
+      <p>Leaf-wise growth + EFB bundling — sparse-friendly. Class padding handles partial-class shards under aggressive non-IID partitioning.</p>
+      <div class="api"><span class="k">class</span> LightGBMAdapter:
+  framework = <span class="s">"lightgbm"</span>
+  _fit_impl(X, y)
+  _predict_proba_impl(X)</div>
+    </div>
+
+    <div class="fwk-card pink">
+      <div class="head">
+        <div class="logo">CB</div>
+        <div>
+          <h4>CatBoost</h4>
+          <span class="tag">catboost, cb</span>
+        </div>
+      </div>
+      <p>Optional extra. Native categorical handling shines on tabular data with raw factor columns. Quiet by default (verbose=False).</p>
+      <div class="api"><span class="k">class</span> CatBoostAdapter:
+  framework = <span class="s">"catboost"</span>
+  _fit_impl(X, y)
+  _predict_proba_impl(X)</div>
+    </div>
+  </div>
+
+  <!-- Adapter API band -->
+  <div class="adapter-bar">
+    <div class="h">▼ Uniform BaseModelAdapter API ▼</div>
+    <div class="sh">Every framework above implements exactly these seven methods. The coordinator never touches the framework directly.</div>
+    <div class="adapter-api">
+      <div class="method">fit(X, y)</div>
+      <div class="method">predict_proba(X)</div>
+      <div class="method">predict(X)</div>
+      <div class="method">classes()</div>
+      <div class="method">serialize()</div>
+      <div class="method">deserialize(blob)</div>
+      <div class="method">n_estimators()</div>
+    </div>
+  </div>
+
+  <div class="wire-fmt">
+    <h4>Wire format — ClientUpdate (framework-agnostic)</h4>
+    <div class="wire-grid">
+      <div class="wire-cell">
+        <div class="key">surrogate_blob: bytes</div>
+        <div class="val">Pickled adapter. Coordinator never inspects the contents — only calls <code>predict_proba</code> via the adapter.</div>
+      </div>
+      <div class="wire-cell">
+        <div class="key">surrogate_class_path: str</div>
+        <div class="val">e.g. <code>"fedrf_distill.models.xgboost_adapter:XGBoostAdapter"</code>. Used by the safe deserialiser to reject unknown classes.</div>
+      </div>
+      <div class="wire-cell">
+        <div class="key">framework: str</div>
+        <div class="val">Audit field declaring which backend ran locally. Coordinator may log a mixed-framework heatmap per round.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

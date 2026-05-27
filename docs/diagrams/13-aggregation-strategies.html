@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Aggregation Strategies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1600px; min-height: 1080px; }
+
+  .strats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 30px; }
+  .strat {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 26px; position: relative;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 14px 30px -14px rgba(19, 1, 74, 0.12);
+  }
+  .strat::before {
+    content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 4px;
+    border-radius: 0 0 4px 4px;
+  }
+  .strat.proxy::before  { background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium)); }
+  .strat.conf::before   { background: linear-gradient(90deg, var(--blue), #3677d1); }
+  .strat.maj::before    { background: linear-gradient(90deg, var(--ink-faint), #98a2b3); }
+
+  .strat .head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .strat h3 { font-size: 16px; font-weight: 700; color: var(--ink-strong); margin-bottom: 4px; }
+  .strat .tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--ink-muted); padding: 3px 8px; background: var(--surface-3);
+    border-radius: 5px; display: inline-block;
+  }
+  .strat .chip {
+    padding: 3px 9px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+  }
+  .chip.default { background: var(--luminate-light); color: var(--luminate-primary); }
+  .chip.tweak   { background: #e8f1fd; color: var(--blue); }
+  .chip.base    { background: var(--surface-3); color: var(--ink-muted); }
+
+  .strat .why { font-size: 12px; color: var(--ink); line-height: 1.55; margin: 12px 0 14px; }
+  .strat .formula {
+    background: #11122e; color: #d6e0ff; padding: 14px 16px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    line-height: 1.7; margin-bottom: 12px; white-space: pre;
+  }
+  .strat .formula .c { color: #8b95c1; }
+  .strat .formula .k { color: #ff9bcd; }
+  .strat .formula .n { color: #9bdc7c; }
+  .strat .pros { color: var(--green); font-size: 12px; line-height: 1.7; }
+  .strat .cons { color: var(--red);   font-size: 12px; line-height: 1.7; margin-top: 8px; }
+  .strat .pros .h, .strat .cons .h {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    font-weight: 700; letter-spacing: 0.04em;
+  }
+
+  .flow-stage {
+    margin-top: 36px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 28px 30px;
+  }
+  .flow-stage h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 22px; }
+
+  .flow-svg-wrap { position: relative; height: 320px; }
+
+  .perf {
+    margin-top: 28px;
+    background: var(--surface-2); border: 1px solid var(--line-subtle);
+    border-radius: 12px; padding: 18px 22px;
+  }
+  table.perf-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.perf-tbl th {
+    text-align: left; padding: 10px 12px; font-size: 10.5px; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--ink-muted); font-weight: 700;
+    border-bottom: 2px solid var(--luminate-primary); font-family: 'JetBrains Mono', monospace;
+  }
+  table.perf-tbl td { padding: 9px 12px; border-bottom: 1px solid var(--line-subtle); font-family: 'JetBrains Mono', monospace; }
+  table.perf-tbl td.lab { font-family: Inter; font-weight: 600; color: var(--ink-strong); }
+  table.perf-tbl tr.best td { background: rgba(60, 34, 138, 0.06); }
+  table.perf-tbl tr.best td.lab { color: var(--luminate-primary); }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Aggregation Strategies</h1>
+      <div class="subtitle">Three plug-replaceable aggregators implementing AggregatorProtocol — same input, very different bias-variance tradeoff</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 13 / 16</div>
+  </div>
+
+  <div class="strats">
+    <!-- ProxyRedistillation -->
+    <div class="strat proxy">
+      <div class="head">
+        <div>
+          <h3>ProxyRedistillationAggregator</h3>
+          <span class="tag">name: "proxy_redistillation"</span>
+        </div>
+        <span class="chip default">DEFAULT</span>
+      </div>
+      <p class="why">The framework's signature aggregator. Average client surrogate probs on a shared proxy, then re-distill into a fresh global tree. Recovers a single coherent model.</p>
+      <div class="formula"><span class="c"># Average ensemble probabilities, re-distill</span>
+P̄ = mean<sub>k</sub>( surrogateₖ.predict_proba(proxy_X) )
+G = distill(proxy_X, P̄, classes)
+<span class="k">return</span> G  <span class="c"># single ModelAdapter</span></div>
+      <div class="pros">
+        <div class="h">PROS</div>
+        + Output is a fresh single tree, not an ensemble.<br>
+        + DP carries through (post-processing).<br>
+        + Resilient to a single bad client.
+      </div>
+      <div class="cons">
+        <div class="h">CONS</div>
+        − Requires a proxy dataset.<br>
+        − Quality bounded by proxy coverage.
+      </div>
+    </div>
+
+    <!-- ConfidenceWeighted -->
+    <div class="strat conf">
+      <div class="head">
+        <div>
+          <h3>ConfidenceWeightedAggregator</h3>
+          <span class="tag">name: "confidence_weighted"</span>
+        </div>
+        <span class="chip tweak">VARIANT</span>
+      </div>
+      <p class="why">Subclass of proxy aggregator. Weights each client by its declared <code>n_samples</code> before averaging — large clients pull more weight.</p>
+      <div class="formula"><span class="c"># Weighted average then re-distill</span>
+wₖ = nₖ / Σⱼ nⱼ
+P̄ = Σₖ wₖ · surrogateₖ.predict_proba(proxy_X)
+G = distill(proxy_X, P̄, classes)</div>
+      <div class="pros">
+        <div class="h">PROS</div>
+        + Reflects QuantitySkew reality.<br>
+        + Smooth degradation if one client is tiny.
+      </div>
+      <div class="cons">
+        <div class="h">CONS</div>
+        − Vulnerable to a tampered <code>n_samples</code> field.<br>
+        − Less fair to small-n clients.
+      </div>
+    </div>
+
+    <!-- MajorityVote -->
+    <div class="strat maj">
+      <div class="head">
+        <div>
+          <h3>MajorityVoteAggregator</h3>
+          <span class="tag">name: "majority_vote"</span>
+        </div>
+        <span class="chip base">BASELINE</span>
+      </div>
+      <p class="why">Classical hard-vote ensemble. Each client surrogate predicts a class; the global model returns the modal label. Kept for paper ablation.</p>
+      <div class="formula"><span class="c"># Hard vote — no distillation</span>
+ŷₖ = surrogateₖ.predict(x)
+G(x) = mode<sub>k</sub>(ŷₖ)
+<span class="k">return</span> VotingEnsembleAdapter(...)</div>
+      <div class="pros">
+        <div class="h">PROS</div>
+        + No proxy needed.<br>
+        + Trivially explainable.
+      </div>
+      <div class="cons">
+        <div class="h">CONS</div>
+        − Discards probabilistic info.<br>
+        − Output is an ensemble — bigger, slower.<br>
+        − Worse under non-IID class skew.
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-stage">
+    <h3>Visual comparison — same 3 client surrogates → 3 global models</h3>
+    <div class="flow-svg-wrap">
+      <svg viewBox="0 0 1480 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--luminate-primary)"/>
+          </marker>
+        </defs>
+
+        <!-- 3 client surrogates on the left -->
+        <g font-family="JetBrains Mono, monospace" font-size="11">
+          <rect x="20"  y="40"  width="120" height="50" rx="8" fill="var(--luminate-light)" stroke="var(--luminate-medium)"/>
+          <text x="80" y="62" text-anchor="middle" fill="var(--luminate-primary)" font-weight="700">surrogate₀</text>
+          <text x="80" y="80" text-anchor="middle" fill="var(--ink-muted)" font-size="10">n=120 · xgb</text>
+
+          <rect x="20"  y="135" width="120" height="50" rx="8" fill="var(--luminate-light)" stroke="var(--luminate-medium)"/>
+          <text x="80" y="157" text-anchor="middle" fill="var(--luminate-primary)" font-weight="700">surrogate₁</text>
+          <text x="80" y="175" text-anchor="middle" fill="var(--ink-muted)" font-size="10">n=300 · sklearn</text>
+
+          <rect x="20"  y="230" width="120" height="50" rx="8" fill="var(--luminate-light)" stroke="var(--luminate-medium)"/>
+          <text x="80" y="252" text-anchor="middle" fill="var(--luminate-primary)" font-weight="700">surrogate₂</text>
+          <text x="80" y="270" text-anchor="middle" fill="var(--ink-muted)" font-size="10">n=60  · lgbm</text>
+        </g>
+
+        <!-- Proxy box -->
+        <rect x="220" y="135" width="120" height="50" rx="8" fill="var(--surface-3)" stroke="var(--line-strong)"/>
+        <text x="280" y="157" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="var(--ink-strong)">proxy_X</text>
+        <text x="280" y="175" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">2,000 × d</text>
+
+        <!-- Lines from clients to proxy -->
+        <path d="M140 65 Q 190 65 220 145" fill="none" stroke="var(--luminate-primary)" stroke-width="1.6" opacity="0.5"/>
+        <path d="M140 160 L 220 160" fill="none" stroke="var(--luminate-primary)" stroke-width="1.6" opacity="0.5"/>
+        <path d="M140 255 Q 190 255 220 175" fill="none" stroke="var(--luminate-primary)" stroke-width="1.6" opacity="0.5"/>
+
+        <!-- Three output paths -->
+        <!-- 1: Proxy Redistillation -->
+        <g>
+          <rect x="500" y="20" width="240" height="80" rx="10" fill="white" stroke="var(--luminate-primary)" stroke-width="2"/>
+          <text x="620" y="42" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="12" fill="var(--luminate-primary)">ProxyRedistillation</text>
+          <text x="620" y="62" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">P̄ = (P₀+P₁+P₂)/3</text>
+          <text x="620" y="80" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">distill → tree</text>
+          <rect x="800" y="35" width="100" height="50" rx="8" fill="var(--luminate-primary)" stroke="var(--luminate-dark)"/>
+          <text x="850" y="64" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="12" fill="white">G_proxy</text>
+          <path d="M340 145 Q 420 70 500 60" fill="none" stroke="var(--luminate-primary)" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M740 60 L 800 60" fill="none" stroke="var(--luminate-primary)" stroke-width="2" marker-end="url(#arr)"/>
+        </g>
+
+        <!-- 2: Confidence Weighted -->
+        <g>
+          <rect x="500" y="135" width="240" height="80" rx="10" fill="white" stroke="var(--blue)" stroke-width="2"/>
+          <text x="620" y="157" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="12" fill="var(--blue)">ConfidenceWeighted</text>
+          <text x="620" y="177" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">w = (0.25, 0.63, 0.12)</text>
+          <text x="620" y="195" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">P̄ = Σ wₖ·Pₖ → distill</text>
+          <rect x="800" y="150" width="100" height="50" rx="8" fill="var(--blue)" stroke="var(--blue)"/>
+          <text x="850" y="179" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="12" fill="white">G_conf</text>
+          <path d="M340 160 L 500 175" fill="none" stroke="var(--blue)" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M740 175 L 800 175" fill="none" stroke="var(--blue)" stroke-width="2" marker-end="url(#arr)"/>
+        </g>
+
+        <!-- 3: Majority Vote -->
+        <g>
+          <rect x="500" y="250" width="240" height="60" rx="10" fill="white" stroke="var(--ink-faint)" stroke-width="2"/>
+          <text x="620" y="272" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="12" fill="var(--ink-faint)">MajorityVote</text>
+          <text x="620" y="292" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">ŷ = mode(ŷ₀, ŷ₁, ŷ₂)</text>
+          <rect x="800" y="250" width="100" height="60" rx="8" fill="var(--ink-faint)" stroke="var(--ink-faint)"/>
+          <text x="850" y="278" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="12" fill="white">G_vote</text>
+          <text x="850" y="293" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="white" opacity="0.85">(ensemble)</text>
+          <path d="M140 260 L 500 280" fill="none" stroke="var(--ink-faint)" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M740 280 L 800 280" fill="none" stroke="var(--ink-faint)" stroke-width="2" marker-end="url(#arr)"/>
+        </g>
+
+        <!-- Output label -->
+        <text x="1380" y="100" text-anchor="end" font-family="Inter" font-size="11" fill="var(--ink-muted)" font-style="italic">single tree, dense knowledge</text>
+        <text x="1380" y="195" text-anchor="end" font-family="Inter" font-size="11" fill="var(--ink-muted)" font-style="italic">single tree, n-weighted</text>
+        <text x="1380" y="290" text-anchor="end" font-family="Inter" font-size="11" fill="var(--ink-muted)" font-style="italic">k-tree ensemble, hard labels</text>
+      </svg>
+    </div>
+
+    <div class="perf">
+      <table class="perf-tbl">
+        <thead>
+          <tr>
+            <th>Strategy</th>
+            <th>Output</th>
+            <th>Size on wire</th>
+            <th>Best regime</th>
+            <th>Acc on Adult Dirichlet α=0.5 (paper)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="best"><td class="lab">ProxyRedistillation</td><td>1 tree</td><td>~12 KB</td><td>Any non-IID with a proxy</td><td>0.844 ± 0.006</td></tr>
+          <tr><td class="lab">ConfidenceWeighted</td><td>1 tree</td><td>~12 KB</td><td>Heavy QuantitySkew</td><td>0.839 ± 0.009</td></tr>
+          <tr><td class="lab">MajorityVote</td><td>K-tree ensemble</td><td>K × 10 KB</td><td>No proxy available</td><td>0.812 ± 0.014</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

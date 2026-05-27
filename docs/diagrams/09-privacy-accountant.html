@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Privacy Accountant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1600px; min-height: 1080px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 30px; }
+  .acct {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 26px; position: relative;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 12px 30px -12px rgba(19, 1, 74, 0.12);
+  }
+  .acct::before {
+    content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 4px;
+    border-radius: 0 0 4px 4px;
+  }
+  .acct.basic::before { background: linear-gradient(90deg, var(--blue), #3677d1); }
+  .acct.rdp::before   { background: linear-gradient(90deg, var(--pink), #d5499f); }
+
+  .acct h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 4px; }
+  .acct .tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    padding: 3px 8px; border-radius: 5px; display: inline-block; margin-bottom: 14px;
+  }
+  .acct.basic .tag { background: #e8f1fd; color: var(--blue); }
+  .acct.rdp .tag   { background: #fdeaf3; color: var(--pink); }
+
+  .acct .formula {
+    background: #11122e; color: #d6e0ff; padding: 14px 16px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    line-height: 1.7; margin-bottom: 14px; white-space: pre;
+  }
+  .acct .formula .c { color: #8b95c1; }
+  .acct .formula .k { color: #ff9bcd; }
+  .acct .formula .n { color: #9bdc7c; }
+  .acct .pros, .acct .cons {
+    font-size: 12px; line-height: 1.7;
+  }
+  .acct .pros { color: var(--green); }
+  .acct .cons { color: var(--red); }
+  .acct .pros .h, .acct .cons .h {
+    font-family: 'JetBrains Mono', monospace; font-weight: 700;
+    font-size: 10.5px; letter-spacing: 0.04em;
+  }
+
+  .ledger {
+    margin-top: 32px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 26px 28px;
+  }
+  .ledger h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 14px; }
+  table.ledger-tbl { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  table.ledger-tbl th {
+    text-align: left; padding: 10px 12px; background: var(--surface-2);
+    border-bottom: 2px solid var(--luminate-primary);
+    font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--ink-muted); font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  table.ledger-tbl td {
+    padding: 9px 12px; border-bottom: 1px solid var(--line-subtle);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  table.ledger-tbl tr.exhaust td { background: #fdecec; color: var(--red); font-weight: 700; }
+
+  .chart-card {
+    margin-top: 30px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 26px 28px;
+  }
+  .chart-card h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 16px; }
+  .chart-wrap { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: center; }
+  .chart-card svg { width: 100%; }
+  .chart-key { font-size: 12.5px; line-height: 1.7; color: var(--ink); }
+  .chart-key .row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .chart-key .sw { width: 14px; height: 4px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Privacy Accountant</h1>
+      <div class="subtitle">Two composition strategies. Pick basic for clarity; pick RDP for tight Gaussian bounds.</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 09 / 16</div>
+  </div>
+
+  <div class="two-col">
+    <div class="acct basic">
+      <h3>BasicCompositionAccountant</h3>
+      <span class="tag">linear bound · mechanism-agnostic</span>
+      <div class="formula"><span class="c"># After T rounds with per-round (εᵢ, δᵢ)</span>
+ε_total = <span class="k">Σᵢ</span> εᵢ
+δ_total = <span class="k">Σᵢ</span> δᵢ
+
+<span class="c"># Records every privatize call</span>
+ledger : list[PrivacyLedgerEntry]
+cumulative() → (ε_total, δ_total)</div>
+      <div class="pros">
+        <div class="h">PROS</div>
+        + Works for any DP mechanism (Lap, Gauss, future).<br>
+        + Trivially auditable — just a sum.<br>
+        + No hyperparameters.
+      </div>
+      <div class="cons" style="margin-top: 10px;">
+        <div class="h">CONS</div>
+        − Linear growth ⇒ wasteful for many rounds.<br>
+        − Doesn't exploit Gaussian's subgaussian tail.
+      </div>
+    </div>
+
+    <div class="acct rdp">
+      <h3>RDPAccountant <span style="font-size: 12px; opacity: 0.7;">(Gaussian-specialised)</span></h3>
+      <span class="tag">Rényi-DP · Mironov 2017</span>
+      <div class="formula"><span class="c"># For each round with noise multiplier σᵢ / Δ₂</span>
+α-RDP: ε(α) = <span class="k">Σᵢ</span> α / (2 · μᵢ²)
+where μᵢ = σᵢ / Δ₂
+
+<span class="c"># Convert RDP → (ε, δ)-DP</span>
+ε_DP = min<sub>α &gt; 1</sub> [ ε(α) + ln(1/δ) / (α-1) ]</div>
+      <div class="pros">
+        <div class="h">PROS</div>
+        + Sub-linear growth for Gaussian ⇒ many more rounds at same ε.<br>
+        + State of the art for analytic Gaussian composition.<br>
+        + α grid is automatic (1.5 … 64).
+      </div>
+      <div class="cons" style="margin-top: 10px;">
+        <div class="h">CONS</div>
+        − Gaussian only (in this codebase).<br>
+        − Requires recording σ per round (handled internally).
+      </div>
+    </div>
+  </div>
+
+  <div class="ledger">
+    <h3>Round-by-round ledger (sample run, ε<sub>per_round</sub>=1.0, δ=1e-5)</h3>
+    <table class="ledger-tbl">
+      <thead>
+        <tr>
+          <th>round_idx</th>
+          <th>client_id</th>
+          <th>mechanism</th>
+          <th>ε</th>
+          <th>δ</th>
+          <th>cum. ε (basic)</th>
+          <th>cum. ε (RDP)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>c0</td><td>gaussian</td><td>1.00</td><td>1.0e-5</td><td>1.00</td><td>0.42</td></tr>
+        <tr><td>0</td><td>c1</td><td>gaussian</td><td>1.00</td><td>1.0e-5</td><td>2.00</td><td>0.78</td></tr>
+        <tr><td>1</td><td>c0</td><td>gaussian</td><td>1.00</td><td>1.0e-5</td><td>3.00</td><td>1.08</td></tr>
+        <tr><td>1</td><td>c1</td><td>gaussian</td><td>1.00</td><td>1.0e-5</td><td>4.00</td><td>1.36</td></tr>
+        <tr><td>2</td><td>c0</td><td>gaussian</td><td>1.00</td><td>1.0e-5</td><td>5.00</td><td>1.61</td></tr>
+        <tr><td>2</td><td>c1</td><td>gaussian</td><td>1.00</td><td>1.0e-5</td><td>6.00</td><td>1.84</td></tr>
+        <tr class="exhaust"><td>3</td><td>c0</td><td>gaussian</td><td>1.00</td><td>1.0e-5</td><td>7.00 ⛔</td><td>2.06</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chart-card">
+    <h3>Cumulative ε growth — basic vs RDP (Gaussian, σ=2·Δ₂)</h3>
+    <div class="chart-wrap">
+      <svg viewBox="0 0 760 290" preserveAspectRatio="none">
+        <!-- Axes -->
+        <line x1="60" y1="250" x2="730" y2="250" stroke="var(--ink-faint)" stroke-width="1.4"/>
+        <line x1="60" y1="20"  x2="60"  y2="250" stroke="var(--ink-faint)" stroke-width="1.4"/>
+        <!-- Y ticks -->
+        <g font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">
+          <text x="55" y="252" text-anchor="end">0</text>
+          <text x="55" y="200" text-anchor="end">2</text>
+          <text x="55" y="148" text-anchor="end">4</text>
+          <text x="55" y="96"  text-anchor="end">6</text>
+          <text x="55" y="44"  text-anchor="end">8</text>
+        </g>
+        <!-- X ticks -->
+        <g font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)" text-anchor="middle">
+          <text x="60"  y="270">0</text>
+          <text x="194" y="270">10</text>
+          <text x="328" y="270">20</text>
+          <text x="462" y="270">30</text>
+          <text x="596" y="270">40</text>
+          <text x="730" y="270">50 rounds</text>
+        </g>
+        <!-- Basic composition: linear ε = 0.5 per round, T rounds -->
+        <path d="M60 250 L 730 33" stroke="var(--blue)" stroke-width="2.5" fill="none"/>
+        <!-- RDP curve: sqrt-like growth -->
+        <path d="M60 250 Q 200 230 350 195 Q 500 155 730 105" stroke="var(--pink)" stroke-width="2.5" fill="none"/>
+        <!-- y label -->
+        <text x="20" y="135" font-family="Inter" font-size="11" fill="var(--ink-muted)" transform="rotate(-90 20 135)">cumulative ε</text>
+        <!-- Budget line -->
+        <line x1="60" y1="80" x2="730" y2="80" stroke="var(--red)" stroke-dasharray="4 4" stroke-width="1.2"/>
+        <text x="725" y="74" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--red)" text-anchor="end">target ε = 6</text>
+      </svg>
+      <div class="chart-key">
+        <div class="row"><div class="sw" style="background: var(--blue);"></div><span>Basic Composition (linear)</span></div>
+        <div class="row"><div class="sw" style="background: var(--pink);"></div><span>RDP (sub-linear)</span></div>
+        <div class="row"><div class="sw" style="background: var(--red);"></div><span>Privacy budget target</span></div>
+        <p style="margin-top: 10px; color: var(--ink-muted); font-size: 11px; line-height: 1.55;">
+          At the same per-round σ, RDP fits <strong>~2.5×</strong> more federation rounds inside the same (ε, δ) budget — a decisive win for long training runs.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

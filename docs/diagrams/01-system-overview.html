@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — System Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1700px; min-height: 1080px; }
+
+  .layer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 28px;
+    margin-top: 24px;
+  }
+  .layer {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 24px 26px;
+    box-shadow: 0 2px 4px rgba(19, 1, 74, 0.04), 0 16px 40px -16px rgba(19, 1, 74, 0.12);
+    position: relative;
+  }
+  .layer.purple::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 24px; right: 24px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 0 0 4px 4px;
+  }
+  .layer-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .layer-icon {
+    width: 42px; height: 42px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    color: white; font-weight: 700; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .layer h3 { font-size: 18px; font-weight: 700; color: var(--ink-strong); }
+  .layer .path {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--ink-muted); padding: 5px 9px;
+    background: var(--luminate-light); border-radius: 5px;
+    display: inline-block; margin-bottom: 14px;
+  }
+  .layer p { font-size: 13px; line-height: 1.55; color: var(--ink); margin-bottom: 12px; }
+  .layer ul { list-style: none; }
+  .layer ul li {
+    font-size: 12.5px; line-height: 1.55; padding-left: 14px; position: relative;
+    color: var(--ink); margin: 6px 0;
+  }
+  .layer ul li::before {
+    content: '◆'; color: var(--luminate-primary);
+    position: absolute; left: 0; top: 4px; font-size: 9px;
+  }
+  .layer ul li strong { color: var(--ink-strong); font-weight: 600; }
+
+  .infra-row {
+    margin-top: 36px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+  .infra-cell {
+    background: white; border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .infra-cell .h {
+    font-size: 13px; font-weight: 700; color: var(--ink-strong);
+    margin-bottom: 4px; display: flex; gap: 8px; align-items: center;
+  }
+  .infra-cell .b { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+  .ic-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    background: var(--surface-3); padding: 2px 7px; border-radius: 4px;
+    border: 1px solid var(--line-subtle); color: var(--ink-muted);
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>FedRF-Distill — System Overview</h1>
+      <div class="subtitle">Layered architecture: every package, what it owns, what it does</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 01 / 16</div>
+  </div>
+
+  <div class="layer-grid">
+
+    <!-- Layer 1: Core -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">⌬</div>
+        <h3>Core</h3>
+      </div>
+      <span class="path">fedrf_distill.core</span>
+      <p>The contract layer. Every other package talks to <em>protocols</em> defined here — never to concrete classes — so plug-replacement happens for free.</p>
+      <ul>
+        <li><strong>Protocols</strong> — ModelAdapter, Distiller, DP, Aggregator, Meta, Partitioner, Client, Coordinator</li>
+        <li><strong>Types</strong> — ClientID, FeatureMatrix, SoftLabels, ClientUpdate, GlobalArtifact, PrivacyBudget</li>
+        <li><strong>Exceptions</strong> — single root <code>FedRFDistillError</code> with typed leaves</li>
+      </ul>
+    </div>
+
+    <!-- Layer 2: Models -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">∮</div>
+        <h3>Models</h3>
+      </div>
+      <span class="path">fedrf_distill.models</span>
+      <p>Uniform adapter API over four major tree frameworks — the foundation for <strong>Hook B (cross-framework heterogeneity)</strong>.</p>
+      <ul>
+        <li><strong>BaseModelAdapter</strong> — refit guard, binary→2D reshape, safe pickling</li>
+        <li><strong>Adapters</strong> — sklearn RF/DT, XGBoost, LightGBM, CatBoost</li>
+        <li><strong>Factory</strong> — string-keyed registry + auto-discovery of optional backends</li>
+      </ul>
+    </div>
+
+    <!-- Layer 3: Distillation -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">⏃</div>
+        <h3>Distillation</h3>
+      </div>
+      <span class="path">fedrf_distill.distillation</span>
+      <p>Turn a heavy teacher into a 10 KB student by mimicking its soft labels.</p>
+      <ul>
+        <li><strong>SoftLabelGenerator</strong> — temperature scaling, label floor</li>
+        <li><strong>SurrogateDistiller</strong> — two strategies: argmax+weight, multi-output regression</li>
+        <li>Wire-format: pickled adapter + qualified class path</li>
+      </ul>
+    </div>
+
+    <!-- Layer 4: Privacy -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">⛨</div>
+        <h3>Privacy <span class="chip purple" style="font-size:10px;margin-left:6px;">HOOK A</span></h3>
+      </div>
+      <span class="path">fedrf_distill.privacy</span>
+      <p>Formal (ε, δ)-DP on every soft-label release. Carries an audit ledger and runs empirical attacks for the paper.</p>
+      <ul>
+        <li><strong>Mechanisms</strong> — Laplace (pure ε), Gaussian (ε,δ), Null (control)</li>
+        <li><strong>Accountants</strong> — Basic composition, Rényi DP</li>
+        <li><strong>Threat model</strong> — adversary × asset × guarantee</li>
+        <li><strong>Attack</strong> — Yeom-style MIA with TPR-at-low-FPR</li>
+      </ul>
+    </div>
+
+    <!-- Layer 5: Aggregation -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">∑</div>
+        <h3>Aggregation</h3>
+      </div>
+      <span class="path">fedrf_distill.aggregation</span>
+      <p>Merge K client surrogates into one global surrogate.</p>
+      <ul>
+        <li><strong>Proxy re-distillation</strong> (default, novel) — average on proxy, then distil again</li>
+        <li><strong>Confidence-weighted</strong> — FedAvg-style sample weighting</li>
+        <li><strong>Majority vote</strong> — discrete-label baseline</li>
+      </ul>
+    </div>
+
+    <!-- Layer 6: Meta -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">↻</div>
+        <h3>Meta-learning</h3>
+      </div>
+      <span class="path">fedrf_distill.meta</span>
+      <p>Each client refines its local model using the broadcast global surrogate.</p>
+      <ul>
+        <li><strong>StackingMetaLearner</strong> — augment X_local with G.predict_proba</li>
+        <li><strong>StackedAdapter</strong> — auto-augments at predict-time (drop-in)</li>
+      </ul>
+    </div>
+
+    <!-- Layer 7: Client -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">◐</div>
+        <h3>Client</h3>
+      </div>
+      <span class="path">fedrf_distill.client</span>
+      <p>Holds local data + teacher + DP. One method per protocol step:</p>
+      <ul>
+        <li><code>local_train()</code> → ClientUpdate</li>
+        <li><code>apply_global(artifact)</code> — refines via meta-learner</li>
+        <li><code>evaluate_local(X, y)</code> → metrics dict</li>
+      </ul>
+    </div>
+
+    <!-- Layer 8: Coordinator -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">⌖</div>
+        <h3>Coordinator</h3>
+      </div>
+      <span class="path">fedrf_distill.coordinator</span>
+      <p>Owns the proxy + aggregator + accountant. Refuses to continue when the total privacy budget would be exceeded.</p>
+      <ul>
+        <li><code>round(updates, t, budget)</code> → GlobalArtifact</li>
+        <li>Maintains <em>privacy ledger</em> across rounds</li>
+        <li>Raises <code>PrivacyBudgetExhausted</code> on overshoot</li>
+      </ul>
+    </div>
+
+    <!-- Layer 9: Orchestration -->
+    <div class="layer purple">
+      <div class="layer-head">
+        <div class="layer-icon">▶</div>
+        <h3>Orchestration</h3>
+      </div>
+      <span class="path">fedrf_distill.orchestration</span>
+      <p>The composition root. YAML → typed config → wired components → round loop.</p>
+      <ul>
+        <li><strong>ExperimentRunner</strong> — end-to-end driver returning RoundResult[]</li>
+        <li>Wires every protocol implementation from <code>ExperimentConfig</code></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Infra row: supporting modules -->
+  <div class="infra-row">
+    <div class="infra-cell">
+      <div class="h">📦 <span>Config</span><span class="ic-tag">pydantic v2</span></div>
+      <div class="b">ExperimentConfig + 8 sub-schemas. Frozen, validated, YAML-friendly.</div>
+    </div>
+    <div class="infra-cell">
+      <div class="h">🗂 <span>Data</span><span class="ic-tag">10 loaders</span></div>
+      <div class="b">UCI, OpenML, Kaggle. Cached to <code>~/.cache/fedrf_distill/</code> as <code>.npz</code>.</div>
+    </div>
+    <div class="infra-cell">
+      <div class="h">📐 <span>Metrics</span><span class="ic-tag">numpy-only</span></div>
+      <div class="b">Accuracy, F1-macro, OvR AUC, KL fidelity — no sklearn import.</div>
+    </div>
+    <div class="infra-cell">
+      <div class="h">🔧 <span>Utils</span><span class="ic-tag">serialisation, seeds, timers</span></div>
+      <div class="b">Safe deserialiser refuses non-adapter classes. Deterministic seeding.</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));"></div>Public API surface</div>
+    <div class="legend-item"><div class="legend-swatch" style="background: var(--surface-3); border: 1px solid var(--line);"></div>Supporting / infra</div>
+  </div>
+
+</div>
+</body>
+</html>

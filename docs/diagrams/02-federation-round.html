@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — One Federation Round</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1700px; min-height: 1080px; }
+  .stages {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    margin-top: 30px;
+    position: relative;
+  }
+  .stage {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 16px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+    position: relative;
+    min-height: 230px;
+    display: flex;
+    flex-direction: column;
+  }
+  .stage::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 18px; right: 18px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 0 0 3px 3px;
+  }
+  .stage-num {
+    display: inline-block; padding: 2px 8px;
+    background: var(--luminate-light); color: var(--luminate-primary);
+    border-radius: 5px; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    margin-bottom: 6px; align-self: flex-start;
+  }
+  .stage h4 {
+    font-size: 14px; font-weight: 700; color: var(--ink-strong);
+    margin-bottom: 8px; line-height: 1.25;
+  }
+  .stage .who {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--ink-muted); padding: 2px 6px;
+    background: var(--surface-3); border-radius: 4px;
+    display: inline-block; margin-bottom: 10px; align-self: flex-start;
+  }
+  .stage .body { font-size: 11.5px; line-height: 1.5; color: var(--ink); }
+  .stage code {
+    background: var(--surface-3); padding: 1px 4px; border-radius: 3px;
+    font-size: 0.85em;
+  }
+  .stage .out {
+    margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--line);
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--luminate-primary); font-weight: 600;
+  }
+
+  .lane {
+    display: grid; grid-template-columns: 130px 1fr;
+    align-items: center;
+    margin-top: 36px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px 22px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .lane .who-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--luminate-primary); font-weight: 700;
+  }
+  .lane .who-cell .sub {
+    font-family: Inter; font-size: 11px; color: var(--ink-muted); font-weight: 500;
+    margin-top: 3px;
+  }
+  .lane .pulses {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .lane .pulse {
+    padding: 5px 10px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    font-weight: 600; letter-spacing: 0.04em;
+  }
+  .pulse.client { background: var(--luminate-light); color: var(--luminate-primary); border: 1px solid rgba(98, 69, 183, 0.2); }
+  .pulse.server { background: #fff5dd; color: var(--amber); border: 1px solid rgba(184, 123, 0, 0.2); }
+  .pulse.dp { background: #fdecec; color: var(--red); border: 1px solid rgba(203, 32, 34, 0.2); }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>One Federation Round, Stage by Stage</h1>
+      <div class="subtitle">From raw local data to a refined, cross-client-aware model — in 7 steps</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 02 / 16</div>
+  </div>
+
+  <div class="stages">
+    <div class="stage">
+      <span class="stage-num">STEP 1</span>
+      <h4>Local teacher fit</h4>
+      <span class="who">client</span>
+      <div class="body">Train the teacher (RF / XGBoost / LightGBM / CatBoost) on the client's private partition.</div>
+      <div class="out">→ teacher</div>
+    </div>
+
+    <div class="stage">
+      <span class="stage-num">STEP 2</span>
+      <h4>Soft labels</h4>
+      <span class="who">client</span>
+      <div class="body"><code>teacher.predict_proba(X_local)</code> with optional temperature T and floor.</div>
+      <div class="out">→ P ∈ ℝ<sup>n×k</sup></div>
+    </div>
+
+    <div class="stage">
+      <span class="stage-num">STEP 3</span>
+      <h4>DP noise (Hook A)</h4>
+      <span class="who">client</span>
+      <div class="body">Add Laplace / Gaussian noise calibrated to (ε, δ). Clip to [0, 1] + renormalise → still (ε, δ)-DP by post-processing.</div>
+      <div class="out">→ P̃ (private)</div>
+    </div>
+
+    <div class="stage">
+      <span class="stage-num">STEP 4</span>
+      <h4>Distill surrogate</h4>
+      <span class="who">client</span>
+      <div class="body">Fit a depth-6 decision tree on <code>(X_local, P̃)</code> via argmax+weight or multi-output regression.</div>
+      <div class="out">→ student (∼10 KB)</div>
+    </div>
+
+    <div class="stage">
+      <span class="stage-num">STEP 5</span>
+      <h4>Aggregate</h4>
+      <span class="who">coordinator</span>
+      <div class="body">Each student runs on the shared <code>proxy_X</code>. Average the probability outputs. Re-distill the ensemble.</div>
+      <div class="out">→ G (global surrogate)</div>
+    </div>
+
+    <div class="stage">
+      <span class="stage-num">STEP 6</span>
+      <h4>Broadcast</h4>
+      <span class="who">coordinator</span>
+      <div class="body">Pack G into a <code>GlobalArtifact</code>: blob + class path + classes + strategy name + cumulative ε.</div>
+      <div class="out">→ artifact_t</div>
+    </div>
+
+    <div class="stage">
+      <span class="stage-num">STEP 7</span>
+      <h4>Meta-refine</h4>
+      <span class="who">client</span>
+      <div class="body">Stacking: <code>X_aug = [X_local || G.predict_proba(X_local)]</code> then retrain local model on (X_aug, y_local).</div>
+      <div class="out">→ refined local model</div>
+    </div>
+  </div>
+
+  <!-- Swim lane summary -->
+  <div class="lane">
+    <div class="who-cell">CLIENT (×K)<div class="sub">private side</div></div>
+    <div class="pulses">
+      <div class="pulse client">teacher.fit</div>
+      <div class="pulse client">teacher.predict_proba</div>
+      <div class="pulse dp">DP.privatize</div>
+      <div class="pulse client">SurrogateDistiller.distill</div>
+      <div class="pulse client">→ upload ClientUpdate</div>
+    </div>
+  </div>
+  <div class="lane">
+    <div class="who-cell">COORDINATOR<div class="sub">honest-but-curious</div></div>
+    <div class="pulses">
+      <div class="pulse server">Aggregator.aggregate</div>
+      <div class="pulse server">SurrogateDistiller.distill (global)</div>
+      <div class="pulse server">Accountant.record(ε,δ)</div>
+      <div class="pulse server">→ broadcast GlobalArtifact</div>
+    </div>
+  </div>
+  <div class="lane">
+    <div class="who-cell">CLIENT (×K)<div class="sub">refine</div></div>
+    <div class="pulses">
+      <div class="pulse client">deserialize(global_blob)</div>
+      <div class="pulse client">MetaLearner.refine</div>
+      <div class="pulse client">→ evaluate on test</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background: var(--luminate-light); border: 1px solid var(--luminate-medium);"></div>Client-side op</div>
+    <div class="legend-item"><div class="legend-swatch" style="background: #fff5dd; border: 1px solid var(--amber);"></div>Server-side op</div>
+    <div class="legend-item"><div class="legend-swatch" style="background: #fdecec; border: 1px solid var(--red);"></div>DP injection point</div>
+  </div>
+
+</div>
+</body>
+</html>

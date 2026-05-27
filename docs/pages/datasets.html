@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Datasets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../diagrams/_shared.css">
+<style>
+  body { min-height: 100vh; }
+  .canvas { width: 1400px; padding-bottom: 80px; }
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--luminate-primary); text-decoration: none;
+    margin-bottom: 24px; font-weight: 600;
+  }
+  .back:hover { text-decoration: underline; }
+
+  .table-card {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 28px 30px; margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+    position: relative; overflow: hidden;
+  }
+  .table-card::before {
+    content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 3px;
+    background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 0 0 3px 3px;
+  }
+  .table-card h2 { font-size: 20px; font-weight: 700; color: var(--ink-strong); margin-bottom: 4px; }
+  .table-card .sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 18px; }
+
+  table.ds-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.ds-table th {
+    text-align: left; padding: 11px 12px; background: var(--surface-2);
+    font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--ink-muted); font-weight: 700;
+    border-bottom: 2px solid var(--luminate-primary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  table.ds-table td {
+    padding: 11px 12px; border-bottom: 1px solid var(--line-subtle);
+    vertical-align: top;
+  }
+  table.ds-table td.name {
+    font-weight: 700; color: var(--ink-strong); font-size: 13px;
+  }
+  table.ds-table td.numeric {
+    font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    color: var(--ink-strong);
+  }
+  table.ds-table td.id {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--luminate-primary);
+  }
+  table.ds-table td.why { font-size: 12px; color: var(--ink); line-height: 1.55; }
+  table.ds-table tr:hover td { background: var(--luminate-light); }
+
+  .chip {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+  }
+  .chip.bin { background: #e8f1fd; color: var(--blue); }
+  .chip.mul { background: #fdeaf3; color: var(--pink); }
+  .chip.imb { background: #fff5dd; color: var(--amber); }
+
+  .notes {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 26px 28px; margin-top: 24px;
+  }
+  .notes h3 { font-size: 16px; font-weight: 700; color: var(--ink-strong); margin-bottom: 12px; }
+  .notes p { font-size: 13px; line-height: 1.65; color: var(--ink); margin-bottom: 12px; }
+  .notes ul { padding-left: 22px; font-size: 13px; line-height: 1.7; color: var(--ink); }
+  .notes code {
+    background: var(--surface-3); padding: 1px 5px; border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.9em;
+  }
+
+  .citation-card {
+    background: var(--surface-2); border: 1px solid var(--line-subtle);
+    border-radius: 10px; padding: 14px 16px; margin: 10px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    line-height: 1.65; color: var(--ink);
+  }
+  .citation-card .auth { color: var(--luminate-primary); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <a href="../index.html" class="back">← back to docs</a>
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Datasets — the 10-dataset benchmark</h1>
+      <div class="subtitle">Every claim in the paper is averaged across these globally-recognised tabular datasets</div>
+    </div>
+    <div class="brand-pill">DATASETS</div>
+  </div>
+
+  <div class="table-card">
+    <h2>The 10 datasets at a glance</h2>
+    <div class="sub">Sourced from the UCI repo (via OpenML mirrors) and scikit-learn. Loaders live in <code>fedrf_distill.data.loaders</code>.</div>
+
+    <table class="ds-table">
+      <thead>
+        <tr>
+          <th style="width:14%">name</th>
+          <th style="width:7%">task</th>
+          <th style="width:8%">n_samples</th>
+          <th style="width:6%">n_feats</th>
+          <th style="width:7%">classes</th>
+          <th style="width:16%">source</th>
+          <th style="width:42%">why it earns a slot</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name">Adult</td>
+          <td><span class="chip bin">binary</span></td>
+          <td class="numeric">48,842</td>
+          <td class="numeric">14</td>
+          <td class="numeric">2</td>
+          <td class="id">OpenML id 1590</td>
+          <td class="why">The canonical tabular-FL benchmark. Mixed numeric + categorical, mild class imbalance, mature literature for direct comparison.</td>
+        </tr>
+        <tr>
+          <td class="name">Bank Marketing</td>
+          <td><span class="chip imb">imbalanced</span></td>
+          <td class="numeric">45,211</td>
+          <td class="numeric">16</td>
+          <td class="numeric">2</td>
+          <td class="id">OpenML id 1461</td>
+          <td class="why">88/12 class skew. Tests aggregator behaviour when one class is rare in some shards under Dirichlet partitioning.</td>
+        </tr>
+        <tr>
+          <td class="name">Breast Cancer (WDBC)</td>
+          <td><span class="chip bin">binary</span></td>
+          <td class="numeric">569</td>
+          <td class="numeric">30</td>
+          <td class="numeric">2</td>
+          <td class="id">sklearn.datasets</td>
+          <td class="why">Tiny + clean — the official smoke test. Verifies end-to-end pipeline in &lt; 1 minute.</td>
+        </tr>
+        <tr>
+          <td class="name">Forest Covertype</td>
+          <td><span class="chip mul">multi · 7</span></td>
+          <td class="numeric">581,012</td>
+          <td class="numeric">54</td>
+          <td class="numeric">7</td>
+          <td class="id">sklearn fetch_covtype</td>
+          <td class="why">Large-n + multiclass. Gives a meaningful Dirichlet α sweep — non-IID effects are visible at α ∈ {0.1, 0.5}.</td>
+        </tr>
+        <tr>
+          <td class="name">Credit Card Fraud</td>
+          <td><span class="chip imb">99.8/0.2</span></td>
+          <td class="numeric">284,807</td>
+          <td class="numeric">30</td>
+          <td class="numeric">2</td>
+          <td class="id">OpenML id 1597</td>
+          <td class="why">Extreme rare-class regime on PCA-anonymised features. Ultimate stress test for the privacy × minority-class interaction.</td>
+        </tr>
+        <tr>
+          <td class="name">Diabetes (Pima)</td>
+          <td><span class="chip bin">binary</span></td>
+          <td class="numeric">768</td>
+          <td class="numeric">8</td>
+          <td class="numeric">2</td>
+          <td class="id">OpenML id 37</td>
+          <td class="why">Healthcare domain — naturally federated across hospitals. Small-n pairs well with strong DP (ε ≤ 1).</td>
+        </tr>
+        <tr>
+          <td class="name">HIGGS</td>
+          <td><span class="chip bin">binary</span></td>
+          <td class="numeric">100,000</td>
+          <td class="numeric">28</td>
+          <td class="numeric">2</td>
+          <td class="id">OpenML id 23512 (subset)</td>
+          <td class="why">Large-n flagship. Demonstrates FedRF-Distill scales beyond toy data without runtime regressions.</td>
+        </tr>
+        <tr>
+          <td class="name">Letter Recognition</td>
+          <td><span class="chip mul">multi · 26</span></td>
+          <td class="numeric">20,000</td>
+          <td class="numeric">16</td>
+          <td class="numeric">26</td>
+          <td class="id">OpenML id 6</td>
+          <td class="why">Maximum-class-count dataset. Stresses the pathological partitioner and the class-padding logic in every adapter.</td>
+        </tr>
+        <tr>
+          <td class="name">Mushroom</td>
+          <td><span class="chip bin">binary</span></td>
+          <td class="numeric">8,124</td>
+          <td class="numeric">22</td>
+          <td class="numeric">2</td>
+          <td class="id">OpenML id 24</td>
+          <td class="why">Fully categorical features. Validates CatBoost adapter's native factor handling — a Hook B success criterion.</td>
+        </tr>
+        <tr>
+          <td class="name">NSL-KDD</td>
+          <td><span class="chip mul">multi · 5</span></td>
+          <td class="numeric">148,517</td>
+          <td class="numeric">41</td>
+          <td class="numeric">5</td>
+          <td class="id">KDDCup99 successor</td>
+          <td class="why">Cybersecurity / network intrusion detection. Genuinely federated in practice — privacy-sensitive enterprise data.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="notes">
+    <h3>Why these ten?</h3>
+    <p>The set was assembled to maximise diversity along four axes simultaneously:</p>
+    <ul>
+      <li><strong>Scale:</strong> 569 rows (Breast Cancer) → 581 K rows (Covertype). Tests memory/time scaling.</li>
+      <li><strong>Class count:</strong> 2 → 26. Stresses padding logic, especially under Pathological partitioning.</li>
+      <li><strong>Class skew:</strong> from balanced (Adult) to 99.8/0.2 (Credit Card Fraud).</li>
+      <li><strong>Feature type:</strong> pure numeric (HIGGS), pure categorical (Mushroom), mixed (Bank, Adult).</li>
+    </ul>
+    <p>Every dataset is downloadable from a public source with a single function call. Loaders are cached under <code>~/.fedrf_distill/cache/</code>.</p>
+
+    <h3 style="margin-top: 22px;">Loader API</h3>
+    <p>Every dataset exposes the same signature so the runner can pick by string:</p>
+<pre class="citation-card"><span class="auth">def</span> load(seed: int = 42) -> tuple[np.ndarray, np.ndarray, dict]:
+    """Returns X (n, d), y (n,), metadata dict.
+
+    metadata = {
+      "name": str,                 <span style="color:#888"># "adult"</span>
+      "task": "classification",
+      "n_classes": int,            <span style="color:#888"># 2 or k</span>
+      "classes": list[int],        <span style="color:#888"># [0, 1, ...]</span>
+      "feature_names": list[str],
+      "categorical_idx": list[int],
+      "source": str,               <span style="color:#888"># OpenML / sklearn / file</span>
+      "citation": str,
+    }
+    """</pre>
+
+    <h3 style="margin-top: 22px;">Primary citations</h3>
+    <div class="citation-card"><span class="auth">Dua, D. &amp; Graff, C.</span> (2019). UCI Machine Learning Repository. University of California, Irvine, School of Information and Computer Sciences.</div>
+    <div class="citation-card"><span class="auth">Vanschoren, J., van Rijn, J. N., Bischl, B., &amp; Torgo, L.</span> (2014). OpenML: networked science in machine learning. ACM SIGKDD Explorations.</div>
+    <div class="citation-card"><span class="auth">Tavallaee, M., Bagheri, E., Lu, W., &amp; Ghorbani, A. A.</span> (2009). A detailed analysis of the KDD CUP 99 data set. IEEE CISDA. <em>(NSL-KDD)</em></div>
+    <div class="citation-card"><span class="auth">Baldi, P., Sadowski, P., &amp; Whiteson, D.</span> (2014). Searching for exotic particles in high-energy physics with deep learning. Nature Comm. 5:4308. <em>(HIGGS)</em></div>
+    <div class="citation-card"><span class="auth">Moro, S., Cortez, P., &amp; Rita, P.</span> (2014). A data-driven approach to predict the success of bank telemarketing. Decision Support Systems. <em>(Bank Marketing)</em></div>
+    <div class="citation-card"><span class="auth">Dal Pozzolo, A., Caelen, O., Johnson, R. A., &amp; Bontempi, G.</span> (2015). Calibrating probability with undersampling for unbalanced classification. IEEE SSCI. <em>(Credit Card Fraud)</em></div>
+  </div>
+
+</div>
+</body>
+</html>

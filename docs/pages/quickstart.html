@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Quickstart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../diagrams/_shared.css">
+<style>
+  body { min-height: 100vh; }
+  .canvas { width: 1100px; padding-bottom: 80px; }
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--luminate-primary); text-decoration: none;
+    margin-bottom: 24px; font-weight: 600;
+  }
+  .back:hover { text-decoration: underline; }
+
+  section {
+    background: white; border: 1px solid var(--line); border-radius: 14px;
+    padding: 28px 32px; margin-bottom: 22px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+    position: relative;
+  }
+  section::before {
+    content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 3px;
+    background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 0 0 3px 3px;
+  }
+  section h2 {
+    font-size: 22px; font-weight: 700; color: var(--ink-strong);
+    margin-bottom: 6px; letter-spacing: -0.01em;
+  }
+  section .sect-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--luminate-primary); letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 12px; display: block;
+  }
+  section p { font-size: 14px; line-height: 1.65; color: var(--ink); margin-bottom: 12px; }
+  section p:last-child { margin-bottom: 0; }
+  section ul { padding-left: 22px; font-size: 13.5px; line-height: 1.7; color: var(--ink); }
+  section ul li { margin: 4px 0; }
+
+  pre.code {
+    background: #11122e; color: #d6e0ff;
+    border-radius: 10px; padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    line-height: 1.65; overflow-x: auto;
+    margin: 12px 0;
+  }
+  pre.code .c { color: #8b95c1; }
+  pre.code .k { color: #ff9bcd; }
+  pre.code .s { color: #9bdc7c; }
+  pre.code .n { color: #ffce9b; }
+  pre.code .cmd { color: #79e2f0; }
+
+  .callout {
+    background: var(--luminate-light);
+    border-left: 4px solid var(--luminate-primary);
+    padding: 14px 18px; border-radius: 0 8px 8px 0;
+    font-size: 13px; color: var(--ink); line-height: 1.6;
+    margin: 14px 0;
+  }
+  .callout strong { color: var(--luminate-primary); }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <a href="../index.html" class="back">← back to docs</a>
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Quickstart</h1>
+      <div class="subtitle">Install, run a smoke test, and explore the YAML-driven experiment runner</div>
+    </div>
+    <div class="brand-pill">QUICKSTART</div>
+  </div>
+
+  <section>
+    <span class="sect-tag">STEP 1</span>
+    <h2>Install</h2>
+    <p>FedRF-Distill targets Python ≥ 3.10. scikit-learn is a hard dependency; XGBoost, LightGBM, and CatBoost are optional extras.</p>
+<pre class="code"><span class="c"># Clone</span>
+<span class="cmd">$</span> git clone https://github.com/&lt;you&gt;/fedrf-distill.git
+<span class="cmd">$</span> cd fedrf-distill
+
+<span class="c"># Create a venv (Python 3.10+)</span>
+<span class="cmd">$</span> python3.13 -m venv .venv && source .venv/bin/activate
+
+<span class="c"># Core install (sklearn-only)</span>
+<span class="cmd">$</span> pip install -e .
+
+<span class="c"># Full install — all four tree backends</span>
+<span class="cmd">$</span> pip install -e .[xgboost,lightgbm,catboost]</pre>
+    <div class="callout">
+      <strong>Why optional extras?</strong> Hook B's headline claim — &ldquo;every client picks its own backend&rdquo; — works with just sklearn. The extras unlock the cross-framework ablation in the paper.
+    </div>
+  </section>
+
+  <section>
+    <span class="sect-tag">STEP 2</span>
+    <h2>Run the smoke test</h2>
+    <p>Verifies the entire pipeline on Breast Cancer in &lt; 1 minute. Trains 10 federated clients with the default proxy-redistillation aggregator and Laplace DP.</p>
+<pre class="code"><span class="cmd">$</span> python -m experiments.scripts.run_experiment \
+    --config experiments/configs/breast_cancer_heterogeneous.yaml \
+    --rounds 2 --out runs/smoke
+
+<span class="c"># expected output</span>
+<span class="c"># [round 0] acc=0.78 F1=0.74 bytes=12,535 eps=2.5 t=0.6s</span>
+<span class="c"># [round 1] acc=0.86 F1=0.83 bytes=13,655 eps=5.0 t=0.4s</span>
+<span class="c"># wrote runs/smoke/metrics.jsonl, runs/smoke/privacy_ledger.jsonl</span></pre>
+  </section>
+
+  <section>
+    <span class="sect-tag">STEP 3</span>
+    <h2>Anatomy of an experiment</h2>
+    <p>One YAML file fully describes a federation run. Every plug-replaceable component is selected by string.</p>
+<pre class="code"><span class="c"># experiments/configs/adult_dp_gaussian.yaml</span>
+<span class="k">data:</span>     {<span class="k">name:</span> <span class="s">adult</span>, <span class="k">seed:</span> <span class="n">42</span>}
+<span class="k">partition:</span> {<span class="k">name:</span> <span class="s">dirichlet</span>, <span class="k">alpha:</span> <span class="n">0.5</span>, <span class="k">n_clients:</span> <span class="n">10</span>}
+<span class="k">proxy:</span>    {<span class="k">source:</span> <span class="s">held_out</span>, <span class="k">n:</span> <span class="n">2000</span>}
+<span class="k">model:</span>
+  <span class="k">teacher_framework:</span> <span class="s">sklearn_rf</span>
+  <span class="k">student_framework:</span> <span class="s">sklearn_dt</span>
+<span class="k">distillation:</span>
+  <span class="k">mode:</span> <span class="s">argmax_weighted</span>
+  <span class="k">temperature:</span> <span class="n">1.0</span>
+<span class="k">dp:</span>
+  <span class="k">mechanism:</span> <span class="s">gaussian</span>
+  <span class="k">epsilon:</span> <span class="n">1.0</span>, <span class="k">delta:</span> <span class="n">1.0e-5</span>
+  <span class="k">accountant:</span> <span class="s">rdp</span>, <span class="k">target_budget:</span> <span class="n">5.0</span>
+<span class="k">aggregator:</span> {<span class="k">name:</span> <span class="s">proxy_redistillation</span>}
+<span class="k">meta:</span>       {<span class="k">name:</span> <span class="s">stacking</span>}
+<span class="k">training:</span>   {<span class="k">n_rounds:</span> <span class="n">5</span>}</pre>
+    <p>To swap an aggregator, change one line: <code>aggregator.name: "confidence_weighted"</code>.</p>
+  </section>
+
+  <section>
+    <span class="sect-tag">STEP 4</span>
+    <h2>Hook B — mix frameworks across clients</h2>
+    <p>Set <code>model.frameworks_per_client</code> to a list. The runner cycles through it.</p>
+<pre class="code"><span class="k">model:</span>
+  <span class="k">teacher_framework:</span> <span class="s">sklearn_rf</span>     <span class="c"># default for non-listed clients</span>
+  <span class="k">student_framework:</span> <span class="s">sklearn_dt</span>     <span class="c"># student always sklearn — wire-stable</span>
+  <span class="k">frameworks_per_client:</span>
+    - <span class="s">sklearn_rf</span>
+    - <span class="s">xgboost</span>
+    - <span class="s">lightgbm</span>
+    - <span class="s">catboost</span>
+  <span class="c"># round-robins across the K clients</span></pre>
+    <div class="callout">
+      <strong>What the coordinator sees:</strong> framework-agnostic <code>ClientUpdate</code> blobs. The audit field <code>framework</code> lets you log a per-round mix heatmap (e.g. 4× sklearn, 3× xgb, 2× lgbm, 1× cb).
+    </div>
+  </section>
+
+  <section>
+    <span class="sect-tag">STEP 5</span>
+    <h2>Programmatic API</h2>
+    <p>For unit-style experiments, skip the YAML and instantiate the config directly.</p>
+<pre class="code"><span class="k">from</span> fedrf_distill.config.schema <span class="k">import</span> ExperimentConfig
+<span class="k">from</span> fedrf_distill.orchestration.runner <span class="k">import</span> ExperimentRunner
+
+cfg = ExperimentConfig.model_validate({
+    <span class="s">"data"</span>: {<span class="s">"name"</span>: <span class="s">"adult"</span>, <span class="s">"seed"</span>: 42},
+    <span class="s">"partition"</span>: {<span class="s">"name"</span>: <span class="s">"dirichlet"</span>, <span class="s">"alpha"</span>: 0.5, <span class="s">"n_clients"</span>: 10},
+    <span class="s">"dp"</span>: {<span class="s">"mechanism"</span>: <span class="s">"gaussian"</span>, <span class="s">"epsilon"</span>: 1.0, <span class="s">"delta"</span>: 1e-5},
+    <span class="c"># …everything else takes a sensible default…</span>
+})
+
+runner = ExperimentRunner(cfg)
+result = runner.run(n_rounds=<span class="n">5</span>)
+
+<span class="k">print</span>(result.history[-<span class="n">1</span>])    <span class="c"># last-round metrics</span>
+<span class="k">print</span>(result.ledger.cumulative())  <span class="c"># (ε_cum, δ_cum)</span></pre>
+  </section>
+
+  <section>
+    <span class="sect-tag">STEP 6</span>
+    <h2>Run the 480-cell benchmark sweep</h2>
+    <p>Reproduces every cell in the paper. Output: a single CSV; ~6 h on a 16-core box.</p>
+<pre class="code"><span class="cmd">$</span> python -m experiments.scripts.run_benchmark_sweep \
+    --datasets all \
+    --partitions iid dirichlet_0p5 dirichlet_0p1 pathological_2 \
+    --dp null laplace_5 gauss_1 gauss_0p5 \
+    --frameworks all-sklearn mixed-4 all-xgb \
+    --seeds 3 --rounds 5 \
+    --out results/benchmark_sweep.csv</pre>
+  </section>
+
+  <section>
+    <span class="sect-tag">STEP 7</span>
+    <h2>Empirical privacy audit</h2>
+    <p>Yeom-style Membership Inference Attack on a single client surrogate.</p>
+<pre class="code"><span class="k">from</span> fedrf_distill.privacy.attack <span class="k">import</span> membership_inference_attack
+
+mia = membership_inference_attack(
+    surrogate    = client.surrogate,
+    member_set    = (X_local, y_local),
+    nonmember_set = (X_test,  y_test),
+)
+<span class="k">print</span>(mia)
+<span class="c"># MIAResult(auc=0.572, advantage=0.143, tpr_at_low_fpr=0.061)</span></pre>
+    <div class="callout">
+      <strong>How to read MIAResult:</strong> An AUC near 0.5 means the surrogate is empirically privacy-safe — the adversary does no better than chance. See <a href="../diagrams/10-mia-evaluation.html">Diagram 10</a> for the full ROC sweep across ε.
+    </div>
+  </section>
+
+  <section>
+    <span class="sect-tag">REFERENCE</span>
+    <h2>Where to go next</h2>
+    <ul>
+      <li><a href="../diagrams/01-system-overview.html">System overview</a> — the 9-layer architecture.</li>
+      <li><a href="../diagrams/02-federation-round.html">Federation round walk-through</a> — every step, with shapes.</li>
+      <li><a href="../diagrams/05-protocol-layer.html">Protocol layer</a> — the eight pluggable Protocols.</li>
+      <li><a href="../diagrams/12-benchmark-grid.html">Benchmark grid</a> — the 10 evaluation datasets.</li>
+      <li><a href="datasets.html">Datasets page</a> — full citation table and column-by-column schema.</li>
+    </ul>
+  </section>
+
+</div>
+</body>
+</html>

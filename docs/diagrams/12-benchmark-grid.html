@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — 10-Dataset Benchmark Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1700px; min-height: 1180px; }
+
+  .ds-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+    margin-top: 30px;
+  }
+  .ds {
+    background: white; border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 10px 22px -12px rgba(19, 1, 74, 0.12);
+    position: relative;
+    display: flex; flex-direction: column;
+    min-height: 240px;
+  }
+  .ds::before {
+    content: ''; position: absolute; top: 0; left: 18px; right: 18px; height: 3px;
+    border-radius: 0 0 3px 3px;
+  }
+  .ds.binary::before  { background: linear-gradient(90deg, var(--blue),   #3677d1); }
+  .ds.multi::before   { background: linear-gradient(90deg, var(--pink),   #d5499f); }
+  .ds.binary-imb::before { background: linear-gradient(90deg, var(--amber), #f0a500); }
+
+  .ds .head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .ds h4 { font-size: 14px; font-weight: 700; color: var(--ink-strong); margin-bottom: 4px; }
+  .ds .src {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    color: var(--ink-muted); margin-bottom: 10px;
+  }
+  .ds .chip {
+    padding: 3px 8px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 700;
+  }
+  .chip.bin    { background: #e8f1fd; color: var(--blue); }
+  .chip.mul    { background: #fdeaf3; color: var(--pink); }
+  .chip.imb    { background: #fff5dd; color: var(--amber); }
+
+  .ds .stats {
+    border-top: 1px solid var(--line-subtle); padding-top: 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    line-height: 1.6; color: var(--ink-muted);
+    margin-top: auto;
+  }
+  .ds .stats .row { display: flex; justify-content: space-between; }
+  .ds .stats .row .v { color: var(--ink-strong); font-weight: 600; }
+  .ds .why {
+    font-size: 11px; color: var(--ink); line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .sweep-band {
+    margin-top: 36px;
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    color: white; border-radius: 16px; padding: 28px 32px;
+    box-shadow: 0 16px 36px -10px rgba(19, 1, 74, 0.32);
+  }
+  .sweep-band .h { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .sweep-band .sh { font-size: 13px; opacity: 0.88; margin-bottom: 20px; }
+  .axes {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+  }
+  .axis {
+    background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.25);
+    padding: 16px 18px; border-radius: 10px;
+  }
+  .axis .a-name {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.04em;
+    opacity: 0.85; margin-bottom: 8px;
+  }
+  .axis .a-vals {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .axis .a-val {
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3);
+    padding: 4px 9px; border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600;
+  }
+
+  .totals {
+    margin-top: 20px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    background: rgba(255,255,255,0.08); border: 1px dashed rgba(255,255,255,0.4);
+    border-radius: 12px; padding: 18px 20px;
+  }
+  .totals .stat {
+    text-align: center;
+  }
+  .totals .stat .big {
+    font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700;
+  }
+  .totals .stat .lab {
+    font-size: 11.5px; opacity: 0.85; margin-top: 2px; letter-spacing: 0.04em;
+  }
+
+  .cli {
+    margin-top: 24px;
+    background: #11122e; color: #d6e0ff;
+    border-radius: 12px; padding: 18px 22px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.7;
+  }
+  .cli .c { color: #8b95c1; }
+  .cli .k { color: #ff9bcd; }
+  .cli .s { color: #9bdc7c; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>10-Dataset Benchmark Grid</h1>
+      <div class="subtitle">Every claim in the paper is averaged across these 10 globally-recognised tabular datasets</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 12 / 16</div>
+  </div>
+
+  <div class="ds-grid">
+    <div class="ds binary">
+      <div class="head">
+        <h4>Adult (Census Income)</h4>
+        <span class="chip bin">BINARY</span>
+      </div>
+      <div class="src">UCI / OpenML id 1590</div>
+      <div class="why">Income &gt; $50k prediction. Mild class imbalance. Canonical FL benchmark.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">48,842</span></div>
+        <div class="row"><span>d</span><span class="v">14</span></div>
+        <div class="row"><span>classes</span><span class="v">2</span></div>
+      </div>
+    </div>
+
+    <div class="ds binary-imb">
+      <div class="head">
+        <h4>Bank Marketing</h4>
+        <span class="chip imb">IMBALANCED</span>
+      </div>
+      <div class="src">UCI / OpenML id 1461</div>
+      <div class="why">Term-deposit subscription. 88/12 imbalance ⇒ tests aggregator under non-IID class rarity.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">45,211</span></div>
+        <div class="row"><span>d</span><span class="v">16</span></div>
+        <div class="row"><span>classes</span><span class="v">2</span></div>
+      </div>
+    </div>
+
+    <div class="ds binary">
+      <div class="head">
+        <h4>Breast Cancer (WDBC)</h4>
+        <span class="chip bin">BINARY</span>
+      </div>
+      <div class="src">sklearn built-in</div>
+      <div class="why">Diagnosis from cell measurements. Small + clean — smoke-test dataset for the pipeline.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">569</span></div>
+        <div class="row"><span>d</span><span class="v">30</span></div>
+        <div class="row"><span>classes</span><span class="v">2</span></div>
+      </div>
+    </div>
+
+    <div class="ds multi">
+      <div class="head">
+        <h4>Forest Covertype</h4>
+        <span class="chip mul">MULTI · 7</span>
+      </div>
+      <div class="src">UCI / sklearn fetch</div>
+      <div class="why">7-way cover type from cartographic features. Large-n + multi-class — meaningful Dirichlet skew sweep.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">581,012</span></div>
+        <div class="row"><span>d</span><span class="v">54</span></div>
+        <div class="row"><span>classes</span><span class="v">7</span></div>
+      </div>
+    </div>
+
+    <div class="ds binary-imb">
+      <div class="head">
+        <h4>Credit Card Fraud</h4>
+        <span class="chip imb">99.8/0.2</span>
+      </div>
+      <div class="src">OpenML id 1597</div>
+      <div class="why">Extreme imbalance on anonymised PCA features. Ultimate stress test for the privacy + minority-class combo.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">284,807</span></div>
+        <div class="row"><span>d</span><span class="v">30</span></div>
+        <div class="row"><span>classes</span><span class="v">2</span></div>
+      </div>
+    </div>
+
+    <div class="ds binary">
+      <div class="head">
+        <h4>Diabetes (Pima)</h4>
+        <span class="chip bin">BINARY</span>
+      </div>
+      <div class="src">OpenML id 37</div>
+      <div class="why">Onset prediction. Small-n, low-d — pairs well with strong DP (ε≤1) for ablation.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">768</span></div>
+        <div class="row"><span>d</span><span class="v">8</span></div>
+        <div class="row"><span>classes</span><span class="v">2</span></div>
+      </div>
+    </div>
+
+    <div class="ds binary">
+      <div class="head">
+        <h4>HIGGS</h4>
+        <span class="chip bin">BINARY</span>
+      </div>
+      <div class="src">OpenML id 23512 (subset)</div>
+      <div class="why">Particle-physics signal/background. Large-n flagship — shows FedRF-Distill scales beyond toy data.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">100,000</span></div>
+        <div class="row"><span>d</span><span class="v">28</span></div>
+        <div class="row"><span>classes</span><span class="v">2</span></div>
+      </div>
+    </div>
+
+    <div class="ds multi">
+      <div class="head">
+        <h4>Letter Recognition</h4>
+        <span class="chip mul">MULTI · 26</span>
+      </div>
+      <div class="src">UCI / OpenML id 6</div>
+      <div class="why">26-class glyph recognition. Maximum-class-count stress test for the pathological partitioner.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">20,000</span></div>
+        <div class="row"><span>d</span><span class="v">16</span></div>
+        <div class="row"><span>classes</span><span class="v">26</span></div>
+      </div>
+    </div>
+
+    <div class="ds binary">
+      <div class="head">
+        <h4>Mushroom</h4>
+        <span class="chip bin">BINARY</span>
+      </div>
+      <div class="src">UCI / OpenML id 24</div>
+      <div class="why">Edible/poisonous from categorical features. Validates CatBoost adapter on raw factor columns.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">8,124</span></div>
+        <div class="row"><span>d</span><span class="v">22</span></div>
+        <div class="row"><span>classes</span><span class="v">2</span></div>
+      </div>
+    </div>
+
+    <div class="ds multi">
+      <div class="head">
+        <h4>NSL-KDD</h4>
+        <span class="chip mul">MULTI · 5</span>
+      </div>
+      <div class="src">OpenML / KDDCup99 successor</div>
+      <div class="why">Network intrusion detection. Cybersec domain — naturally federated across enterprises.</div>
+      <div class="stats">
+        <div class="row"><span>n</span><span class="v">148,517</span></div>
+        <div class="row"><span>d</span><span class="v">41</span></div>
+        <div class="row"><span>classes</span><span class="v">5</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sweep-band">
+    <div class="h">▼ Full evaluation sweep configuration ▼</div>
+    <div class="sh">run_benchmark_sweep.py runs the full cartesian product. Output: a single CSV per row a (dataset, partition, dp, framework_mix) cell.</div>
+
+    <div class="axes">
+      <div class="axis">
+        <div class="a-name">DATASETS (10)</div>
+        <div class="a-vals">
+          <div class="a-val">adult</div>
+          <div class="a-val">bank_marketing</div>
+          <div class="a-val">breast_cancer</div>
+          <div class="a-val">covertype</div>
+          <div class="a-val">credit_card_fraud</div>
+          <div class="a-val">diabetes</div>
+          <div class="a-val">higgs</div>
+          <div class="a-val">letter_recognition</div>
+          <div class="a-val">mushroom</div>
+          <div class="a-val">nsl_kdd</div>
+        </div>
+      </div>
+      <div class="axis">
+        <div class="a-name">PARTITION (4)</div>
+        <div class="a-vals">
+          <div class="a-val">iid</div>
+          <div class="a-val">dirichlet α=0.5</div>
+          <div class="a-val">dirichlet α=0.1</div>
+          <div class="a-val">pathological k=2</div>
+        </div>
+      </div>
+      <div class="axis">
+        <div class="a-name">DP MECHANISM (4)</div>
+        <div class="a-vals">
+          <div class="a-val">null (ε=∞)</div>
+          <div class="a-val">laplace ε=5</div>
+          <div class="a-val">gaussian ε=1</div>
+          <div class="a-val">gaussian ε=0.5</div>
+        </div>
+      </div>
+      <div class="axis">
+        <div class="a-name">FRAMEWORK MIX (3)</div>
+        <div class="a-vals">
+          <div class="a-val">all-sklearn</div>
+          <div class="a-val">mixed-4</div>
+          <div class="a-val">all-xgb</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="totals">
+      <div class="stat"><div class="big">10</div><div class="lab">datasets</div></div>
+      <div class="stat"><div class="big">4 × 4 × 3</div><div class="lab">treatment combos</div></div>
+      <div class="stat"><div class="big">480</div><div class="lab">total cells</div></div>
+      <div class="stat"><div class="big">3 × 5</div><div class="lab">seeds × rounds (reported)</div></div>
+    </div>
+
+    <div class="cli"><span class="c"># Reproduce every benchmark cell in one command:</span>
+<span class="k">$</span> python -m experiments.scripts.run_benchmark_sweep \
+    --datasets all \
+    --partitions iid dirichlet_0p5 dirichlet_0p1 pathological_2 \
+    --dp null laplace_5 gauss_1 gauss_0p5 \
+    --frameworks all-sklearn mixed-4 all-xgb \
+    --seeds 3 --rounds 5 \
+    --out results/benchmark_sweep.csv</div>
+  </div>
+
+</div>
+</body>
+</html>

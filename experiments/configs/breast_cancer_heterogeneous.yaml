@@ -1,0 +1,57 @@
+# Demonstrates Hook B: cross-framework heterogeneity.
+# Clients 0-2 use sklearn RF; clients 3-5 use XGBoost; clients 6-9 use LightGBM.
+# (Requires the xgboost + lightgbm extras to be installed.)
+name: breast_cancer_heterogeneous
+output_dir: experiments/results/breast_cancer_heterogeneous
+n_rounds: 5
+random_state: 42
+
+data:
+  name: breast_cancer
+  test_fraction: 0.2
+  random_state: 0
+
+partition:
+  strategy: dirichlet
+  n_clients: 10
+  alpha: 0.5
+  seed: 0
+
+proxy:
+  source: synthetic_uniform
+  n_samples: 1000
+  seed: 0
+
+model:
+  teacher_framework: sklearn_rf
+  teacher_kwargs:
+    n_estimators: 100
+  student_framework: sklearn_dt
+  student_kwargs:
+    max_depth: 5
+  frameworks_per_client:
+    - sklearn_rf
+    - sklearn_rf
+    - sklearn_rf
+    - xgboost
+    - xgboost
+    - xgboost
+    - lightgbm
+    - lightgbm
+    - lightgbm
+    - lightgbm
+
+distillation:
+  mode: argmax_weighted
+
+dp:
+  mechanism: null
+  target_epsilon: 100.0  # effectively disabled
+  accountant: basic
+
+aggregator:
+  strategy: proxy_redistillation
+
+meta:
+  enabled: true
+  strategy: stacking
