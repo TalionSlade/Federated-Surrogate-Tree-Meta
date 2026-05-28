@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Distillation Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1600px; min-height: 1000px; }
+
+  .pipe { display: grid; grid-template-columns: repeat(5, 1fr); gap: 26px; margin-top: 30px; align-items: stretch; position: relative; z-index: 1; }
+  .step {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 20px; position: relative;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 12px 28px -12px rgba(19, 1, 74, 0.12);
+  }
+  .step::before { content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 3px;
+                  background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+                  border-radius: 0 0 3px 3px; }
+  .step .ord {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--luminate-primary); color: white;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .step h4 { font-size: 15px; font-weight: 700; color: var(--ink-strong); margin-bottom: 4px; }
+  .step .tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--ink-muted); margin-bottom: 12px; padding: 3px 7px;
+    background: var(--surface-3); border-radius: 4px; display: inline-block;
+  }
+  .step p { font-size: 12.5px; line-height: 1.55; color: var(--ink); margin-bottom: 10px; }
+  .shape-box {
+    margin-top: auto; padding: 10px 12px; border-radius: 8px;
+    background: var(--luminate-light); border: 1px dashed var(--luminate-medium);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--luminate-primary);
+    font-weight: 600;
+  }
+
+  .formula {
+    margin-top: 50px; background: white; border: 1px solid var(--line);
+    border-radius: 16px; padding: 26px 30px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .formula h3 { font-size: 16px; font-weight: 700; color: var(--ink-strong); margin-bottom: 14px; }
+  .formula-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  .formula-card {
+    background: var(--surface-2); border: 1px solid var(--line-subtle); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .formula-card .name { font-size: 13px; font-weight: 700; color: var(--luminate-primary); }
+  .formula-card .eq {
+    margin: 8px 0; font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    color: var(--ink-strong);
+  }
+  .formula-card .note { font-size: 11.5px; color: var(--ink-muted); line-height: 1.5; }
+
+  .flow-svg path { stroke: var(--luminate-primary); opacity: 0.6; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <svg class="flow-svg" viewBox="0 0 1600 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--luminate-primary)"/>
+      </marker>
+    </defs>
+    <line x1="320" y1="280" x2="370" y2="280"/>
+    <line x1="620" y1="280" x2="670" y2="280"/>
+    <line x1="920" y1="280" x2="970" y2="280"/>
+    <line x1="1220" y1="280" x2="1270" y2="280"/>
+  </svg>
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Knowledge Distillation Pipeline</h1>
+      <div class="subtitle">Teacher RF → soft labels → DP → surrogate DT — with intermediate shapes</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 03 / 16</div>
+  </div>
+
+  <div class="pipe">
+    <div class="step">
+      <div class="ord">1</div>
+      <h4>Teacher</h4>
+      <span class="tag">RandomForestClassifier(n_estimators=100)</span>
+      <p>Strong-but-heavy ensemble fitted on the client's private partition. Provides the empirical predictions used as a soft label source.</p>
+      <div class="shape-box">X<sub>local</sub> ∈ ℝ<sup>n×d</sup><br>y<sub>local</sub> ∈ ℤ<sup>n</sup></div>
+    </div>
+
+    <div class="step">
+      <div class="ord">2</div>
+      <h4>Soft labels</h4>
+      <span class="tag">SoftLabelGenerator(T, floor)</span>
+      <p>Probability vectors per training row. Optional temperature T re-shapes the distribution; floor smooths zeros to prevent log(0).</p>
+      <div class="shape-box">P = teacher.predict_proba(X<sub>local</sub>)<br>shape: (n, k), rows sum to 1</div>
+    </div>
+
+    <div class="step">
+      <div class="ord">3</div>
+      <h4>DP noise</h4>
+      <span class="tag">{Laplace, Gaussian, Null}</span>
+      <p>Add calibrated noise to every entry, clip to [0,1], renormalise. Post-processing preserves the DP guarantee.</p>
+      <div class="shape-box">P̃ = clip(P + η) / Σ<br>shape preserved</div>
+    </div>
+
+    <div class="step">
+      <div class="ord">4</div>
+      <h4>Distill student</h4>
+      <span class="tag">SurrogateDistiller(mode)</span>
+      <p>Either argmax+weight (default) or multi-output regression on P̃. Always yields a compact tree.</p>
+      <div class="shape-box">student fit on (X<sub>local</sub>, P̃)<br>typical size ≈ 5–15 KB</div>
+    </div>
+
+    <div class="step">
+      <div class="ord">5</div>
+      <h4>Wire format</h4>
+      <span class="tag">ClientUpdate</span>
+      <p>Pickle blob + qualified class path. Coordinator imports the class, calls <code>cls.deserialize(blob)</code>, refuses non-adapters.</p>
+      <div class="shape-box">{surrogate_blob: bytes,<br>&nbsp;&nbsp;surrogate_class_path: str,<br>&nbsp;&nbsp;classes, n_samples, ε}</div>
+    </div>
+  </div>
+
+  <div class="formula">
+    <h3>Formal building blocks</h3>
+    <div class="formula-grid">
+      <div class="formula-card">
+        <div class="name">Temperature scaling</div>
+        <div class="eq">pᵢ(T) = pᵢ<sup>1/T</sup> / Σⱼ pⱼ<sup>1/T</sup></div>
+        <div class="note">T &gt; 1 smooths the distribution to preserve "dark knowledge"; T = 1 is the identity.</div>
+      </div>
+      <div class="formula-card">
+        <div class="name">Laplace mechanism</div>
+        <div class="eq">η ∼ Lap(0, Δ₁/ε), Δ₁ ≤ 2</div>
+        <div class="note">Pure ε-DP. Δ₁ bound because one row of P swaps at most 2 mass in L1.</div>
+      </div>
+      <div class="formula-card">
+        <div class="name">Gaussian mechanism</div>
+        <div class="eq">σ ≥ Δ₂·√(2·ln(1.25/δ))/ε</div>
+        <div class="note">(ε, δ)-DP. L2 sensitivity Δ₂ ≤ √2. Composes tightly under Rényi-DP.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background: var(--luminate-light); border: 1px dashed var(--luminate-medium);"></div>Tensor shape</div>
+    <div class="legend-item"><div class="legend-swatch" style="background: var(--luminate-primary);"></div>Pipeline step</div>
+  </div>
+
+</div>
+</body>
+</html>

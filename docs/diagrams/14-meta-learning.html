@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Meta-Learning (Stacking)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1600px; min-height: 1080px; }
+
+  .stages {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px;
+    margin-top: 30px;
+  }
+  .stage {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 22px; position: relative; min-height: 280px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 12px 28px -12px rgba(19, 1, 74, 0.12);
+    display: flex; flex-direction: column;
+  }
+  .stage::before {
+    content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 4px;
+    background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 0 0 4px 4px;
+  }
+  .stage .ord {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--luminate-primary); color: white;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
+  }
+  .stage h4 { font-size: 15px; font-weight: 700; color: var(--ink-strong); margin-bottom: 4px; }
+  .stage .tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--ink-muted); padding: 2px 7px; background: var(--surface-3);
+    border-radius: 5px; display: inline-block; margin-bottom: 10px;
+  }
+  .stage p { font-size: 12px; line-height: 1.55; color: var(--ink); }
+  .stage .shape {
+    margin-top: auto;
+    padding: 10px 12px; border-radius: 8px;
+    background: var(--luminate-light); border: 1px dashed var(--luminate-medium);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--luminate-primary);
+    font-weight: 600; line-height: 1.5;
+  }
+
+  .arch {
+    margin-top: 36px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 28px 32px;
+  }
+  .arch h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 18px; }
+  .arch-grid {
+    display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px;
+  }
+  .arch-svg { background: var(--surface-2); border-radius: 12px; padding: 18px; }
+  .arch-svg svg { width: 100%; height: 380px; }
+  .arch-text { font-size: 13px; line-height: 1.6; color: var(--ink); }
+  .arch-text h5 {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.04em; color: var(--luminate-primary);
+    margin-bottom: 8px; margin-top: 14px;
+  }
+  .arch-text h5:first-child { margin-top: 0; }
+
+  .code {
+    background: #11122e; color: #d6e0ff;
+    border-radius: 12px; padding: 18px 22px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.7; white-space: pre;
+    margin-top: 24px;
+  }
+  .code .c { color: #8b95c1; }
+  .code .k { color: #ff9bcd; }
+  .code .s { color: #9bdc7c; }
+
+  .impact {
+    margin-top: 28px;
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    color: white; border-radius: 16px; padding: 22px 26px;
+  }
+  .impact h4 { font-size: 14px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; opacity: 0.85; margin-bottom: 12px; }
+  .impact .nums {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+  }
+  .impact .num { text-align: center; }
+  .impact .num .big {
+    font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700;
+  }
+  .impact .num .lab {
+    font-size: 11.5px; opacity: 0.88; margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Meta-Learning — StackingMetaLearner</h1>
+      <div class="subtitle">Refine the local model by stacking it on top of the global surrogate's predictions</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 14 / 16</div>
+  </div>
+
+  <div class="stages">
+    <div class="stage">
+      <div class="ord">1</div>
+      <h4>Apply global artifact</h4>
+      <span class="tag">deserialize</span>
+      <p>Client receives <code>GlobalArtifact</code> from coordinator, runs <code>cls.deserialize(blob)</code> via safe class-path lookup.</p>
+      <div class="shape">G : ModelAdapterProtocol</div>
+    </div>
+
+    <div class="stage">
+      <div class="ord">2</div>
+      <h4>Build augmented features</h4>
+      <span class="tag">stacking</span>
+      <p>Project local rows through G's probability head; concatenate with raw features. Each row now carries the global model's "opinion".</p>
+      <div class="shape">X_aug = [X<sub>local</sub> ‖ G.predict_proba(X<sub>local</sub>)]<br>shape: (n, d + k)</div>
+    </div>
+
+    <div class="stage">
+      <div class="ord">3</div>
+      <h4>Refit local model</h4>
+      <span class="tag">re-train</span>
+      <p>Train a fresh local RandomForest on (X_aug, y_local). Now sees both raw and global signals; can decide when to trust which.</p>
+      <div class="shape">refined.fit(X_aug, y<sub>local</sub>)</div>
+    </div>
+
+    <div class="stage">
+      <div class="ord">4</div>
+      <h4>Wrap as StackedAdapter</h4>
+      <span class="tag">drop-in</span>
+      <p>Refined model is wrapped so <code>predict_proba(X)</code> auto-augments at inference time — caller never has to remember the trick.</p>
+      <div class="shape">StackedAdapter(refined, G)<br>predict_proba(X) → augments internally</div>
+    </div>
+  </div>
+
+  <div class="arch">
+    <h3>Architecture — what StackedAdapter looks like under the hood</h3>
+    <div class="arch-grid">
+      <div class="arch-svg">
+        <svg viewBox="0 0 540 380" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--luminate-primary)"/>
+            </marker>
+          </defs>
+          <!-- Input X -->
+          <rect x="20" y="160" width="100" height="60" rx="10" fill="var(--surface-3)" stroke="var(--line-strong)"/>
+          <text x="70" y="187" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">X</text>
+          <text x="70" y="205" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">(n, d)</text>
+
+          <!-- Split arrows -->
+          <path d="M120 175 L 200 80" fill="none" stroke="var(--luminate-primary)" stroke-width="2" marker-end="url(#arrM)"/>
+          <path d="M120 205 L 200 285" fill="none" stroke="var(--luminate-primary)" stroke-width="2" marker-end="url(#arrM)"/>
+
+          <!-- Global G -->
+          <rect x="200" y="40" width="160" height="70" rx="10" fill="var(--luminate-light)" stroke="var(--luminate-medium)" stroke-width="1.5"/>
+          <text x="280" y="65" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="var(--luminate-primary)">G (global)</text>
+          <text x="280" y="83" text-anchor="middle" font-family="Inter" font-size="10" fill="var(--ink-muted)">predict_proba</text>
+          <text x="280" y="100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">→ shape (n, k)</text>
+
+          <!-- raw X passthrough -->
+          <rect x="200" y="250" width="160" height="70" rx="10" fill="var(--surface-3)" stroke="var(--line-strong)"/>
+          <text x="280" y="275" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">X (passthrough)</text>
+          <text x="280" y="295" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--ink-muted)">→ shape (n, d)</text>
+
+          <!-- concat -->
+          <rect x="400" y="155" width="120" height="70" rx="10" fill="var(--luminate-primary)" stroke="var(--luminate-dark)"/>
+          <text x="460" y="180" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="white">concat ‖</text>
+          <text x="460" y="200" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="white">X_aug</text>
+          <text x="460" y="215" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="white" opacity="0.85">(n, d+k)</text>
+
+          <path d="M360 75  Q 390 100 405 165" fill="none" stroke="var(--luminate-primary)" stroke-width="2" marker-end="url(#arrM)"/>
+          <path d="M360 285 Q 390 260 405 215" fill="none" stroke="var(--luminate-primary)" stroke-width="2" marker-end="url(#arrM)"/>
+
+          <!-- refined model below -->
+          <rect x="160" y="335" width="240" height="40" rx="8" fill="white" stroke="var(--luminate-primary)" stroke-width="2"/>
+          <text x="280" y="360" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="var(--luminate-primary)">refined.predict_proba(X_aug)</text>
+          <path d="M460 225 Q 460 290 400 350" fill="none" stroke="var(--luminate-primary)" stroke-width="2" marker-end="url(#arrM)"/>
+        </svg>
+      </div>
+      <div class="arch-text">
+        <h5>WHY STACKING (NOT FedAvg)?</h5>
+        <p>Trees don't average in parameter space — there is no weight tensor to mean. Stacking sidesteps the issue: the global model becomes a <em>feature</em>, not a parameter set.</p>
+
+        <h5>WHY MetaLearnerProtocol?</h5>
+        <p>Stacking is the canonical strategy, but distillation-on-augmented-data and gating networks fit the same protocol. Future work plugs in here.</p>
+
+        <h5>HOW THE LOCAL MODEL USES G</h5>
+        <p>The first-split decisions in the refined tree often select <code>G_proba</code> columns as the most informative feature when local data is class-skewed — letting raw features dominate only where G is unsure.</p>
+      </div>
+    </div>
+
+    <div class="code"><span class="c"># Stacking is one of the protocols — swap by string in the config</span>
+class StackingMetaLearner:
+    name = <span class="s">"stacking"</span>
+
+    <span class="k">def</span> refine(self, X_local, y_local,
+               global_surrogate, local_model_factory):
+        proba_aug = global_surrogate.predict_proba(X_local)   <span class="c"># (n, k)</span>
+        X_aug    = np.hstack([X_local, proba_aug])             <span class="c"># (n, d+k)</span>
+        refined   = local_model_factory()                       <span class="c"># fresh adapter</span>
+        refined.fit(X_aug, y_local)
+        <span class="k">return</span> StackedAdapter(inner=refined, global_surrogate=global_surrogate)</div>
+  </div>
+
+  <div class="impact">
+    <h4>EMPIRICAL IMPACT (Adult, K=10, Dirichlet α=0.5, ε=1 Gaussian, averaged over 3 seeds)</h4>
+    <div class="nums">
+      <div class="num"><div class="big">0.792</div><div class="lab">acc — local RF only</div></div>
+      <div class="num"><div class="big">0.821</div><div class="lab">acc — global G only</div></div>
+      <div class="num"><div class="big">0.844</div><div class="lab">acc — StackedAdapter</div></div>
+      <div class="num"><div class="big">+5.2 pp</div><div class="lab">vs. local baseline</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

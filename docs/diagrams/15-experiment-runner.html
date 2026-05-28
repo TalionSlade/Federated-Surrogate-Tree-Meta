@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Experiment Runner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1640px; min-height: 1080px; }
+
+  .pipeline {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px;
+    margin-top: 30px;
+  }
+  .col {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 12px 28px -12px rgba(19, 1, 74, 0.12);
+    position: relative;
+  }
+  .col::before {
+    content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 4px;
+    border-radius: 0 0 4px 4px;
+  }
+  .col.config::before { background: linear-gradient(90deg, var(--green), #34c759); }
+  .col.runner::before { background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium)); }
+  .col.output::before { background: linear-gradient(90deg, var(--blue), #3677d1); }
+
+  .col h3 { font-size: 16px; font-weight: 700; color: var(--ink-strong); margin-bottom: 4px; }
+  .col .tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--ink-muted); padding: 3px 8px; background: var(--surface-3);
+    border-radius: 5px; display: inline-block; margin-bottom: 14px;
+  }
+  .yaml {
+    background: #11122e; color: #d6e0ff; padding: 14px 16px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    line-height: 1.65; white-space: pre; overflow-x: auto;
+  }
+  .yaml .k { color: #ff9bcd; }
+  .yaml .s { color: #9bdc7c; }
+  .yaml .n { color: #ffce9b; }
+  .yaml .c { color: #8b95c1; }
+
+  .step-list { font-size: 12px; line-height: 1.7; }
+  .step-list .step {
+    display: grid; grid-template-columns: 28px 1fr; gap: 10px;
+    padding: 10px 0; border-bottom: 1px dashed var(--line-subtle);
+  }
+  .step-list .step:last-child { border-bottom: none; }
+  .step-list .num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--luminate-primary); color: white;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 10.5px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-list .what { font-weight: 600; color: var(--ink-strong); margin-bottom: 2px; font-size: 12.5px; }
+  .step-list .when { font-size: 11px; color: var(--ink-muted); line-height: 1.5; }
+
+  .out-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--line-subtle);
+  }
+  .out-row:last-child { border-bottom: none; }
+  .out-row .k { color: var(--luminate-primary); font-weight: 700; }
+  .out-row .v { color: var(--ink); }
+  .out-block {
+    background: var(--surface-2); border: 1px solid var(--line-subtle);
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;
+  }
+  .out-block h5 {
+    font-size: 12px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em;
+    color: var(--ink-muted); margin-bottom: 8px;
+  }
+
+  .arrow-svg {
+    margin-top: 20px; position: relative; height: 60px;
+  }
+  .arrow-svg svg { width: 100%; height: 100%; }
+
+  .builders {
+    margin-top: 36px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 26px 30px;
+  }
+  .builders h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 16px; }
+  .builder-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .builder {
+    border: 1px solid var(--line-subtle); border-radius: 10px;
+    padding: 12px 14px; background: var(--surface-2);
+  }
+  .builder .name {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--luminate-primary); font-weight: 700; margin-bottom: 4px;
+  }
+  .builder .desc { font-size: 11.5px; color: var(--ink); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>ExperimentRunner — config → metrics</h1>
+      <div class="subtitle">A single Pydantic config drives the entire federation. Pure-function builders translate strings into Protocol instances.</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 15 / 16</div>
+  </div>
+
+  <div class="pipeline">
+    <!-- CONFIG -->
+    <div class="col config">
+      <h3>1 · Config (YAML)</h3>
+      <span class="tag">experiments/configs/*.yaml</span>
+      <div class="yaml"><span class="k">data:</span>
+  <span class="k">name:</span> <span class="s">adult</span>
+  <span class="k">seed:</span> <span class="n">42</span>
+<span class="k">partition:</span>
+  <span class="k">name:</span> <span class="s">dirichlet</span>
+  <span class="k">alpha:</span> <span class="n">0.5</span>
+  <span class="k">n_clients:</span> <span class="n">10</span>
+<span class="k">proxy:</span>
+  <span class="k">source:</span> <span class="s">held_out</span>
+  <span class="k">n:</span> <span class="n">2000</span>
+<span class="k">model:</span>
+  <span class="k">teacher_framework:</span> <span class="s">sklearn_rf</span>
+  <span class="k">student_framework:</span> <span class="s">sklearn_dt</span>
+  <span class="k">frameworks_per_client:</span>
+    <span class="c"># Hook B mixed-framework</span>
+    - <span class="s">sklearn_rf</span>
+    - <span class="s">xgboost</span>
+    - <span class="s">lightgbm</span>
+<span class="k">distillation:</span>
+  <span class="k">mode:</span> <span class="s">argmax_weighted</span>
+  <span class="k">temperature:</span> <span class="n">1.0</span>
+  <span class="k">student_max_depth:</span> <span class="n">6</span>
+<span class="k">dp:</span>
+  <span class="k">mechanism:</span> <span class="s">gaussian</span>
+  <span class="k">epsilon:</span> <span class="n">1.0</span>
+  <span class="k">delta:</span> <span class="n">1.0e-5</span>
+  <span class="k">accountant:</span> <span class="s">rdp</span>
+  <span class="k">target_budget:</span> <span class="n">5.0</span>
+<span class="k">aggregator:</span>
+  <span class="k">name:</span> <span class="s">proxy_redistillation</span>
+<span class="k">meta:</span>
+  <span class="k">name:</span> <span class="s">stacking</span>
+<span class="k">training:</span>
+  <span class="k">n_rounds:</span> <span class="n">5</span>
+  <span class="k">eval_every:</span> <span class="n">1</span></div>
+    </div>
+
+    <!-- RUNNER -->
+    <div class="col runner">
+      <h3>2 · ExperimentRunner</h3>
+      <span class="tag">orchestration.runner</span>
+      <div class="step-list">
+        <div class="step">
+          <div class="num">1</div>
+          <div>
+            <div class="what">load_dataset(data.name)</div>
+            <div class="when">10 loaders mapped by string. Adult → OpenML id 1590.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <div>
+            <div class="what">_build_partitioner(partition)</div>
+            <div class="when">"dirichlet" → DirichletPartitioner(α=0.5)</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <div>
+            <div class="what">build_proxy_dataset(proxy)</div>
+            <div class="when">held_out / synthetic_uniform / public_X</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">4</div>
+          <div>
+            <div class="what">_build_dp_mechanism(dp)</div>
+            <div class="when">"gaussian" → GaussianMechanism(...)</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">5</div>
+          <div>
+            <div class="what">_build_accountant(dp)</div>
+            <div class="when">"rdp" → RDPAccountant(target_budget=5)</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">6</div>
+          <div>
+            <div class="what">_build_aggregator(aggregator)</div>
+            <div class="when">"proxy_redistillation" → ProxyRedistillationAggregator</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">7</div>
+          <div>
+            <div class="what">build_clients(model, ...)</div>
+            <div class="when">K FederatedClient instances. Per-client framework picked from frameworks_per_client.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">8</div>
+          <div>
+            <div class="what">build_coordinator(...)</div>
+            <div class="when">FederatedCoordinator with aggregator + proxy + accountant.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">9</div>
+          <div>
+            <div class="what">for t in range(n_rounds):</div>
+            <div class="when">client.local_train → coordinator.round → client.apply_global → eval. Stop early on PrivacyBudgetExhausted.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div class="col output">
+      <h3>3 · Output</h3>
+      <span class="tag">runs/&lt;ts&gt;_&lt;dataset&gt;_&lt;dp&gt;/</span>
+
+      <div class="out-block">
+        <h5>metrics.jsonl (per round)</h5>
+        <div class="out-row"><span class="k">round</span><span class="v">0, 1, … 4</span></div>
+        <div class="out-row"><span class="k">acc_global</span><span class="v">0.79 → 0.84</span></div>
+        <div class="out-row"><span class="k">macro_f1</span><span class="v">0.71 → 0.78</span></div>
+        <div class="out-row"><span class="k">surrogate_fidelity</span><span class="v">KL, argmax</span></div>
+        <div class="out-row"><span class="k">per_client_acc</span><span class="v">[K floats]</span></div>
+        <div class="out-row"><span class="k">cumulative_eps</span><span class="v">basic / rdp</span></div>
+      </div>
+
+      <div class="out-block">
+        <h5>privacy_ledger.jsonl</h5>
+        <div class="out-row"><span class="k">round_idx</span><span class="v">0..T-1</span></div>
+        <div class="out-row"><span class="k">client_id</span><span class="v">c0..ck</span></div>
+        <div class="out-row"><span class="k">mechanism</span><span class="v">gaussian</span></div>
+        <div class="out-row"><span class="k">epsilon / delta</span><span class="v">1.0 / 1e-5</span></div>
+      </div>
+
+      <div class="out-block">
+        <h5>mia_report.json (optional)</h5>
+        <div class="out-row"><span class="k">auc</span><span class="v">0.57</span></div>
+        <div class="out-row"><span class="k">advantage</span><span class="v">0.14</span></div>
+        <div class="out-row"><span class="k">tpr_at_1pct_fpr</span><span class="v">0.06</span></div>
+      </div>
+
+      <div class="out-block">
+        <h5>config_resolved.yaml</h5>
+        <div class="out-row"><span class="k">all defaults</span><span class="v">filled in</span></div>
+        <div class="out-row"><span class="k">git_sha</span><span class="v">snapshotted</span></div>
+        <div class="out-row"><span class="k">seed_chain</span><span class="v">deterministic</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="builders">
+    <h3>Builder functions — pure config → object</h3>
+    <div class="builder-grid">
+      <div class="builder">
+        <div class="name">_build_partitioner</div>
+        <div class="desc">str → IIDPartitioner / DirichletPartitioner / PathologicalPartitioner / QuantitySkewPartitioner</div>
+      </div>
+      <div class="builder">
+        <div class="name">_build_dp_mechanism</div>
+        <div class="desc">str → LaplaceMechanism / GaussianMechanism / NullDPMechanism</div>
+      </div>
+      <div class="builder">
+        <div class="name">_build_accountant</div>
+        <div class="desc">str → BasicCompositionAccountant / RDPAccountant</div>
+      </div>
+      <div class="builder">
+        <div class="name">_build_aggregator</div>
+        <div class="desc">str → ProxyRedistillation / ConfidenceWeighted / MajorityVote</div>
+      </div>
+      <div class="builder">
+        <div class="name">make_model (registry)</div>
+        <div class="desc">str → SklearnRF / SklearnDT / XGBoost / LightGBM / CatBoost adapter</div>
+      </div>
+      <div class="builder">
+        <div class="name">_build_distiller</div>
+        <div class="desc">enum mode → SurrogateDistiller(argmax / multioutput)</div>
+      </div>
+      <div class="builder">
+        <div class="name">_build_meta_learner</div>
+        <div class="desc">str → StackingMetaLearner / None</div>
+      </div>
+      <div class="builder">
+        <div class="name">build_proxy_dataset</div>
+        <div class="desc">enum source → held_out / synthetic_uniform / public_X</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

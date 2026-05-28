@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Threat Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1600px; min-height: 1080px; }
+
+  .actors {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px;
+    margin-top: 30px;
+  }
+  .actor {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 24px; position: relative;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 12px 28px -12px rgba(19, 1, 74, 0.10);
+  }
+  .actor.client::before, .actor.server::before, .actor.outside::before {
+    content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 4px;
+    border-radius: 0 0 4px 4px;
+  }
+  .actor.client::before  { background: linear-gradient(90deg, var(--green), #34c759); }
+  .actor.server::before  { background: linear-gradient(90deg, var(--amber), #f0a500); }
+  .actor.outside::before { background: linear-gradient(90deg, var(--red),   #ff5a5a); }
+  .actor h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); }
+  .actor .role {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--ink-muted); padding: 3px 8px; background: var(--surface-3);
+    border-radius: 5px; display: inline-block; margin: 6px 0 12px;
+  }
+  .actor .desc { font-size: 12.5px; color: var(--ink); line-height: 1.55; margin-bottom: 14px; }
+  .actor .list { font-size: 12px; line-height: 1.6; }
+  .actor .list .row {
+    display: flex; align-items: flex-start; gap: 8px; margin-bottom: 5px;
+  }
+  .actor .list .row .bullet {
+    width: 16px; height: 16px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 11px;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .bullet.know { background: var(--surface-3); color: var(--ink-muted); }
+  .bullet.see  { background: #fff5dd; color: var(--amber); }
+  .bullet.try  { background: #fdecec; color: var(--red); }
+
+  .assets {
+    margin-top: 32px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 26px;
+  }
+  .assets h3 { font-size: 16px; font-weight: 700; color: var(--ink-strong); margin-bottom: 16px; }
+  .assets-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  }
+  .asset {
+    border: 1px solid var(--line-subtle); border-radius: 10px;
+    padding: 14px 16px; background: var(--surface-2);
+  }
+  .asset .name {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    font-weight: 700; color: var(--luminate-primary); margin-bottom: 4px;
+  }
+  .asset .what { font-size: 11.5px; color: var(--ink); margin-bottom: 8px; line-height: 1.5; }
+  .asset .shield {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700;
+    padding: 3px 7px; border-radius: 4px; display: inline-block;
+  }
+  .shield.protected { background: #e6f6ec; color: var(--green); }
+  .shield.partial   { background: #fff5dd; color: var(--amber); }
+  .shield.exposed   { background: #fdecec; color: var(--red); }
+
+  .table-wrap {
+    margin-top: 32px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 26px;
+  }
+  .table-wrap h3 { font-size: 16px; font-weight: 700; color: var(--ink-strong); margin-bottom: 14px; }
+  table.attacks { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.attacks th {
+    text-align: left; padding: 10px 12px; background: var(--surface-2);
+    border-bottom: 2px solid var(--luminate-primary);
+    font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--ink-muted); font-weight: 700;
+  }
+  table.attacks td { padding: 10px 12px; border-bottom: 1px solid var(--line-subtle); vertical-align: top; }
+  table.attacks code { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Threat Model</h1>
+      <div class="subtitle">Adversaries, protected assets, and attack surfaces — formalised for Hook A's DP guarantee</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 07 / 16</div>
+  </div>
+
+  <div class="actors">
+    <div class="actor client">
+      <h3>Honest Client</h3>
+      <div class="role">trusted-execution</div>
+      <div class="desc">Owns a private partition of the global dataset. Trains its own teacher and never reveals raw rows. May refuse a round.</div>
+      <div class="list">
+        <div class="row"><div class="bullet know">K</div>X<sub>local</sub>, y<sub>local</sub> in plaintext (local)</div>
+        <div class="row"><div class="bullet see">S</div>Global artifact G broadcast by coordinator</div>
+        <div class="row"><div class="bullet try">×</div>Cannot inspect other clients' data</div>
+      </div>
+    </div>
+
+    <div class="actor server">
+      <h3>Honest-but-Curious Coordinator</h3>
+      <div class="role">passive-adversary</div>
+      <div class="desc">Runs aggregation correctly but logs everything received. May attempt to invert soft labels back to raw rows. <strong>Primary threat.</strong></div>
+      <div class="list">
+        <div class="row"><div class="bullet see">S</div>K surrogate blobs + (ε, δ) declarations</div>
+        <div class="row"><div class="bullet see">S</div>predict_proba outputs on proxy_X</div>
+        <div class="row"><div class="bullet try">A</div>Membership inference on uploaded surrogate</div>
+        <div class="row"><div class="bullet try">A</div>Property inference on aggregated distribution</div>
+      </div>
+    </div>
+
+    <div class="actor outside">
+      <h3>External Eavesdropper</h3>
+      <div class="role">network-layer</div>
+      <div class="desc">Sees ClientUpdate / GlobalArtifact in flight. Out of scope for FedRF-Distill itself — addressed by TLS at deployment. Mentioned for completeness.</div>
+      <div class="list">
+        <div class="row"><div class="bullet see">S</div>Encrypted blobs only (assumed TLS)</div>
+        <div class="row"><div class="bullet try">×</div>No plaintext access</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="assets">
+    <h3>Protected assets — what FedRF-Distill defends</h3>
+    <div class="assets-grid">
+      <div class="asset">
+        <div class="name">RAW_DATA</div>
+        <div class="what">X<sub>local</sub>, y<sub>local</sub> per client. Never leaves the client process.</div>
+        <span class="shield protected">PROTECTED — never transmitted</span>
+      </div>
+      <div class="asset">
+        <div class="name">SOFT_LABELS (P)</div>
+        <div class="what">Teacher's predict_proba on X<sub>local</sub>. Used only locally for distillation.</div>
+        <span class="shield protected">PROTECTED — never transmitted</span>
+      </div>
+      <div class="asset">
+        <div class="name">SURROGATE</div>
+        <div class="what">Compact tree (~10 KB) fit on (X<sub>local</sub>, P̃). Trained on DP-noised labels.</div>
+        <span class="shield partial">PARTIAL — covered by (ε, δ)-DP</span>
+      </div>
+      <div class="asset">
+        <div class="name">METADATA</div>
+        <div class="what">n_samples, framework, classes — exposed for audit. Not protected by design.</div>
+        <span class="shield exposed">EXPOSED — by-design</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <h3>Attack surface matrix</h3>
+    <table class="attacks">
+      <thead>
+        <tr>
+          <th style="width:22%">Attack</th>
+          <th style="width:26%">What the adversary does</th>
+          <th style="width:26%">FedRF-Distill defence</th>
+          <th style="width:26%">Residual risk</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Membership Inference (MIA)</strong> <code>privacy.attack</code></td>
+          <td>Given a row (x, y), decide if it was in X<sub>local</sub> by inspecting surrogate.predict_proba(x).</td>
+          <td>DP on soft labels ⇒ post-processing immunity. Tunable via ε.</td>
+          <td>Higher ε ⇒ higher TPR@1%FPR. Reported in MIAResult.</td>
+        </tr>
+        <tr>
+          <td><strong>Property Inference</strong></td>
+          <td>Infer aggregate properties (e.g. class skew) of X<sub>local</sub> from the surrogate.</td>
+          <td>Soft labels carry the property; DP noise masks at fine granularity.</td>
+          <td>Coarse global statistics (e.g. dominant class) may still leak.</td>
+        </tr>
+        <tr>
+          <td><strong>Model Inversion</strong></td>
+          <td>Reconstruct prototype rows from surrogate decision paths.</td>
+          <td>Depth-bounded student + DP-noised labels limit gradient signal.</td>
+          <td>Out-of-scope for shallow trees; quantitatively bounded by ε.</td>
+        </tr>
+        <tr>
+          <td><strong>Replay / Tampering</strong></td>
+          <td>Modify a ClientUpdate in flight to bias the global model.</td>
+          <td>safe_deserialize refuses unknown class paths. Signed transport at deployment.</td>
+          <td>Malicious-client poisoning is out-of-scope (orthogonal robust-agg defences).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background: var(--surface-3);"></div>Knows</div>
+    <div class="legend-item"><div class="legend-swatch" style="background: #fff5dd;"></div>Sees</div>
+    <div class="legend-item"><div class="legend-swatch" style="background: #fdecec;"></div>Attempts</div>
+  </div>
+
+</div>
+</body>
+</html>

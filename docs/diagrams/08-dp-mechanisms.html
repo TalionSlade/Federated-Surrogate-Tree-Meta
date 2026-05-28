@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — DP Mechanisms (Hook A)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1600px; min-height: 1080px; }
+
+  .mech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 30px; }
+  .mech {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 24px; position: relative;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 14px 30px -14px rgba(19, 1, 74, 0.12);
+  }
+  .mech::before {
+    content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 4px;
+    border-radius: 0 0 4px 4px;
+  }
+  .mech.laplace::before  { background: linear-gradient(90deg, var(--blue), #3677d1); }
+  .mech.gaussian::before { background: linear-gradient(90deg, var(--pink), #d5499f); }
+  .mech.null::before     { background: linear-gradient(90deg, var(--ink-faint), #98a2b3); }
+
+  .mech h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 4px; }
+  .mech .badge {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700;
+    padding: 3px 8px; border-radius: 5px; display: inline-block; margin-bottom: 14px;
+  }
+  .mech.laplace .badge  { background: #e8f1fd; color: var(--blue); }
+  .mech.gaussian .badge { background: #fdeaf3; color: var(--pink); }
+  .mech.null .badge     { background: var(--surface-3); color: var(--ink-muted); }
+
+  .mech .formula {
+    background: #11122e; color: #d6e0ff; padding: 14px 16px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.7; margin-bottom: 12px;
+  }
+  .mech .formula .v { color: #ff9bcd; }
+  .mech .formula .n { color: #9bdc7c; }
+  .mech .formula .c { color: #8b95c1; }
+
+  .mech .row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; padding: 7px 0;
+    border-bottom: 1px solid var(--line-subtle);
+  }
+  .mech .row:last-child { border-bottom: none; }
+  .mech .row .k { color: var(--ink-muted); font-weight: 500; }
+  .mech .row .v { color: var(--ink-strong); font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+  .comparison {
+    margin-top: 36px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 28px 30px;
+  }
+  .comparison h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 16px; }
+
+  .noise-viz {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 22px;
+  }
+  .viz-card {
+    background: var(--surface-2); border: 1px solid var(--line-subtle);
+    border-radius: 12px; padding: 18px 20px;
+  }
+  .viz-card h4 {
+    font-size: 13px; font-weight: 700; color: var(--luminate-primary);
+    margin-bottom: 12px; font-family: 'JetBrains Mono', monospace;
+  }
+  .viz-card svg { width: 100%; height: 220px; }
+
+  .pipeline {
+    margin-top: 28px;
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 16px; padding: 28px 32px; color: white;
+    box-shadow: 0 16px 36px -12px rgba(19, 1, 74, 0.32);
+  }
+  .pipeline h3 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+  .pipeline-steps {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+    align-items: center;
+  }
+  .pipeline-steps .pstep {
+    background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.25);
+    padding: 14px 16px; border-radius: 10px;
+  }
+  .pipeline-steps .pstep .o {
+    font-family: 'JetBrains Mono', monospace; font-weight: 700;
+    font-size: 11px; opacity: 0.75; margin-bottom: 4px;
+  }
+  .pipeline-steps .pstep .t { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .pipeline-steps .pstep .d { font-size: 11.5px; opacity: 0.82; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>DP Mechanisms — Hook A</h1>
+      <div class="subtitle">Three calibrated noise injectors that turn raw soft labels P into (ε, δ)-DP soft labels P̃</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 08 / 16</div>
+  </div>
+
+  <div class="mech-grid">
+    <div class="mech laplace">
+      <h3>LaplaceMechanism</h3>
+      <span class="badge">PURE ε-DP &nbsp; · &nbsp; δ = 0</span>
+      <div class="formula"><span class="c"># Sample noise per cell of P</span>
+η ~ <span class="v">Lap</span>(0, <span class="n">Δ₁ / ε</span>)
+P̃ = clip(P + η, 0, 1)
+P̃ = P̃ / P̃.sum(axis=1, keepdims=True)</div>
+      <div class="row"><span class="k">Sensitivity (Δ₁)</span><span class="v">2.0</span></div>
+      <div class="row"><span class="k">Noise scale b</span><span class="v">Δ₁ / ε</span></div>
+      <div class="row"><span class="k">Composition</span><span class="v">basic / advanced</span></div>
+      <div class="row"><span class="k">Best for</span><span class="v">low ε &amp; pure DP</span></div>
+    </div>
+
+    <div class="mech gaussian">
+      <h3>GaussianMechanism</h3>
+      <span class="badge">(ε, δ)-DP &nbsp; · &nbsp; δ &gt; 0</span>
+      <div class="formula"><span class="c"># Calibrated σ via analytical bound</span>
+σ ≥ <span class="n">Δ₂ · √(2·ln(1.25/δ)) / ε</span>
+η ~ <span class="v">𝒩</span>(0, σ²)
+P̃ = clip(P + η, 0, 1)
+P̃ = P̃ / P̃.sum(axis=1, keepdims=True)</div>
+      <div class="row"><span class="k">Sensitivity (Δ₂)</span><span class="v">√2</span></div>
+      <div class="row"><span class="k">Noise scale σ</span><span class="v">closed-form</span></div>
+      <div class="row"><span class="k">Composition</span><span class="v">RDP (tight)</span></div>
+      <div class="row"><span class="k">Best for</span><span class="v">many rounds &amp; tight bounds</span></div>
+    </div>
+
+    <div class="mech null">
+      <h3>NullDPMechanism</h3>
+      <span class="badge">CONTROL &nbsp; · &nbsp; ε = ∞</span>
+      <div class="formula"><span class="c"># Identity — for ablation only</span>
+P̃ = P</div>
+      <div class="row"><span class="k">Sensitivity</span><span class="v">— (n/a)</span></div>
+      <div class="row"><span class="k">Noise scale</span><span class="v">0</span></div>
+      <div class="row"><span class="k">Composition</span><span class="v">— (n/a)</span></div>
+      <div class="row"><span class="k">Best for</span><span class="v">utility-ceiling baseline</span></div>
+    </div>
+  </div>
+
+  <div class="comparison">
+    <h3>Noise distributions on a single soft-label cell (qualitative)</h3>
+    <div class="noise-viz">
+      <div class="viz-card">
+        <h4>Laplace η ~ Lap(0, b)</h4>
+        <svg viewBox="0 0 400 220" preserveAspectRatio="none">
+          <line x1="20" y1="180" x2="380" y2="180" stroke="var(--ink-faint)" stroke-width="1"/>
+          <line x1="200" y1="20" x2="200" y2="180" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="4 4"/>
+          <path d="M20 178 Q 80 178 130 170 Q 170 158 200 30 Q 230 158 270 170 Q 320 178 380 178"
+                fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+          <path d="M20 178 Q 80 178 130 170 Q 170 158 200 30 Q 230 158 270 170 Q 320 178 380 178 L 380 180 L 20 180 z"
+                fill="var(--blue)" opacity="0.16"/>
+          <text x="200" y="200" text-anchor="middle" font-size="11" fill="var(--ink-muted)">0</text>
+          <text x="370" y="200" text-anchor="end" font-size="11" fill="var(--ink-muted)">+3b</text>
+          <text x="30" y="200" font-size="11" fill="var(--ink-muted)">-3b</text>
+          <text x="380" y="40" text-anchor="end" font-size="11" fill="var(--blue)" font-weight="700">heavy tails ⇒ stronger ε-DP</text>
+        </svg>
+      </div>
+      <div class="viz-card">
+        <h4>Gaussian η ~ 𝒩(0, σ²)</h4>
+        <svg viewBox="0 0 400 220" preserveAspectRatio="none">
+          <line x1="20" y1="180" x2="380" y2="180" stroke="var(--ink-faint)" stroke-width="1"/>
+          <line x1="200" y1="20" x2="200" y2="180" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="4 4"/>
+          <path d="M20 180 C 90 180 140 175 170 130 C 185 95 195 40 200 40 C 205 40 215 95 230 130 C 260 175 310 180 380 180"
+                fill="none" stroke="var(--pink)" stroke-width="2.5"/>
+          <path d="M20 180 C 90 180 140 175 170 130 C 185 95 195 40 200 40 C 205 40 215 95 230 130 C 260 175 310 180 380 180 L 380 180 L 20 180 z"
+                fill="var(--pink)" opacity="0.16"/>
+          <text x="200" y="200" text-anchor="middle" font-size="11" fill="var(--ink-muted)">0</text>
+          <text x="370" y="200" text-anchor="end" font-size="11" fill="var(--ink-muted)">+3σ</text>
+          <text x="30" y="200" font-size="11" fill="var(--ink-muted)">-3σ</text>
+          <text x="380" y="40" text-anchor="end" font-size="11" fill="var(--pink)" font-weight="700">tighter under RDP composition</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline">
+    <h3>Post-processing chain (preserves DP)</h3>
+    <div class="pipeline-steps">
+      <div class="pstep">
+        <div class="o">1</div>
+        <div class="t">teacher.predict_proba</div>
+        <div class="d">P ∈ [0,1]<sup>n×k</sup>, rows sum to 1</div>
+      </div>
+      <div class="pstep">
+        <div class="o">2</div>
+        <div class="t">privatize(P, ε, δ)</div>
+        <div class="d">Lap or Gauss noise; only this step consumes ε</div>
+      </div>
+      <div class="pstep">
+        <div class="o">3</div>
+        <div class="t">clip → renormalise</div>
+        <div class="d">Post-processing — free</div>
+      </div>
+      <div class="pstep">
+        <div class="o">4</div>
+        <div class="t">distill on P̃</div>
+        <div class="d">Surrogate inherits (ε, δ)-DP</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

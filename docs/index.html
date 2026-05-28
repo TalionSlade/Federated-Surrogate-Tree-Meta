@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="diagrams/_shared.css">
+<style>
+  body { min-height: 100vh; }
+  .canvas { width: 1280px; min-height: auto; padding-bottom: 80px; }
+  .hero {
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    color: white;
+    padding: 56px 48px;
+    border-radius: 18px;
+    margin-bottom: 40px;
+    box-shadow: 0 12px 36px -10px rgba(19, 1, 74, 0.4);
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .hero .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+    margin-bottom: 12px;
+  }
+  .hero p {
+    font-size: 17px;
+    line-height: 1.6;
+    max-width: 720px;
+    opacity: 0.92;
+  }
+  .pill-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .pill-row .pill {
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  h2.section {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink-strong);
+    margin: 40px 0 16px;
+    padding-left: 14px;
+    border-left: 4px solid var(--luminate-primary);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+  .doc-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform .15s ease, box-shadow .15s ease;
+    box-shadow: 0 1px 2px rgba(19, 1, 74, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .doc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -10px rgba(19, 1, 74, 0.18);
+    border-color: var(--luminate-medium);
+  }
+  .doc-card .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--luminate-primary);
+    letter-spacing: 0.06em;
+  }
+  .doc-card .title {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--ink-strong);
+    line-height: 1.3;
+  }
+  .doc-card .desc {
+    font-size: 13px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="hero">
+    <div class="tag">FedRF-Distill v0.1.0  •  research-grade</div>
+    <h1>Privacy-preserving cross-framework federated distillation</h1>
+    <p>
+      A protocol-driven framework for tree-based federated learning with
+      <strong>formal (ε, δ)-differential privacy</strong> on soft labels
+      <em>(Hook A)</em> and <strong>cross-framework heterogeneity</strong>
+      across sklearn / XGBoost / LightGBM / CatBoost <em>(Hook B)</em>.
+      Designed for submission to A* venues.
+    </p>
+    <div class="pill-row">
+      <div class="pill">10 global benchmark datasets</div>
+      <div class="pill">4 DP mechanisms</div>
+      <div class="pill">4 partitioners (IID → pathological)</div>
+      <div class="pill">3 aggregation strategies</div>
+      <div class="pill">Empirical MIA validation</div>
+    </div>
+  </div>
+
+  <h2 class="section">Architecture &amp; flow</h2>
+  <div class="grid">
+    <a class="doc-card" href="diagrams/01-system-overview.html">
+      <div class="num">DIAGRAM 01</div>
+      <div class="title">System Overview</div>
+      <div class="desc">Layered map of every package, from protocols to orchestration.</div>
+    </a>
+    <a class="doc-card" href="diagrams/02-federation-round.html">
+      <div class="num">DIAGRAM 02</div>
+      <div class="title">One Federation Round</div>
+      <div class="desc">Step-by-step swim-lane: client → teacher → DP → distill → aggregate → broadcast → refine.</div>
+    </a>
+    <a class="doc-card" href="diagrams/03-distillation-pipeline.html">
+      <div class="num">DIAGRAM 03</div>
+      <div class="title">Distillation Pipeline</div>
+      <div class="desc">Teacher RF → soft labels → noise → surrogate DT — with shape annotations.</div>
+    </a>
+    <a class="doc-card" href="diagrams/04-cross-framework.html">
+      <div class="num">DIAGRAM 04</div>
+      <div class="title">Cross-Framework Heterogeneity (Hook B)</div>
+      <div class="desc">Mixed sklearn / XGBoost / LightGBM / CatBoost clients with a uniform adapter.</div>
+    </a>
+    <a class="doc-card" href="diagrams/05-protocol-layer.html">
+      <div class="num">DIAGRAM 05</div>
+      <div class="title">Protocol Layer</div>
+      <div class="desc">Every pluggable interface as a typing.Protocol with concrete implementations.</div>
+    </a>
+    <a class="doc-card" href="diagrams/06-class-diagram.html">
+      <div class="num">DIAGRAM 06</div>
+      <div class="title">UML Class Diagram</div>
+      <div class="desc">Relationships between adapters, clients, coordinator, aggregator, accountant.</div>
+    </a>
+  </div>
+
+  <h2 class="section">Privacy (Hook A)</h2>
+  <div class="grid">
+    <a class="doc-card" href="diagrams/07-threat-model.html">
+      <div class="num">DIAGRAM 07</div>
+      <div class="title">Threat Model</div>
+      <div class="desc">Adversary capability × protected asset × formal guarantee matrix.</div>
+    </a>
+    <a class="doc-card" href="diagrams/08-dp-mechanisms.html">
+      <div class="num">DIAGRAM 08</div>
+      <div class="title">DP Mechanism Catalogue</div>
+      <div class="desc">Laplace vs Gaussian noise on the probability simplex — formulas + diagrams.</div>
+    </a>
+    <a class="doc-card" href="diagrams/09-privacy-accountant.html">
+      <div class="num">DIAGRAM 09</div>
+      <div class="title">Privacy Accountant</div>
+      <div class="desc">Basic composition vs RDP curves; ε vs rounds visualisation.</div>
+    </a>
+    <a class="doc-card" href="diagrams/10-mia-evaluation.html">
+      <div class="num">DIAGRAM 10</div>
+      <div class="title">Empirical MIA Evaluation</div>
+      <div class="desc">TPR / FPR ROC curve under DP vs no-DP. The paper's privacy-audit graphic.</div>
+    </a>
+  </div>
+
+  <h2 class="section">Data &amp; experiments</h2>
+  <div class="grid">
+    <a class="doc-card" href="diagrams/11-partitioners.html">
+      <div class="num">DIAGRAM 11</div>
+      <div class="title">Data Partitioners</div>
+      <div class="desc">IID vs Dirichlet vs Pathological vs Quantity-skew, side by side.</div>
+    </a>
+    <a class="doc-card" href="diagrams/12-benchmark-grid.html">
+      <div class="num">DIAGRAM 12</div>
+      <div class="title">10-Dataset Benchmark Grid</div>
+      <div class="desc">Adult • Bank • Breast Cancer • Cover • CC-Fraud • Diabetes • HIGGS • Letter • Mushroom • NSL-KDD.</div>
+    </a>
+    <a class="doc-card" href="diagrams/13-aggregation-strategies.html">
+      <div class="num">DIAGRAM 13</div>
+      <div class="title">Aggregation Strategies</div>
+      <div class="desc">Re-distillation vs confidence-weighted vs majority vote.</div>
+    </a>
+    <a class="doc-card" href="diagrams/14-meta-learning.html">
+      <div class="num">DIAGRAM 14</div>
+      <div class="title">Meta-learning (Stacking)</div>
+      <div class="desc">How the broadcast global surrogate is fused back into each local model.</div>
+    </a>
+    <a class="doc-card" href="diagrams/15-experiment-runner.html">
+      <div class="num">DIAGRAM 15</div>
+      <div class="title">Experiment Runner</div>
+      <div class="desc">From YAML → ExperimentConfig → RoundResult sequence.</div>
+    </a>
+    <a class="doc-card" href="diagrams/16-sequence.html">
+      <div class="num">DIAGRAM 16</div>
+      <div class="title">Sequence Diagram</div>
+      <div class="desc">UML sequence for one round across clients ↔ coordinator.</div>
+    </a>
+  </div>
+
+  <h2 class="section">Pages</h2>
+  <div class="grid cols-2">
+    <a class="doc-card" href="pages/quickstart.html">
+      <div class="num">PAGE</div>
+      <div class="title">Quickstart</div>
+      <div class="desc">Install, run the smoke test, run a single experiment.</div>
+    </a>
+    <a class="doc-card" href="pages/datasets.html">
+      <div class="num">PAGE</div>
+      <div class="title">10 Benchmark Datasets</div>
+      <div class="desc">Full table with size, classes, source, and citation per dataset.</div>
+    </a>
+  </div>
+
+</div>
+</body>
+</html>

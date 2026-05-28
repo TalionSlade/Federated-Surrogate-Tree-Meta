@@ -1,0 +1,4197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Codebase Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --luminate-primary: #3c228a;
+    --luminate-light: #ebe8f3;
+    --luminate-dark: #13014a;
+    --luminate-medium: #6245b7;
+    --luminate-lighter: #b5abd3;
+    --line: #dadce0;
+    --line-subtle: #E3E4E5;
+    --ink: #2E2F32;
+    --ink-strong: #13014a;
+    --ink-muted: #6d6e71;
+    --ink-faint: #74767C;
+    --surface: #ffffff;
+    --surface-2: #f8f9fb;
+    --surface-3: #f1f3f4;
+    --green: #1b8e3d;
+    --amber: #b87b00;
+    --red: #cb2022;
+    --blue: #1a4ea0;
+    --pink: #a31a6b;
+    --code-bg: #1a1233;
+    --code-fg: #e8e6ef;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #f8f9fb 0%, #ebe8f3 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* ─── Header ─────────────────────────────────────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar .brand {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .topbar .logo {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 14px;
+    box-shadow: 0 4px 12px -4px rgba(60, 34, 138, 0.4);
+  }
+  .topbar h1 {
+    font-size: 16px; font-weight: 700; color: var(--ink-strong);
+    letter-spacing: -0.01em;
+  }
+  .topbar .subtitle {
+    font-size: 11px; color: var(--ink-muted); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-top: 1px;
+  }
+  .topbar .meta {
+    display: flex; gap: 10px; align-items: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--ink-muted);
+  }
+  .topbar .meta .badge {
+    padding: 4px 10px; background: var(--luminate-light);
+    border-radius: 999px; color: var(--luminate-primary);
+    font-weight: 600;
+  }
+
+  /* ─── Layout ─────────────────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    max-width: 1500px;
+    margin: 0 auto;
+    min-height: calc(100vh - 64px);
+  }
+  /* ─── Sidebar ────────────────────────────────────────── */
+  .sidebar {
+    position: sticky; top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+    padding: 24px 16px 32px 24px;
+    border-right: 1px solid var(--line);
+    background: rgba(255,255,255,0.6);
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--luminate-lighter); border-radius: 3px; }
+  .sidebar .group {
+    margin-bottom: 18px;
+  }
+  .sidebar .group-title {
+    font-size: 10px; font-weight: 700;
+    color: var(--ink-faint);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 6px 10px 6px 8px;
+    margin-bottom: 4px;
+  }
+  .sidebar .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+    text-decoration: none;
+    line-height: 1.3;
+  }
+  .sidebar .nav-item:hover {
+    background: var(--luminate-light);
+    color: var(--luminate-primary);
+  }
+  .sidebar .nav-item.active {
+    background: var(--luminate-primary);
+    color: white;
+    font-weight: 600;
+  }
+  .sidebar .nav-item .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    opacity: 0.7;
+    min-width: 22px;
+  }
+  .sidebar .nav-item.active .num { opacity: 0.85; color: white; }
+
+  /* ─── Content area ───────────────────────────────────── */
+  .content {
+    padding: 40px 56px 80px 56px;
+    max-width: 1100px;
+  }
+  .page { display: none; }
+  .page.active { display: block; animation: fadein .25s ease; }
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .page .hero {
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    color: white;
+    padding: 36px 40px;
+    border-radius: 16px;
+    margin-bottom: 32px;
+    box-shadow: 0 10px 32px -10px rgba(19, 1, 74, 0.35);
+  }
+  .page .hero .crumb {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 10px;
+  }
+  .page .hero h2 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  .page .hero .lead {
+    font-size: 15.5px;
+    line-height: 1.65;
+    max-width: 800px;
+    opacity: 0.95;
+  }
+  .page .hero .file-pill {
+    margin-top: 18px;
+    display: inline-block;
+    padding: 7px 14px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* Section blocks inside a page */
+  .block {
+    margin-bottom: 36px;
+  }
+  .block h3 {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink-strong);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--luminate-light);
+    letter-spacing: -0.01em;
+  }
+  .block h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--luminate-primary);
+    margin: 18px 0 10px;
+  }
+  .block p {
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .block ul, .block ol {
+    margin: 8px 0 14px 24px;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  .block li { margin-bottom: 5px; }
+  .block code.inline {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--luminate-light);
+    color: var(--luminate-primary);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .block a { color: var(--luminate-primary); text-decoration: none; font-weight: 500; }
+  .block a:hover { text-decoration: underline; }
+
+  /* Code blocks */
+  pre.code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 18px 22px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.65;
+    margin: 12px 0 20px;
+    box-shadow: 0 8px 24px -12px rgba(19, 1, 74, 0.35);
+  }
+  pre.code::-webkit-scrollbar { height: 8px; }
+  pre.code::-webkit-scrollbar-thumb { background: #4a3a7a; border-radius: 4px; }
+  pre.code .kw  { color: #c792ea; }
+  pre.code .str { color: #ecc48d; }
+  pre.code .cmt { color: #7c84a0; font-style: italic; }
+  pre.code .fn  { color: #82aaff; }
+  pre.code .num { color: #f78c6c; }
+  pre.code .dec { color: #addb67; }
+  pre.code .cls { color: #ffcb6b; }
+
+  /* Callouts */
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--luminate-medium);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .callout.note    { border-left-color: var(--blue); background: #f4f8fd; }
+  .callout.warn    { border-left-color: var(--amber); background: #fdf8ef; }
+  .callout.danger  { border-left-color: var(--red); background: #fdf3f3; }
+  .callout.success { border-left-color: var(--green); background: #f1faf3; }
+  .callout strong { color: var(--ink-strong); display: block; margin-bottom: 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* Tables */
+  table.t {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 14px 0;
+    font-size: 13.5px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.t th, table.t td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-subtle);
+  }
+  table.t th {
+    background: var(--luminate-light);
+    color: var(--luminate-primary);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  table.t tr:last-child td { border-bottom: none; }
+  table.t td code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--luminate-primary); }
+
+  /* Footer nav */
+  .page-nav {
+    display: flex; justify-content: space-between; gap: 12px;
+    margin-top: 40px; padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+  .page-nav a {
+    flex: 1; padding: 16px 20px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 10px; text-decoration: none;
+    color: var(--ink); cursor: pointer;
+    transition: all .15s ease;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .page-nav a:hover { border-color: var(--luminate-primary); transform: translateY(-1px); }
+  .page-nav a.next { text-align: right; }
+  .page-nav .label { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+  .page-nav .name { font-size: 14.5px; font-weight: 600; color: var(--ink-strong); }
+  .page-nav a.disabled { opacity: 0.35; pointer-events: none; }
+
+  /* Module overview cards */
+  .pkg-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 14px 0;
+  }
+  .pkg-card {
+    background: white; border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px 18px;
+  }
+  .pkg-card .name {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    color: var(--luminate-primary); font-weight: 600; margin-bottom: 6px;
+  }
+  .pkg-card .desc { font-size: 13px; color: var(--ink-muted); line-height: 1.55; }
+</style>
+</head>
+<body>
+
+<!-- ─── Top bar ──────────────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">F</div>
+    <div>
+      <h1>FedRF-Distill — Codebase Deep Dive</h1>
+      <div class="subtitle">27 sections · every module explained</div>
+    </div>
+  </div>
+  <div class="meta">
+    <span class="badge">Python 3.13</span>
+    <span class="badge">Federated + DP</span>
+    <span>v0.1.0</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ─── Sidebar nav ─────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="group">
+      <div class="group-title">Foundation</div>
+      <a class="nav-item active" data-target="p01"><span class="num">01</span> Overview</a>
+      <a class="nav-item" data-target="p02"><span class="num">02</span> Core / Types</a>
+      <a class="nav-item" data-target="p03"><span class="num">03</span> Core / Protocols</a>
+      <a class="nav-item" data-target="p04"><span class="num">04</span> Core / Exceptions</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Models (Hook B)</div>
+      <a class="nav-item" data-target="p05"><span class="num">05</span> Adapter Base</a>
+      <a class="nav-item" data-target="p06"><span class="num">06</span> Factory &amp; Registry</a>
+      <a class="nav-item" data-target="p07"><span class="num">07</span> sklearn Adapter</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Data Pipeline</div>
+      <a class="nav-item" data-target="p08"><span class="num">08</span> Loaders &amp; Registry</a>
+      <a class="nav-item" data-target="p09"><span class="num">09</span> Partitioners</a>
+      <a class="nav-item" data-target="p10"><span class="num">10</span> Proxy Dataset</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Distillation</div>
+      <a class="nav-item" data-target="p11"><span class="num">11</span> Soft Labels</a>
+      <a class="nav-item" data-target="p12"><span class="num">12</span> Surrogate Distiller</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Privacy (Hook A)</div>
+      <a class="nav-item" data-target="p13"><span class="num">13</span> Threat Model</a>
+      <a class="nav-item" data-target="p14"><span class="num">14</span> DP Mechanisms</a>
+      <a class="nav-item" data-target="p15"><span class="num">15</span> Accountant</a>
+      <a class="nav-item" data-target="p16"><span class="num">16</span> Attack (Legacy)</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Aggregation &amp; Meta</div>
+      <a class="nav-item" data-target="p17"><span class="num">17</span> Aggregators</a>
+      <a class="nav-item" data-target="p18"><span class="num">18</span> Meta-Learner</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Topology</div>
+      <a class="nav-item" data-target="p19"><span class="num">19</span> Client</a>
+      <a class="nav-item" data-target="p20"><span class="num">20</span> Coordinator</a>
+      <a class="nav-item" data-target="p21"><span class="num">21</span> Orchestration Runner</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Plumbing</div>
+      <a class="nav-item" data-target="p22"><span class="num">22</span> Configuration</a>
+      <a class="nav-item" data-target="p23"><span class="num">23</span> Utils</a>
+      <a class="nav-item" data-target="p24"><span class="num">24</span> Metrics</a>
+    </div>
+    <div class="group">
+      <div class="group-title">Eval Pipeline (New)</div>
+      <a class="nav-item" data-target="p25"><span class="num">25</span> Pipeline</a>
+      <a class="nav-item" data-target="p26"><span class="num">26</span> MIA</a>
+      <a class="nav-item" data-target="p27"><span class="num">27</span> Aggregate &amp; Report</a>
+    </div>
+  </aside>
+
+  <!-- ─── Content (sections injected below) ───────────────────────── -->
+  <main class="content" id="content">
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 01 — Overview
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page active" id="p01">
+      <div class="hero">
+        <div class="crumb">Foundation · 01 / 27</div>
+        <h2>Project Overview</h2>
+        <p class="lead">
+          FedRF-Distill is a federated learning research codebase built around two
+          A*-conference contributions: <b>Hook A</b> — formal (ε, δ)-DP applied to
+          knowledge-distilled soft labels, and <b>Hook B</b> — cross-framework tree
+          heterogeneity (sklearn / XGBoost / LightGBM / CatBoost interchangeable per
+          client). Everything else exists to demonstrate, defend, or measure those
+          two claims.
+        </p>
+        <span class="file-pill">src/fedrf_distill/</span>
+      </div>
+
+      <div class="block">
+        <h3>Package Layout</h3>
+        <p>
+          The source tree is organised by responsibility, not by feature. Each top-level
+          package owns one concept; cross-package dependencies always flow downward
+          from <code class="inline">orchestration</code> toward the leaves.
+        </p>
+        <div class="pkg-grid">
+          <div class="pkg-card"><div class="name">core/</div><div class="desc">Protocol definitions, typed contracts, custom exceptions. No runtime logic — pure structural typing.</div></div>
+          <div class="pkg-card"><div class="name">models/</div><div class="desc">Adapter pattern that hides framework-specific APIs behind one ABC. Powers Hook B.</div></div>
+          <div class="pkg-card"><div class="name">data/</div><div class="desc">Dataset registry + loaders, Non-IID partitioners, proxy unlabelled sets.</div></div>
+          <div class="pkg-card"><div class="name">distillation/</div><div class="desc">Soft-label generation, temperature sharpening, surrogate distillation.</div></div>
+          <div class="pkg-card"><div class="name">privacy/</div><div class="desc">DP mechanisms, RDP accountant, threat model, legacy MIA attack. Powers Hook A.</div></div>
+          <div class="pkg-card"><div class="name">aggregation/</div><div class="desc">Three aggregators: majority vote, proxy re-distillation, confidence-weighted.</div></div>
+          <div class="pkg-card"><div class="name">meta/</div><div class="desc">Stacking meta-learner — augments local features with global predictions.</div></div>
+          <div class="pkg-card"><div class="name">client/ &amp; coordinator/</div><div class="desc">Federated topology — clients train locally + emit soft labels; coordinator aggregates.</div></div>
+          <div class="pkg-card"><div class="name">orchestration/</div><div class="desc">ExperimentRunner: ties everything together end-to-end for one config.</div></div>
+          <div class="pkg-card"><div class="name">config/</div><div class="desc">Pydantic v2 schema — single source of truth for all hyper-parameters.</div></div>
+          <div class="pkg-card"><div class="name">metrics/ &amp; utils/</div><div class="desc">Classification metrics, timer, seeding, adapter (de)serialisation.</div></div>
+          <div class="pkg-card"><div class="name">eval/ <i>(new)</i></div><div class="desc">EvaluationPipeline, Yeom MIA, aggregation, paper-ready markdown report.</div></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>End-to-End Round (Single Configuration)</h3>
+        <p>
+          A single federated round is the unit of work that every script ultimately drives.
+          Understanding it tells you what every other module is for:
+        </p>
+        <ol>
+          <li><b>Local training</b> — each of <code class="inline">K</code> clients fits its
+            own tree model (sklearn RF by default, but any registered framework via Hook B)
+            on its <i>private</i> Dirichlet shard.</li>
+          <li><b>Soft-label emission</b> — each client predicts class probabilities on a
+            shared <i>public proxy set</i>, applies temperature, and (optionally) adds
+            DP noise from <code class="inline">privacy.mechanisms</code>.</li>
+          <li><b>Privacy accounting</b> — every emission consumes ε from the per-client
+            <code class="inline">RDPAccountant</code>; exhaustion raises
+            <code class="inline">PrivacyBudgetExhausted</code>.</li>
+          <li><b>Aggregation</b> — the coordinator combines K probability matrices (mean,
+            weighted, or vote), then re-distills the aggregate into a small surrogate tree.</li>
+          <li><b>Evaluation</b> — global surrogate is scored on a held-out test set;
+            per-client and fidelity metrics optional; Yeom MIA on a sample of (member,
+            non-member) examples.</li>
+        </ol>
+      </div>
+
+      <div class="block">
+        <h3>Two Research Hooks</h3>
+        <div class="callout note"><strong>Hook A — (ε, δ)-DP on soft labels</strong>
+          The Laplace and Gaussian mechanisms perturb each client's probability matrix
+          before it leaves the device. Composition is tracked via RDP across rounds. The
+          empirical privacy claim is validated by Yeom MIA: attack AUC should approach
+          0.5 as ε shrinks.
+        </div>
+        <div class="callout success"><strong>Hook B — Cross-framework heterogeneity</strong>
+          The <code class="inline">BaseModelAdapter</code> ABC + factory registry let
+          client <i>i</i> use sklearn, client <i>j</i> use XGBoost, and client <i>k</i>
+          use LightGBM — all in the same round. The coordinator only sees soft labels,
+          so it is agnostic to framework identity.
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>How to read this guide</h3>
+        <p>
+          Each of the following 26 sections drills into one module. Read in order for a
+          guided tour, or jump directly via the sidebar. Code excerpts are syntax-
+          highlighted; callouts flag invariants, hazards, and design choices.
+        </p>
+      </div>
+
+      <div class="page-nav">
+        <a class="disabled"><span class="label">← Previous</span><span class="name">—</span></a>
+        <a class="next" data-target="p02"><span class="label">Next →</span><span class="name">02 · Core / Types</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 02 — Core / Types
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p02">
+      <div class="hero">
+        <div class="crumb">Foundation · 02 / 27</div>
+        <h2>Core / Types</h2>
+        <p class="lead">
+          Strongly-typed aliases and the five dataclasses that travel between every
+          module. The wire format between client and coordinator stays identical
+          regardless of which ML framework the client used locally.
+        </p>
+        <span class="file-pill">src/fedrf_distill/core/types.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Strongly-typed aliases</h3>
+        <p>
+          <code class="inline">ClientID</code> is a <code class="inline">NewType</code>
+          over <code class="inline">int</code> (mypy will reject a bare int passed
+          where a <code class="inline">ClientID</code> is expected). The three NumPy
+          aliases use <code class="inline">NDArray</code> from
+          <code class="inline">numpy.typing</code> so dtype is part of the contract.
+        </p>
+        <pre class="code py">ClientID = NewType("ClientID", int)
+"""Stable identifier for a federated client (0-indexed)."""
+
+SoftLabels = NDArray[np.float64]
+"""(n_samples, n_classes) probability matrix. Each row must sum to 1.0."""
+
+FeatureMatrix = NDArray[np.float64]
+"""(n_samples, n_features) feature matrix."""
+
+LabelVector = NDArray[np.int64]
+"""(n_samples,) integer class labels."""</pre>
+      </div>
+
+      <div class="block">
+        <h3>PrivacyBudget — frozen, with <code class="inline">spend()</code></h3>
+        <p>
+          Budgets are immutable; to "spend" you construct a new budget. Out-of-bounds
+          values are rejected in <code class="inline">__post_init__</code>; over-spending
+          raises <code class="inline">PrivacyBudgetExhausted</code>.
+        </p>
+        <pre class="code py">@dataclass(frozen=True, slots=True)
+class PrivacyBudget:
+    epsilon: float
+    delta: float
+
+    def __post_init__(self) -> None:
+        if self.epsilon &lt; 0:
+            raise ValueError(f"epsilon must be &gt;= 0, got {self.epsilon}")
+        if not 0 &lt;= self.delta &lt; 1:
+            raise ValueError(f"delta must be in [0, 1), got {self.delta}")
+
+    def spend(self, eps: float, delta: float = 0.0) -&gt; PrivacyBudget:
+        from fedrf_distill.core.exceptions import PrivacyBudgetExhausted
+        new_eps = self.epsilon - eps
+        new_delta = self.delta - delta
+        if new_eps &lt; -1e-12:
+            raise PrivacyBudgetExhausted(eps, self.epsilon)
+        return PrivacyBudget(epsilon=max(new_eps, 0.0), delta=max(new_delta, 0.0))
+
+    def is_exhausted(self) -&gt; bool:
+        return self.epsilon &lt;= 1e-12</pre>
+      </div>
+
+      <div class="block">
+        <h3>Federated artifacts</h3>
+        <p>
+          The wire format. <code class="inline">ClientUpdate</code> flows up;
+          <code class="inline">GlobalArtifact</code> flows down. The surrogate
+          is shipped as an opaque <code class="inline">bytes</code> blob plus a
+          <code class="inline">surrogate_class_path</code> — the coordinator never
+          inspects internals.
+        </p>
+        <pre class="code py">@dataclass(slots=True)
+class ClientUpdate:
+    client_id: ClientID
+    framework: str               # "sklearn", "xgboost", "lightgbm", ...
+    surrogate_blob: bytes        # pickled model
+    surrogate_class_path: str    # qualified import path for safe deserialisation
+    n_samples: int
+    classes: list[int]
+    eps_spent_this_round: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class GlobalArtifact:
+    round_idx: int
+    global_surrogate_blob: bytes
+    global_surrogate_class_path: str
+    classes: list[int]
+    aggregation_strategy: str
+    metadata: dict[str, Any] = field(default_factory=dict)</pre>
+      </div>
+
+      <div class="block">
+        <h3>Round-level results</h3>
+        <p>
+          One <code class="inline">RoundResult</code> per federated round. Carries
+          its own <code class="inline">summary()</code> renderer so logs stay
+          consistent across scripts.
+        </p>
+        <pre class="code py">@dataclass(slots=True)
+class ClientRoundMetrics:
+    client_id: ClientID
+    local_accuracy: float
+    local_f1_macro: float
+    local_auc: float | None
+    surrogate_fidelity: float  # KL/agreement between teacher RF and surrogate
+    bytes_uploaded: int
+    eps_spent: float
+    framework: str
+
+
+@dataclass(slots=True)
+class RoundResult:
+    round_idx: int
+    global_accuracy: float
+    global_f1_macro: float
+    global_auc: float | None
+    per_client_metrics: list[ClientRoundMetrics]
+    total_bytes_communicated: int
+    cumulative_epsilon: float
+    cumulative_delta: float
+    wall_clock_seconds: float
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def summary(self) -&gt; str:
+        return (
+            f"[round {self.round_idx:3d}] "
+            f"acc={self.global_accuracy:.4f}  "
+            f"F1={self.global_f1_macro:.4f}  "
+            f"bytes={self.total_bytes_communicated:&gt;10,}  "
+            f"eps={self.cumulative_epsilon:.3f}  "
+            f"t={self.wall_clock_seconds:.1f}s"
+        )</pre>
+        <div class="callout note"><strong>Convention</strong>
+          <code class="inline">SoftLabels</code> rows always sum to 1
+          <i>before</i> DP noise. After noise, <code class="inline">privacy.mechanisms</code>
+          re-clips to <code class="inline">[0, 1]</code> and renormalises (post-processing
+          is privacy-preserving, so guarantees survive the renorm).
+        </div>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p01"><span class="label">← Previous</span><span class="name">01 · Overview</span></a>
+        <a class="next" data-target="p03"><span class="label">Next →</span><span class="name">03 · Core / Protocols</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 03 — Core / Protocols
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p03">
+      <div class="hero">
+        <div class="crumb">Foundation · 03 / 27</div>
+        <h2>Core / Protocols</h2>
+        <p class="lead">
+          Eight <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">@runtime_checkable</code> <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">typing.Protocol</code>
+          classes that define the structural contracts between every layer. The
+          orchestration layer talks to protocols, never to concrete classes.
+        </p>
+        <span class="file-pill">src/fedrf_distill/core/protocols.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Why protocols, not ABCs?</h3>
+        <p>
+          <code class="inline">Protocol</code> gives <b>structural</b> typing: any
+          class with the matching methods satisfies the interface, no inheritance
+          required. That matters because Hook B adapts third-party libraries
+          (sklearn, XGBoost, LightGBM, CatBoost) whose class hierarchies we don't
+          own. Decorating each protocol <code class="inline">@runtime_checkable</code>
+          additionally lets us use <code class="inline">isinstance</code> for
+          defensive checks.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>The eight contracts</h3>
+        <table class="t">
+          <thead><tr><th>Protocol</th><th>Key methods</th><th>Implementers</th></tr></thead>
+          <tbody>
+            <tr><td><code>ModelAdapterProtocol</code></td><td>fit, predict_proba, predict, classes, serialize, deserialize, n_estimators</td><td>SklearnRF/DT, XGB, LGBM, CatBoost</td></tr>
+            <tr><td><code>SurrogateDistillerProtocol</code></td><td>distill(X, soft_labels, classes)</td><td>SurrogateDistiller</td></tr>
+            <tr><td><code>AggregatorProtocol</code></td><td>aggregate(client_updates, proxy_X, classes)</td><td>3 aggregators</td></tr>
+            <tr><td><code>DPMechanismProtocol</code></td><td>privatize(x, epsilon, delta)</td><td>Laplace, Gaussian, Null</td></tr>
+            <tr><td><code>MetaLearnerProtocol</code></td><td>refine(X_local, y_local, global_surrogate, local_model_factory)</td><td>StackingMetaLearner</td></tr>
+            <tr><td><code>PartitionerProtocol</code></td><td>partition(X, y, n_clients, seed)</td><td>IID, QuantitySkew, Dirichlet, Pathological</td></tr>
+            <tr><td><code>ClientProtocol</code></td><td>local_train, apply_global, evaluate_local</td><td>FederatedClient</td></tr>
+            <tr><td><code>CoordinatorProtocol</code></td><td>round(client_updates, round_idx, budget)</td><td>FederatedCoordinator</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="block">
+        <h3>ModelAdapterProtocol — the cross-framework contract</h3>
+        <pre class="code py">@runtime_checkable
+class ModelAdapterProtocol(Protocol):
+    """Uniform interface over sklearn / xgboost / lightgbm / catboost tree models."""
+
+    framework: str
+
+    def fit(self, X: FeatureMatrix, y: LabelVector) -&gt; None: ...
+    def predict_proba(self, X: FeatureMatrix) -&gt; SoftLabels: ...
+    def predict(self, X: FeatureMatrix) -&gt; LabelVector: ...
+    def classes(self) -&gt; list[int]: ...
+    def serialize(self) -&gt; bytes: ...
+    @classmethod
+    def deserialize(cls, blob: bytes) -&gt; ModelAdapterProtocol: ...
+    def n_estimators(self) -&gt; int: ...</pre>
+      </div>
+
+      <div class="block">
+        <h3>AggregatorProtocol — returns an adapter, not a matrix</h3>
+        <p>
+          The aggregator does the <i>full</i> aggregate-and-distil round trip.
+          Callers receive a fitted <code class="inline">ModelAdapterProtocol</code>
+          they can immediately ship as the next <code class="inline">GlobalArtifact</code>.
+        </p>
+        <pre class="code py">@runtime_checkable
+class AggregatorProtocol(Protocol):
+    name: str
+
+    def aggregate(
+        self,
+        client_updates: list[ClientUpdate],
+        proxy_X: FeatureMatrix,
+        classes: list[int],
+    ) -&gt; ModelAdapterProtocol: ...</pre>
+      </div>
+
+      <div class="block">
+        <h3>Topology: ClientProtocol &amp; CoordinatorProtocol</h3>
+        <pre class="code py">@runtime_checkable
+class ClientProtocol(Protocol):
+    client_id: ClientID
+
+    def local_train(self) -&gt; ClientUpdate: ...
+    def apply_global(self, artifact: GlobalArtifact) -&gt; None: ...
+    def evaluate_local(self, X: FeatureMatrix, y: LabelVector) -&gt; dict[str, float]: ...
+
+
+@runtime_checkable
+class CoordinatorProtocol(Protocol):
+    def round(
+        self,
+        client_updates: list[ClientUpdate],
+        round_idx: int,
+        budget: PrivacyBudget,
+    ) -&gt; GlobalArtifact: ...</pre>
+        <div class="callout warn"><strong>Hazard: protocol drift</strong>
+          If you add a method to a protocol, every implementer must follow.
+          Run <code class="inline">mypy src/</code> to catch drift before merging.
+        </div>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p02"><span class="label">← Previous</span><span class="name">02 · Core / Types</span></a>
+        <a class="next" data-target="p04"><span class="label">Next →</span><span class="name">04 · Core / Exceptions</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 04 — Core / Exceptions
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p04">
+      <div class="hero">
+        <div class="crumb">Foundation · 04 / 27</div>
+        <h2>Core / Exceptions</h2>
+        <p class="lead">
+          A single root (<code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">FedRFDistillError</code>) lets downstream
+          users catch any failure from this framework with one <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">except</code>
+          clause, while specific subclasses surface the exact failure mode for fine-grained handling.
+        </p>
+        <span class="file-pill">src/fedrf_distill/core/exceptions.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Hierarchy (verbatim)</h3>
+        <pre class="code py">FedRFDistillError                 # root — base class for every FedRF-Distill error
+├── UnsupportedModelError          # requested model framework is not registered
+├── DistillationError              # soft-label distillation produced invalid output
+├── AggregationError               # surrogate aggregation failed (shape mismatch, empty set, ...)
+├── PrivacyBudgetExhausted         # carries requested_eps, remaining_eps + custom message
+├── ConfigurationError             # config object failed validation (non-pydantic-catchable)
+└── ProxyDataError                 # proxy dataset is missing, malformed, or empty</pre>
+      </div>
+
+      <div class="block">
+        <h3>PrivacyBudgetExhausted — the stateful one</h3>
+        <p>
+          DP is the only place where the codebase has to make a runtime decision
+          based on cumulative state. Two call-sites raise it: (a) <code class="inline">PrivacyBudget.spend()</code>
+          when an individual debit would over-draw the budget, and (b) the coordinator's
+          round loop when the running accountant ledger exceeds the configured target.
+        </p>
+        <pre class="code py">class PrivacyBudgetExhausted(FedRFDistillError):
+    """Raised when a requested operation would exceed the configured (eps, delta) budget."""
+
+    def __init__(
+        self,
+        requested_eps: float,
+        remaining_eps: float,
+        message: str | None = None,
+    ) -> None:
+        self.requested_eps = requested_eps
+        self.remaining_eps = remaining_eps
+        super().__init__(
+            message
+            or f"Privacy budget exhausted: requested eps={requested_eps:.4f}, "
+            f"only eps={remaining_eps:.4f} remaining."
+        )</pre>
+        <p>
+          <code class="inline">FederatedCoordinator.round()</code> (see Page 20) raises this after
+          recording the round's spend if <code class="inline">cumulative() &gt; target_budget.epsilon</code>.
+          The <code class="inline">message</code> override lets callers attach structured context
+          (e.g. <em>which</em> client tripped the limit) without forfeiting the default
+          format string.
+        </p>
+      </div>
+
+      <div class="callout success"><strong>Design choice</strong>
+        Every error inherits a common root so test harnesses can write
+        <code class="inline">pytest.raises(FedRFDistillError)</code> without
+        worrying about which subclass actually fires. The structured attributes
+        (<code class="inline">requested_eps</code>, <code class="inline">remaining_eps</code>) survive
+        the <code class="inline">str()</code> round-trip, so introspection in tests is fine.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p03"><span class="label">← Previous</span><span class="name">03 · Core / Protocols</span></a>
+        <a class="next" data-target="p05"><span class="label">Next →</span><span class="name">05 · Adapter Base</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 05 — Models / Adapter Base
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p05">
+      <div class="hero">
+        <div class="crumb">Models · Hook B · 05 / 27</div>
+        <h2>BaseModelAdapter — the framework abstraction</h2>
+        <p class="lead">
+          The ABC that powers Hook B. Every framework-specific adapter (sklearn,
+          XGBoost, LightGBM, CatBoost) inherits from this class and overrides three
+          private template-method hooks. Public methods enforce invariants common
+          to <em>all</em> frameworks: refit prohibition, canonical 2-D probability
+          shape, defensive renormalisation, and pickle-based serialisation.
+        </p>
+        <span class="file-pill">src/fedrf_distill/models/base.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Class declaration &amp; constructor</h3>
+        <p>
+          <code class="inline">framework</code> is a <code class="inline">ClassVar[str]</code>
+          set per-subclass (e.g. <code class="inline">"sklearn_rf"</code>,
+          <code class="inline">"xgboost"</code>). The constructor takes no arguments —
+          subclasses store framework-specific hyperparameters in their own
+          <code class="inline">__init__</code>.
+        </p>
+        <pre class="code py">class BaseModelAdapter(ABC):
+    """Common machinery for every concrete model adapter."""
+
+    framework: ClassVar[str] = "abstract"
+
+    def __init__(self) -> None:
+        self._fitted: bool = False
+        self._classes: list[int] | None = None</pre>
+      </div>
+
+      <div class="block">
+        <h3>Required hooks (three abstract methods)</h3>
+        <pre class="code py">@abstractmethod
+def _fit_impl(self, X: FeatureMatrix, y: LabelVector) -> None:
+    """Framework-specific fit logic."""
+
+@abstractmethod
+def _predict_proba_impl(self, X: FeatureMatrix) -> SoftLabels:
+    """Framework-specific predict_proba; MUST return ``(n_samples, n_classes)``."""
+
+@abstractmethod
+def n_estimators(self) -> int:
+    """Number of trees / boosting rounds in the underlying ensemble."""</pre>
+        <p>
+          Note: <code class="inline">serialize</code>/<code class="inline">deserialize</code>
+          are <em>not</em> abstract — the base class provides pickle-based defaults that
+          subclasses can override for faster paths (e.g. XGBoost's native JSON dump).
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>fit() — refit guard + class capture</h3>
+        <pre class="code py">def fit(self, X: FeatureMatrix, y: LabelVector) -> None:
+    if self._fitted:
+        raise RuntimeError(
+            f"{type(self).__name__} is already fitted. "
+            "Construct a new adapter instead of refitting."
+        )
+    X = np.asarray(X, dtype=np.float64)
+    y = np.asarray(y, dtype=np.int64)
+    self._classes = sorted(int(c) for c in np.unique(y).tolist())
+    self._fit_impl(X, y)
+    self._fitted = True</pre>
+        <p>
+          Trees are not idempotent under refit. Forbidding it at the adapter layer
+          prevents silent state leakage between rounds (e.g. a client warm-starting
+          from its previous tree). Refresh by constructing a new adapter.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>predict_proba() — canonical shape + renormalisation</h3>
+        <pre class="code py">def predict_proba(self, X: FeatureMatrix) -> SoftLabels:
+    self._require_fitted()
+    X = np.asarray(X, dtype=np.float64)
+    proba = self._predict_proba_impl(X)
+    proba = np.asarray(proba, dtype=np.float64)
+    if proba.ndim == 1:
+        # Binary case where adapter returned only P(class=1). Reshape to canonical 2-col.
+        proba = np.column_stack([1.0 - proba, proba])
+    # Renormalise defensively to handle floating-point drift.
+    row_sums = proba.sum(axis=1, keepdims=True)
+    row_sums = np.where(row_sums &lt;= 0, 1.0, row_sums)
+    return proba / row_sums  # type: ignore[no-any-return]</pre>
+        <div class="callout warn"><strong>1-D probability reshape</strong>
+          XGBoost binary classification returns shape <code class="inline">(n,)</code>
+          — only P(class=1). The base class promotes this to the canonical 2-column
+          format via <code class="inline">np.column_stack([1.0 - proba, proba])</code>
+          so downstream code never has to special-case binary vs. multi-class.
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>predict() &amp; classes()</h3>
+        <pre class="code py">def predict(self, X: FeatureMatrix) -> LabelVector:
+    proba = self.predict_proba(X)
+    idx = proba.argmax(axis=1)
+    classes_arr = np.asarray(self.classes(), dtype=np.int64)
+    return classes_arr[idx]
+
+def classes(self) -> list[int]:
+    self._require_fitted()
+    assert self._classes is not None
+    return list(self._classes)</pre>
+        <p>
+          Hard labels are derived from <code class="inline">predict_proba</code>'s argmax —
+          single source of truth, no separate inference path.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>Serialisation (pickle, highest protocol)</h3>
+        <pre class="code py">def serialize(self) -> bytes:
+    """Default: pickle the whole adapter. Adapters may override for efficiency."""
+    return pickle.dumps(self, protocol=pickle.HIGHEST_PROTOCOL)
+
+@classmethod
+def deserialize(cls, blob: bytes) -> BaseModelAdapter:
+    obj = pickle.loads(blob)  # noqa: S301 – trusted internal channel
+    if not isinstance(obj, BaseModelAdapter):
+        raise TypeError(
+            f"Deserialized object is {type(obj).__name__}, "
+            "expected a BaseModelAdapter subclass."
+        )
+    return obj</pre>
+        <p>
+          The runtime <code class="inline">isinstance</code> check is the
+          deserialiser's safety net: even though the channel is internal, a stray
+          payload of another type fails loudly instead of corrupting downstream
+          aggregation.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>Diagnostic <code class="inline">__repr__</code></h3>
+        <pre class="code py">def __repr__(self) -> str:
+    fitted = "fitted" if self._fitted else "unfitted"
+    n_est = self.n_estimators() if self._fitted else "?"
+    return f"&lt;{type(self).__name__} framework={self.framework} n_est={n_est} ({fitted})&gt;"</pre>
+        <p>
+          Every adapter prints its framework, ensemble size, and fit-state at a
+          glance — handy in pytest failure traces.
+        </p>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p04"><span class="label">← Previous</span><span class="name">04 · Core / Exceptions</span></a>
+        <a class="next" data-target="p06"><span class="label">Next →</span><span class="name">06 · Factory &amp; Registry</span></a>
+      </div>
+    </section>
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 06 — Factory & Registry
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p06">
+      <div class="hero">
+        <div class="crumb">Models · Hook B · 06 / 27</div>
+        <h2>Factory &amp; Adapter Registry</h2>
+        <p class="lead">
+          A string-keyed registry that maps the framework identifier in YAML
+          (<code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">framework: xgboost</code>) to a concrete
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">BaseModelAdapter</code> subclass. Optional dependencies are auto-detected
+          at import time so the codebase runs with just sklearn installed, but
+          activates xgb/lgbm/catboost when they're available — no hard-coded
+          <em>if/elif</em> ladders anywhere.
+        </p>
+        <span class="file-pill">src/fedrf_distill/models/factory.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Registry storage + register_adapter</h3>
+        <pre class="code py">_REGISTRY: dict[str, type[BaseModelAdapter]] = {}
+
+
+def register_adapter(name: str, adapter_cls: type[BaseModelAdapter]) -> None:
+    """Register ``adapter_cls`` under the canonical lower-cased ``name``.
+
+    Overrides existing registrations silently — useful for tests that want to
+    swap in a mock adapter.
+    """
+    if not issubclass(adapter_cls, BaseModelAdapter):
+        raise TypeError(
+            f"{adapter_cls.__name__} is not a subclass of BaseModelAdapter."
+        )
+    _REGISTRY[name.lower()] = adapter_cls
+    _logger.debug("Registered model adapter '%s' → %s", name, adapter_cls.__name__)</pre>
+        <p>
+          Keys are lower-cased on insertion, so <code class="inline">"XGBoost"</code>
+          and <code class="inline">"xgboost"</code> resolve to the same class.
+          Subclass validation happens at registration time — bad types fail at
+          import, not at first use.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>make_model — case-insensitive, helpful errors</h3>
+        <pre class="code py">def make_model(name: str, **kwargs: Any) -> BaseModelAdapter:
+    """Instantiate a model adapter by framework name.
+
+    Parameters
+    ----------
+    name:
+        Canonical framework key (e.g. ``"sklearn_rf"``, ``"xgboost"``).
+        Case-insensitive.
+    **kwargs:
+        Forwarded to the adapter's constructor.
+
+    Raises
+    ------
+    UnsupportedModelError
+        If ``name`` is not registered. Lists available alternatives.
+    """
+    key = name.lower()
+    if key not in _REGISTRY:
+        available = ", ".join(sorted(_REGISTRY)) or "&lt;none&gt;"
+        raise UnsupportedModelError(
+            f"Unknown model framework '{name}'. Available: {available}."
+        )
+    return _REGISTRY[key](**kwargs)
+
+
+def AVAILABLE_FRAMEWORKS() -> list[str]:
+    """Return the sorted list of currently-registered framework keys."""
+    return sorted(_REGISTRY)</pre>
+        <p>
+          The error message names every <em>currently available</em> alternative,
+          so a typo on a CI machine without XGBoost still surfaces useful guidance
+          rather than a bare KeyError.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>Auto-registration (sklearn always; xgb/lgbm/cb best-effort)</h3>
+        <pre class="code py">def _autoregister() -> None:
+    """Best-effort import of every adapter; skip ones whose backend is missing."""
+    # sklearn — always available
+    from fedrf_distill.models.sklearn_adapter import (
+        SklearnDecisionTreeAdapter,
+        SklearnRandomForestAdapter,
+    )
+
+    register_adapter("sklearn_rf", SklearnRandomForestAdapter)
+    register_adapter("sklearn_dt", SklearnDecisionTreeAdapter)
+    # Aliases for ergonomics
+    register_adapter("sklearn", SklearnRandomForestAdapter)
+    register_adapter("rf", SklearnRandomForestAdapter)
+    register_adapter("dt", SklearnDecisionTreeAdapter)
+
+    # XGBoost
+    try:
+        from fedrf_distill.models.xgboost_adapter import XGBoostAdapter
+
+        register_adapter("xgboost", XGBoostAdapter)
+        register_adapter("xgb", XGBoostAdapter)
+    except ImportError:  # pragma: no cover - depends on env
+        _logger.info("XGBoost not installed; xgboost adapter unavailable.")
+
+    # LightGBM
+    try:
+        from fedrf_distill.models.lightgbm_adapter import LightGBMAdapter
+
+        register_adapter("lightgbm", LightGBMAdapter)
+        register_adapter("lgbm", LightGBMAdapter)
+    except ImportError:  # pragma: no cover - depends on env
+        _logger.info("LightGBM not installed; lightgbm adapter unavailable.")
+
+    # CatBoost
+    try:
+        from fedrf_distill.models.catboost_adapter import CatBoostAdapter
+
+        register_adapter("catboost", CatBoostAdapter)
+        register_adapter("cb", CatBoostAdapter)
+    except ImportError:  # pragma: no cover - depends on env
+        _logger.info("CatBoost not installed; catboost adapter unavailable.")
+
+
+_autoregister()</pre>
+      </div>
+
+      <div class="block">
+        <h3>Registered alias map (after a full-deps install)</h3>
+        <table class="data-table">
+          <thead>
+            <tr><th>Alias</th><th>Adapter class</th><th>Always available?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code class="inline">sklearn_rf</code> · <code class="inline">sklearn</code> · <code class="inline">rf</code></td><td>SklearnRandomForestAdapter</td><td>Yes (sklearn is a hard dep)</td></tr>
+            <tr><td><code class="inline">sklearn_dt</code> · <code class="inline">dt</code></td><td>SklearnDecisionTreeAdapter</td><td>Yes</td></tr>
+            <tr><td><code class="inline">xgboost</code> · <code class="inline">xgb</code></td><td>XGBoostAdapter</td><td>If <code class="inline">xgboost</code> installed</td></tr>
+            <tr><td><code class="inline">lightgbm</code> · <code class="inline">lgbm</code></td><td>LightGBMAdapter</td><td>If <code class="inline">lightgbm</code> installed</td></tr>
+            <tr><td><code class="inline">catboost</code> · <code class="inline">cb</code></td><td>CatBoostAdapter</td><td>If <code class="inline">catboost</code> installed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note"><strong>Hook B activation</strong>
+        Per-client heterogeneity is realised in <code class="inline">build_clients</code>
+        (orchestration/runner.py:121): if <code class="inline">cfg.model.frameworks_per_client</code>
+        is a non-empty list of length K, client <em>k</em> uses
+        <code class="inline">per_client[k]</code>; otherwise every client falls back
+        to <code class="inline">cfg.model.teacher_framework</code>.
+        <code class="inline">make_model(fwk, **kwargs)</code> is then called once per
+        client per round inside a closure-safe factory.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p05"><span class="label">← Previous</span><span class="name">05 · Adapter Base</span></a>
+        <a class="next" data-target="p07"><span class="label">Next →</span><span class="name">07 · sklearn Adapter</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 07 — sklearn Adapter
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p07">
+      <div class="hero">
+        <div class="crumb">Models · Hook B · 07 / 27</div>
+        <h2>SklearnRandomForestAdapter &amp; DecisionTreeAdapter</h2>
+        <p class="lead">
+          The two reference adapters. <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">RandomForest</code> is the canonical client
+          teacher; <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">DecisionTree</code> is the canonical surrogate student.
+          Both subclass <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">BaseModelAdapter</code>
+          and only override <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">_fit_impl</code>,
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">_predict_proba_impl</code>, and
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">n_estimators</code>.
+        </p>
+        <span class="file-pill">src/fedrf_distill/models/sklearn_adapter.py</span>
+      </div>
+
+      <div class="block">
+        <h3>SklearnRandomForestAdapter (teacher)</h3>
+        <p>
+          Defaults follow accepted FL/RF practice: 100 trees, no depth cap so trees
+          fully grow the way Breiman intended, but with
+          <code class="inline">min_samples_leaf=2</code> to dampen pathological overfit
+          on tiny client shards. <code class="inline">max_features="sqrt"</code>
+          remains the canonical RF column-subsampling rule. <code class="inline">n_jobs=-1</code>
+          uses all cores during local fit.
+        </p>
+        <pre class="code py">class SklearnRandomForestAdapter(BaseModelAdapter):
+    framework: ClassVar[str] = "sklearn_rf"
+
+    def __init__(
+        self,
+        n_estimators: int = 100,
+        max_depth: int | None = None,
+        min_samples_leaf: int = 2,
+        max_features: str | int | float | None = "sqrt",
+        class_weight: str | dict[int, float] | None = None,
+        n_jobs: int = -1,
+        random_state: int | None = None,
+        **extra: Any,
+    ) -> None:
+        super().__init__()
+        self._estimator = RandomForestClassifier(
+            n_estimators=n_estimators,
+            max_depth=max_depth,
+            min_samples_leaf=min_samples_leaf,
+            max_features=max_features,
+            class_weight=class_weight,
+            n_jobs=n_jobs,
+            random_state=random_state,
+            **extra,
+        )
+
+    def _fit_impl(self, X: FeatureMatrix, y: LabelVector) -> None:
+        self._estimator.fit(X, y)
+
+    def _predict_proba_impl(self, X: FeatureMatrix) -> SoftLabels:
+        proba = self._estimator.predict_proba(X)
+        # sklearn may return a sub-set of classes if some labels are absent locally.
+        # Re-pad to the canonical class set the adapter recorded at fit-time.
+        return _pad_to_full_classes(proba, self._estimator.classes_, self._classes)
+
+    def n_estimators(self) -> int:
+        return int(self._estimator.n_estimators)</pre>
+      </div>
+
+      <div class="block">
+        <h3>SklearnDecisionTreeAdapter (student / surrogate)</h3>
+        <p>
+          The student is intentionally shallow — distillation only buys a
+          generalisation gain when the student has less capacity than the teacher.
+          The default <code class="inline">max_depth=6</code> keeps surrogates
+          compact, typically under 10 KB when pickled — that's the
+          <em>communication cost</em> per federated round.
+        </p>
+        <pre class="code py">class SklearnDecisionTreeAdapter(BaseModelAdapter):
+    framework: ClassVar[str] = "sklearn_dt"
+
+    def __init__(
+        self,
+        max_depth: int | None = 6,
+        min_samples_leaf: int = 5,
+        criterion: str = "gini",
+        random_state: int | None = None,
+        **extra: Any,
+    ) -> None:
+        super().__init__()
+        self._estimator = DecisionTreeClassifier(
+            max_depth=max_depth,
+            min_samples_leaf=min_samples_leaf,
+            criterion=criterion,
+            random_state=random_state,
+            **extra,
+        )
+
+    def _fit_impl(self, X: FeatureMatrix, y: LabelVector) -> None:
+        self._estimator.fit(X, y)
+
+    def _predict_proba_impl(self, X: FeatureMatrix) -> SoftLabels:
+        proba = self._estimator.predict_proba(X)
+        return _pad_to_full_classes(proba, self._estimator.classes_, self._classes)
+
+    def n_estimators(self) -> int:
+        return 1</pre>
+        <div class="callout note"><strong>Soft-label fit path</strong>
+          The classifier above accepts <code class="inline">sample_weight</code>,
+          so soft-label distillation routes through it via the
+          <code class="inline">ARGMAX_WEIGHTED</code> mode in
+          <code class="inline">SurrogateDistiller</code> (see Page 12). The
+          alternate <code class="inline">MULTIOUTPUT_REGRESSION</code> mode swaps
+          in <code class="inline">DecisionTreeRegressor</code> via the internal
+          <code class="inline">_MultiOutputDTSurrogate</code> helper.
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>The pad-classes helper</h3>
+        <p>
+          Non-IID shards routinely miss whole classes. Sklearn happily returns a
+          probability matrix with only the classes it saw, but downstream code
+          (aggregation, DP noise, fidelity) expects a column for every globally
+          known class. <code class="inline">_pad_to_full_classes</code> inserts
+          zero columns for any missing classes while preserving order.
+        </p>
+        <pre class="code py">def _pad_to_full_classes(
+    proba: np.ndarray,
+    fitted_classes: np.ndarray,
+    expected_classes: list[int] | None,
+) -> SoftLabels:
+    """Re-index a sub-class probability matrix to the global class set.
+
+    When a client only sees classes ``{0, 2}`` (non-IID partition), sklearn
+    returns a 2-column probability matrix. Downstream code expects a column for
+    every globally-known class. We pad missing classes with zeros, preserving
+    column order.
+    """
+    if expected_classes is None or len(fitted_classes) == len(expected_classes):
+        return np.ascontiguousarray(proba, dtype=np.float64)
+
+    full = np.zeros((proba.shape[0], len(expected_classes)), dtype=np.float64)
+    expected_arr = np.asarray(expected_classes, dtype=np.int64)
+    for j, cls in enumerate(fitted_classes):
+        # Find the index of `cls` in expected_classes
+        idx = int(np.where(expected_arr == cls)[0][0])
+        full[:, idx] = proba[:, j]
+    return full</pre>
+        <div class="callout warn"><strong>Subtle invariant</strong>
+          Padding happens <em>inside</em> <code class="inline">_predict_proba_impl</code>,
+          so by the time DP noise is added in the soft-label generator the matrix
+          already has its full set of columns. This means missing-class columns
+          start at exactly zero, and any non-zero post-noise value is purely the
+          DP perturbation — a desirable property for the auditing pipeline.
+        </div>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p06"><span class="label">← Previous</span><span class="name">06 · Factory &amp; Registry</span></a>
+        <a class="next" data-target="p08"><span class="label">Next →</span><span class="name">08 · Loaders &amp; Registry</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 08 — Data / Loaders & Registry
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p08">
+      <div class="hero">
+        <div class="crumb">Data Pipeline · 08 / 27</div>
+        <h2>Dataset, DatasetRegistry, load_dataset</h2>
+        <p class="lead">
+          A decorator-based registry that lets new datasets be added with a one-line
+          declaration. The <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">Dataset</code> dataclass is the unified return type so callers don't
+          care whether the source is OpenML, a local CSV, or scikit-learn — every
+          loader returns the same shape.
+        </p>
+        <span class="file-pill">src/fedrf_distill/data/loaders/base.py</span>
+      </div>
+
+      <div class="block">
+        <h3>The Dataset dataclass</h3>
+        <pre class="code py">LoaderFn = Callable[[Path], "Dataset"]
+
+
+@dataclass(slots=True)
+class Dataset:
+    """A loaded benchmark dataset."""
+
+    name: str
+    X: FeatureMatrix
+    y: LabelVector
+    task_type: str  # "binary" | "multiclass"
+    n_classes: int
+    feature_names: list[str] = field(default_factory=list)
+    metadata: dict[str, object] = field(default_factory=dict)</pre>
+        <p>
+          Note the <em>loader signature</em>: each loader function receives the
+          dataset's cache directory as its only argument and is free to use it
+          however it likes (OpenML cache, on-disk CSV, custom <code class="inline">.npz</code>).
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>DatasetRegistry — decorator + lookup</h3>
+        <pre class="code py">class DatasetRegistry:
+    """Map of canonical dataset name → loader callable."""
+
+    _store: dict[str, LoaderFn] = {}
+
+    @classmethod
+    def register(cls, name: str) -> Callable[[LoaderFn], LoaderFn]:
+        def deco(fn: LoaderFn) -> LoaderFn:
+            cls._store[name.lower()] = fn
+            return fn
+
+        return deco
+
+    @classmethod
+    def get(cls, name: str) -> LoaderFn:
+        key = name.lower()
+        if key not in cls._store:
+            available = ", ".join(sorted(cls._store)) or "&lt;none&gt;"
+            raise KeyError(f"Unknown dataset '{name}'. Available: {available}.")
+        return cls._store[key]
+
+    @classmethod
+    def available(cls) -> list[str]:
+        return sorted(cls._store)</pre>
+        <p>
+          Keys are lower-cased on insert and lookup. The "available" enumeration
+          is what surfaces in the <code class="inline">KeyError</code> message when
+          a typo hits.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>Cache directory (env-overridable)</h3>
+        <pre class="code py">def _cache_dir(name: str) -> Path:
+    base = Path(os.environ.get("FEDRF_CACHE", Path.home() / ".cache" / "fedrf_distill"))
+    p = base / name
+    p.mkdir(parents=True, exist_ok=True)
+    return p</pre>
+        <p>
+          Default is <code class="inline">~/.cache/fedrf_distill/&lt;dataset&gt;/</code>
+          following XDG conventions. Override with <code class="inline">FEDRF_CACHE</code>
+          to relocate (useful for CI runners, NFS-mounted scratch, etc.). The
+          framework imposes <em>no</em> fixed cache format — each loader picks the
+          serialisation that suits its source.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>load_dataset — the public entry point</h3>
+        <pre class="code py">def load_dataset(name: str) -> Dataset:
+    """Public entry point used by orchestration / experiment scripts."""
+    loader = DatasetRegistry.get(name)
+    cache = _cache_dir(name.lower())
+    ds = loader(cache)
+    # Final shape sanity
+    if ds.X.shape[0] != ds.y.shape[0]:
+        raise ValueError(
+            f"{name}: X has {ds.X.shape[0]} rows, y has {ds.y.shape[0]}."
+        )
+    ds.X = np.ascontiguousarray(ds.X, dtype=np.float64)
+    ds.y = np.ascontiguousarray(ds.y, dtype=np.int64)
+    return ds</pre>
+        <div class="callout note"><strong>Two invariants enforced after load</strong>
+          <ul style="margin:8px 0 0 18px">
+            <li><code class="inline">X.shape[0] == y.shape[0]</code> — row counts match.</li>
+            <li><code class="inline">X</code> is C-contiguous <code class="inline">float64</code>;
+                <code class="inline">y</code> is C-contiguous <code class="inline">int64</code>.</li>
+          </ul>
+          This guarantees every downstream component (partitioners, adapters, DP
+          mechanisms) receives the canonical dtype/layout without re-casting.
+        </div>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p07"><span class="label">← Previous</span><span class="name">07 · sklearn Adapter</span></a>
+        <a class="next" data-target="p09"><span class="label">Next →</span><span class="name">09 · Partitioners</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 09 — Partitioners (Non-IID)
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p09">
+      <div class="hero">
+        <div class="crumb">Data Pipeline · 09 / 27</div>
+        <h2>Partitioners — simulating federated Non-IID</h2>
+        <p class="lead">
+          A federated dataset is just a list of <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">np.ndarray</code> index slices.
+          Four partitioners produce different degrees of heterogeneity, from IID
+          baseline to pathological extreme skew.
+        </p>
+        <span class="file-pill">src/fedrf_distill/data/partitioners.py</span>
+      </div>
+
+      <div class="block">
+        <h3>The contract (verbatim across all four classes)</h3>
+        <pre class="code py">def partition(
+    self,
+    X: FeatureMatrix,
+    y: LabelVector,
+    n_clients: int,
+    seed: int,
+) -> list[tuple[FeatureMatrix, LabelVector]]: ...</pre>
+        <p>
+          Every partitioner returns a list of <em>K</em>
+          <code class="inline">(X_k, y_k)</code> tuples — index slices of the inputs,
+          column order preserved. The seed parameter creates a fresh
+          <code class="inline">np.random.default_rng(seed)</code> inside each call
+          so partitions are deterministic across runs.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>The four implementations</h3>
+        <table class="data-table">
+          <thead><tr><th>Class</th><th>name (ClassVar)</th><th>Knob(s)</th><th>Heterogeneity</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">IIDPartitioner</code></td><td><code class="inline">"iid"</code></td><td>—</td><td>None — sanity baseline</td></tr>
+            <tr><td><code class="inline">QuantitySkewPartitioner</code></td><td><code class="inline">"quantity_skew"</code></td><td><code class="inline">skew_exponent=1.5</code> (Pareto)</td><td>Sample-count skew, IID labels</td></tr>
+            <tr><td><code class="inline">DirichletPartitioner</code></td><td><code class="inline">"dirichlet"</code></td><td><code class="inline">alpha=0.5</code>, <code class="inline">min_size=1</code></td><td>The realistic one — used in paper</td></tr>
+            <tr><td><code class="inline">PathologicalPartitioner</code></td><td><code class="inline">"pathological"</code></td><td><code class="inline">k_classes_per_client=2</code></td><td>Extreme — for stress tests</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="block">
+        <h3>DirichletPartitioner — the workhorse (verbatim)</h3>
+        <p>
+          For each class, draws a probability vector
+          <code class="inline">p ~ Dir(α, ..., α)</code> of length
+          <code class="inline">n_clients</code> and allocates that class's examples
+          accordingly. Small α (e.g. 0.1) → highly skewed; large α (e.g. 100) →
+          near-IID. The codebase ships with α = 0.5 by default.
+        </p>
+        <pre class="code py">@dataclass
+class DirichletPartitioner:
+    """Class-wise Dirichlet partition with concentration ``alpha``.
+
+    Smaller ``alpha`` → more skewed distributions per client.
+    Common choices: 0.1 (very non-IID), 0.5 (moderate), 1.0 (mild).
+    """
+
+    name: ClassVar[str] = "dirichlet"
+    alpha: float = 0.5
+    min_size: int = 1  # avoid empty clients
+
+    def partition(
+        self,
+        X: FeatureMatrix,
+        y: LabelVector,
+        n_clients: int,
+        seed: int,
+    ) -> list[tuple[FeatureMatrix, LabelVector]]:
+        rng = np.random.default_rng(seed)
+        classes = np.unique(y)
+        per_client: list[list[int]] = [[] for _ in range(n_clients)]
+
+        # Loop until every client has at least ``min_size`` samples.
+        for _ in range(20):
+            per_client = [[] for _ in range(n_clients)]
+            for c in classes:
+                idx_c = np.where(y == c)[0]
+                rng.shuffle(idx_c)
+                proportions = rng.dirichlet(np.full(n_clients, self.alpha))
+                # Cumulative split points
+                cuts = (np.cumsum(proportions) * len(idx_c)).astype(int)[:-1]
+                splits = np.split(idx_c, cuts)
+                for k, s in enumerate(splits):
+                    per_client[k].extend(s.tolist())
+            if min(len(s) for s in per_client) &gt;= self.min_size:
+                break
+
+        return [
+            (X[np.asarray(idx, dtype=np.int64)], y[np.asarray(idx, dtype=np.int64)])
+            for idx in per_client
+        ]</pre>
+        <div class="callout warn"><strong>Retry loop — fixed at 20</strong>
+          The retry budget is a hard-coded <code class="inline">range(20)</code>,
+          not a constructor parameter. With <code class="inline">min_size=1</code>
+          this is essentially a sanity check that the partition isn't pathologically
+          empty; small α values almost always satisfy on the first try. If 20
+          retries fail, the partition is returned as-is — the orchestrator's
+          empty-shard guard takes over from there.
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>PathologicalPartitioner — adversarial regime</h3>
+        <pre class="code py">@dataclass
+class PathologicalPartitioner:
+    """Each client sees only ``k_classes_per_client`` classes — adversarial regime."""
+
+    name: ClassVar[str] = "pathological"
+    k_classes_per_client: int = 2
+
+    def partition(self, X, y, n_clients, seed):
+        rng = np.random.default_rng(seed)
+        classes = np.unique(y)
+        if self.k_classes_per_client &gt; len(classes):
+            raise ValueError(
+                f"k_classes_per_client ({self.k_classes_per_client}) "
+                f"exceeds number of classes ({len(classes)})."
+            )
+
+        # For each client choose k classes uniformly; for each class collect
+        # the clients that claim it and split evenly among them.
+        client_classes = [
+            rng.choice(classes, size=self.k_classes_per_client, replace=False).tolist()
+            for _ in range(n_clients)
+        ]
+        ...  # build reverse map class → clients, split each class evenly</pre>
+        <p>
+          Useful to stress-test Hook A (DP) and the surrogate aggregator under
+          near-disjoint label sets. Standard regime in MNIST/CIFAR FL papers.
+        </p>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p08"><span class="label">← Previous</span><span class="name">08 · Loaders &amp; Registry</span></a>
+        <a class="next" data-target="p10"><span class="label">Next →</span><span class="name">10 · Proxy Dataset</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 10 — Proxy Dataset
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p10">
+      <div class="hero">
+        <div class="crumb">Data Pipeline · 10 / 27</div>
+        <h2>Proxy Dataset — the public unlabelled scratchpad</h2>
+        <p class="lead">
+          Knowledge distillation across clients requires a <i>shared input space</i>
+          on which to compare teacher predictions. The proxy is an unlabelled
+          dataset visible to all parties; clients score it locally, ship soft
+          labels, and the coordinator aggregates.
+        </p>
+        <span class="file-pill">src/fedrf_distill/data/proxy.py</span>
+      </div>
+
+      <div class="block">
+        <h3>ProxySource enum</h3>
+        <pre class="code py">class ProxySource(str, Enum):
+    SYNTHETIC_UNIFORM  = "synthetic_uniform"
+    SYNTHETIC_GAUSSIAN = "synthetic_gaussian"
+    EXTERNAL           = "external"</pre>
+        <p>
+          Three construction strategies — <em>no</em> holdout / public-dataset
+          variant lives in this module (those would require coupling to the
+          private training set or the dataset registry, which we deliberately
+          avoid here).
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>ProxyDataConfig</h3>
+        <pre class="code py">@dataclass
+class ProxyDataConfig:
+    """Declarative spec for proxy-dataset construction."""
+
+    source: ProxySource = ProxySource.SYNTHETIC_UNIFORM
+    n_samples: int = 2000
+    seed: int = 0
+
+    # When source == EXTERNAL the caller passes raw features in to
+    # ``build_proxy_dataset``. The fields below are unused.
+    n_features: int | None = None
+    feature_low: float | None = None
+    feature_high: float | None = None
+    feature_mean: np.ndarray | None = None
+    feature_cov: np.ndarray | None = None</pre>
+        <p>
+          For <code class="inline">EXTERNAL</code> the synthetic fields are ignored
+          and the caller passes the raw feature matrix to
+          <code class="inline">build_proxy_dataset</code>. For
+          <code class="inline">SYNTHETIC_GAUSSIAN</code>, omitting
+          <code class="inline">feature_mean</code>/<code class="inline">feature_cov</code>
+          defaults to a unit-variance multivariate-normal — useful for ablations.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>build_proxy_dataset — the public builder</h3>
+        <pre class="code py">def build_proxy_dataset(
+    cfg: ProxyDataConfig,
+    external: FeatureMatrix | None = None,
+) -> FeatureMatrix:
+    rng = np.random.default_rng(cfg.seed)
+    if cfg.source == ProxySource.EXTERNAL:
+        if external is None or external.size == 0:
+            raise ProxyDataError(
+                "ProxySource.EXTERNAL was selected but no `external` array passed."
+            )
+        # Sub-sample to n_samples
+        if external.shape[0] &gt; cfg.n_samples:
+            idx = rng.choice(external.shape[0], size=cfg.n_samples, replace=False)
+            external = external[idx]
+        return np.asarray(external, dtype=np.float64)
+
+    if cfg.n_features is None or cfg.n_features &lt;= 0:
+        raise ProxyDataError(
+            "ProxyDataConfig.n_features must be set for synthetic proxies."
+        )
+
+    if cfg.source == ProxySource.SYNTHETIC_UNIFORM:
+        low  = cfg.feature_low  if cfg.feature_low  is not None else 0.0
+        high = cfg.feature_high if cfg.feature_high is not None else 1.0
+        return rng.uniform(low, high, size=(cfg.n_samples, cfg.n_features))
+
+    if cfg.source == ProxySource.SYNTHETIC_GAUSSIAN:
+        mean = cfg.feature_mean if cfg.feature_mean is not None else np.zeros(cfg.n_features)
+        cov  = cfg.feature_cov  if cfg.feature_cov  is not None else np.eye(cfg.n_features)
+        return rng.multivariate_normal(mean, cov, size=cfg.n_samples)
+
+    raise ProxyDataError(f"Unsupported proxy source: {cfg.source}")</pre>
+        <div class="callout warn"><strong>EXTERNAL is sub-sampled, not concatenated</strong>
+          If you pass an <code class="inline">external</code> matrix bigger than
+          <code class="inline">n_samples</code>, the builder
+          <em>randomly subsets</em> it. Passing a smaller matrix returns it
+          verbatim — there is no replication/repeat.
+        </div>
+      </div>
+
+      <div class="callout note"><strong>Why proxy distillation, not direct weight sharing?</strong>
+        Tree models don't have weights to average. Soft labels on a shared input set
+        are the only signal that can be combined across heterogeneous tree
+        frameworks — which is exactly what Hook B requires.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p09"><span class="label">← Previous</span><span class="name">09 · Partitioners</span></a>
+        <a class="next" data-target="p11"><span class="label">Next →</span><span class="name">11 · Soft Labels</span></a>
+      </div>
+    </section>
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 11 — Distillation / Soft Labels
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p11">
+      <div class="hero">
+        <div class="crumb">Distillation · 11 / 27</div>
+        <h2>Soft Labels &amp; Temperature</h2>
+        <p class="lead">
+          The two-function module that produces the privacy-relevant payload of the
+          system. <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">apply_temperature</code> sharpens or smooths a probability
+          matrix; <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">SoftLabelGenerator</code> orchestrates the full pipeline
+          (predict → temperature → floor) before DP is layered on top.
+        </p>
+        <span class="file-pill">src/fedrf_distill/distillation/soft_labels.py</span>
+      </div>
+
+      <div class="block">
+        <h3>apply_temperature — numerically-stable log-space</h3>
+        <p>
+          The Hinton temperature trick: divide log-probabilities by T, re-normalise.
+          Doing it on probabilities directly would underflow for confident
+          predictions, so we work in log-space with a max-subtract for stability.
+        </p>
+        <pre class="code py">def apply_temperature(proba: SoftLabels, temperature: float) -> SoftLabels:
+    """Re-scale a probability matrix by temperature ``T``.
+
+    Numerically stable: works in log-space, max-subtraction trick prevents
+    overflow when probabilities have very small floor values.
+    """
+    if temperature &lt;= 0:
+        raise DistillationError(f"temperature must be &gt; 0, got {temperature}")
+    if temperature == 1.0:
+        return proba
+
+    # Add a tiny floor so log(0) doesn't propagate -inf
+    proba_safe = np.clip(proba, 1e-12, 1.0)
+    log_p = np.log(proba_safe) / temperature
+    log_p -= log_p.max(axis=1, keepdims=True)  # stability
+    new_p = np.exp(log_p)
+    new_p /= new_p.sum(axis=1, keepdims=True)
+    return new_p</pre>
+      </div>
+
+      <div class="block">
+        <h3>SoftLabelGenerator — floor THEN temperature</h3>
+        <pre class="code py">@dataclass(slots=True)
+class SoftLabelGenerator:
+    """Produces soft labels from a fitted teacher."""
+
+    temperature: float = 1.0
+    floor: float = 0.0
+
+    def generate(
+        self,
+        teacher: ModelAdapterProtocol,
+        X: FeatureMatrix,
+    ) -> SoftLabels:
+        """Return calibrated soft labels for ``X`` using the given teacher."""
+        if X.size == 0:
+            raise DistillationError("Cannot generate soft labels from empty X.")
+
+        proba = np.asarray(teacher.predict_proba(X), dtype=np.float64)
+        if proba.ndim != 2:
+            raise DistillationError(
+                f"Teacher returned shape {proba.shape}; expected 2-D."
+            )
+
+        if self.floor &gt; 0:
+            proba = np.clip(proba, self.floor, 1.0)
+            proba /= proba.sum(axis=1, keepdims=True)
+
+        if self.temperature != 1.0:
+            proba = apply_temperature(proba, self.temperature)
+
+        return proba</pre>
+        <div class="callout warn"><strong>Order matters: floor first, then temperature</strong>
+          The implementation applies the floor (with renorm) <em>before</em>
+          temperature, not after. Reversing the order would let temperature
+          re-introduce near-zero probabilities that the floor was meant to
+          eliminate — defeating the point of floored labels for downstream DP and
+          surrogate fitting stability.
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Why the floor matters for DP</h3>
+        <div class="callout note"><strong>Sensitivity bound</strong>
+          The L1 sensitivity of a probability row is at most 2 (one entry goes
+          from 0→1, another from 1→0). A probability floor doesn't change
+          sensitivity but it bounds the worst-case loss on near-zero
+          probabilities, which stabilises downstream surrogate fitting <em>after</em>
+          DP noise has been added to the soft labels.
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Empty-input + shape guard</h3>
+        <p>
+          <code class="inline">generate</code> raises <code class="inline">DistillationError</code>
+          on two failure modes: (a) empty <code class="inline">X</code>, and
+          (b) the teacher returning a 1-D probability vector — even though
+          <code class="inline">BaseModelAdapter.predict_proba</code> already promotes
+          binary 1-D output to 2-D, this is a defensive second line in case a
+          custom adapter bypasses the base class.
+        </p>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p10"><span class="label">← Previous</span><span class="name">10 · Proxy Dataset</span></a>
+        <a class="next" data-target="p12"><span class="label">Next →</span><span class="name">12 · Surrogate Distiller</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 12 — Surrogate Distiller
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p12">
+      <div class="hero">
+        <div class="crumb">Distillation · 12 / 27</div>
+        <h2>SurrogateDistiller — fitting a student to soft labels</h2>
+        <p class="lead">
+          Two distillation strategies via a <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">DistillationMode</code> enum.
+          <em>No row-expansion / sample-replication.</em>
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">ARGMAX_WEIGHTED</code> takes the argmax of each row as the hard
+          target and the max-probability as <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">sample_weight</code>;
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">MULTIOUTPUT_REGRESSION</code> swaps the student for a
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">DecisionTreeRegressor</code> over probability vectors.
+        </p>
+        <span class="file-pill">src/fedrf_distill/distillation/surrogate.py</span>
+      </div>
+
+      <div class="block">
+        <h3>DistillationMode enum</h3>
+        <pre class="code py">class DistillationMode(str, Enum):
+    """How to translate soft labels into a trainable target."""
+
+    ARGMAX_WEIGHTED = "argmax_weighted"
+    """Use argmax(p) as hard label, max(p) as sample weight."""
+
+    MULTIOUTPUT_REGRESSION = "multioutput_regression"
+    """Multi-output regression on the probability vector itself."""</pre>
+      </div>
+
+      <div class="block">
+        <h3>SurrogateDistiller — dispatch</h3>
+        <pre class="code py">@dataclass
+class SurrogateDistiller:
+    student_framework: str = "sklearn_dt"
+    mode: DistillationMode = DistillationMode.ARGMAX_WEIGHTED
+    student_kwargs: dict[str, Any] | None = None
+    random_state: int | None = None
+
+    def distill(
+        self,
+        X: FeatureMatrix,
+        soft_labels: SoftLabels,
+        classes: list[int],
+    ) -> BaseModelAdapter:
+        """Train a surrogate to mimic ``soft_labels(X)``."""
+        if X.shape[0] != soft_labels.shape[0]:
+            raise DistillationError(
+                f"Row count mismatch: X has {X.shape[0]}, soft_labels has {soft_labels.shape[0]}."
+            )
+        if soft_labels.shape[1] != len(classes):
+            raise DistillationError(
+                f"soft_labels has {soft_labels.shape[1]} columns "
+                f"but {len(classes)} classes were declared."
+            )
+
+        kw = dict(self.student_kwargs or {})
+        if self.random_state is not None and "random_state" not in kw:
+            kw["random_state"] = self.random_state
+
+        if self.mode == DistillationMode.ARGMAX_WEIGHTED:
+            return self._distill_argmax_weighted(X, soft_labels, classes, kw)
+        if self.mode == DistillationMode.MULTIOUTPUT_REGRESSION:
+            return self._distill_multioutput(X, soft_labels, classes, kw)
+        raise DistillationError(f"Unknown distillation mode: {self.mode}")</pre>
+      </div>
+
+      <div class="block">
+        <h3>Strategy 1 — ARGMAX_WEIGHTED (default)</h3>
+        <p>
+          <strong>One row in → one row out.</strong> The hard target is
+          <code class="inline">classes_arr[argmax(soft_labels)]</code>; the sample
+          weight is <code class="inline">soft_labels.max(axis=1)</code>. The
+          weight is routed directly to the underlying estimator via
+          <code class="inline">sample_weight=</code> if its
+          <code class="inline">fit</code> supports it (introspected via
+          <code class="inline">inspect.signature</code>).
+        </p>
+        <pre class="code py">def _distill_argmax_weighted(self, X, soft_labels, classes, student_kwargs):
+    classes_arr = np.asarray(classes, dtype=np.int64)
+    hard = classes_arr[np.argmax(soft_labels, axis=1)]
+    weight = soft_labels.max(axis=1)
+
+    # Degenerate edge case: ``argmax`` may yield only one unique class on
+    # very skewed shards. Inject a tiny synthetic counter-example with
+    # ε-weight so the tree can still be fit with the canonical class set.
+    if len(np.unique(hard)) &lt; 2 and len(classes) &gt;= 2:
+        X, hard, weight = _inject_synthetic_minority(X, hard, weight, classes_arr)
+
+    student = make_model(self.student_framework, **student_kwargs)
+    # The base adapter records ``_classes`` from ``y`` during fit. To keep
+    # the canonical class set even when ``hard`` is single-class, we pre-set.
+    student._classes = list(classes)  # noqa: SLF001
+    student._fitted_classes_override = True  # hint flag (unused otherwise)
+    # Try to pass sample_weight through if the underlying estimator supports it.
+    underlying = getattr(student, "_estimator", None)
+    if underlying is not None and "sample_weight" in _supported_fit_kwargs(underlying):
+        # Bypass the base ``fit`` so we can route the weight through.
+        X = np.asarray(X, dtype=np.float64)
+        hard = np.asarray(hard, dtype=np.int64)
+        underlying.fit(X, hard, sample_weight=weight)
+        student._fitted = True  # noqa: SLF001
+    else:
+        # Fall back to weight-less fit — slightly less faithful.
+        student.fit(X, hard)
+    return student</pre>
+        <div class="callout note"><strong>Synthetic minority injection</strong>
+          On extremely skewed shards <code class="inline">argmax</code> can collapse
+          to a single class, which would force the tree's class set to size 1 and
+          break aggregation. <code class="inline">_inject_synthetic_minority</code>
+          appends one row per missing class — features set to
+          <code class="inline">X.mean(axis=0)</code>, weight
+          <code class="inline">1e-9</code> — so the tree carries the full
+          canonical class set without meaningfully biasing splits.
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Strategy 2 — MULTIOUTPUT_REGRESSION</h3>
+        <p>
+          Wraps an sklearn <code class="inline">DecisionTreeRegressor</code> with
+          multi-output targets — fitting the probability vector directly,
+          preserving dark knowledge instead of collapsing to argmax. Currently
+          locked to <code class="inline">sklearn_dt</code> as the student framework.
+        </p>
+        <pre class="code py">def _distill_multioutput(self, X, soft_labels, classes, student_kwargs):
+    if self.student_framework not in {"sklearn_dt", "sklearn", "dt"}:
+        raise DistillationError(
+            "MULTIOUTPUT_REGRESSION currently supports only sklearn_dt "
+            f"as the student framework; got '{self.student_framework}'."
+        )
+    return _MultiOutputDTSurrogate(classes, **student_kwargs).fit_soft(X, soft_labels)
+
+
+class _MultiOutputDTSurrogate(SklearnDecisionTreeAdapter):
+    framework = "sklearn_dt_mo"
+
+    def __init__(self, classes, max_depth=6, min_samples_leaf=5,
+                 random_state=None, **extra):
+        BaseModelAdapter.__init__(self)
+        self._estimator = DecisionTreeRegressor(
+            max_depth=max_depth,
+            min_samples_leaf=min_samples_leaf,
+            random_state=random_state,
+            **extra,
+        )
+        self._classes = list(classes)
+
+    def fit_soft(self, X, soft_labels):
+        X = np.asarray(X, dtype=np.float64)
+        soft = np.asarray(soft_labels, dtype=np.float64)
+        self._estimator.fit(X, soft)
+        self._fitted = True
+        return self
+
+    def _predict_proba_impl(self, X):
+        raw = self._estimator.predict(X)
+        if raw.ndim == 1:
+            raw = raw.reshape(-1, 1)
+        raw = np.clip(raw, 0.0, None)
+        return np.asarray(raw, dtype=np.float64)</pre>
+        <p>
+          <code class="inline">_predict_proba_impl</code> clips to
+          <code class="inline">[0, ∞)</code> and lets the base class's
+          <code class="inline">predict_proba</code> handle row-sum renormalisation —
+          so regression drift outside the simplex never escapes to downstream
+          aggregation.
+        </p>
+      </div>
+
+      <div class="callout warn"><strong>What this module does NOT do</strong>
+        There is no <em>row expansion</em>, no <code class="inline">np.repeat</code>
+        of <code class="inline">X_proxy</code> by class count, no
+        <code class="inline">np.tile(np.arange(C), n)</code> trick. Both strategies
+        are <em>1:1</em> in row count between input and training set. The
+        documentation previously described a row-expansion approach that this
+        codebase never implemented.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p11"><span class="label">← Previous</span><span class="name">11 · Soft Labels</span></a>
+        <a class="next" data-target="p13"><span class="label">Next →</span><span class="name">13 · Threat Model</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 13 — Privacy / Threat Model
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p13">
+      <div class="hero">
+        <div class="crumb">Privacy · Hook A · 13 / 27</div>
+        <h2>Threat Model — who attacks what, with what capability</h2>
+        <p class="lead">
+          Before claiming any privacy guarantee, we have to name the adversary.
+          This module enumerates adversary capabilities, protected assets, and
+          packages them as a <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">ThreatModel</code> dataclass with a human-
+          readable summary.
+        </p>
+        <span class="file-pill">src/fedrf_distill/privacy/threat_model.py</span>
+      </div>
+
+      <div class="block">
+        <h3>AdversaryCapability (verbatim enum)</h3>
+        <pre class="code py">class AdversaryCapability(str, Enum):
+    """What the attacker can observe."""
+
+    HONEST_BUT_CURIOUS_SERVER = "honest_but_curious_server"
+    """Coordinator follows the protocol but inspects all client uploads."""
+
+    EAVESDROPPER = "eavesdropper"
+    """Observes wire traffic only; cannot inject."""
+
+    COLLUDING_CLIENTS = "colluding_clients"
+    """A subset of clients pool their views to attack a target client."""
+
+    EXTERNAL_QUERIER = "external_querier"
+    """Queries the released global surrogate; no internal access."""</pre>
+      </div>
+
+      <div class="block">
+        <h3>ProtectedAsset (verbatim enum)</h3>
+        <pre class="code py">class ProtectedAsset(str, Enum):
+    """What we promise to keep private."""
+
+    INDIVIDUAL_TRAINING_RECORD = "individual_training_record"
+    """Membership privacy: whether any single training row was in a client's set."""
+
+    LABEL_DISTRIBUTION = "label_distribution"
+    """The per-class frequencies on each client (relevant under quantity skew)."""
+
+    LOCAL_MODEL_STRUCTURE = "local_model_structure"
+    """The teacher's internal tree splits — not protected here; out of scope."""</pre>
+        <div class="callout warn"><strong>What's explicitly out of scope</strong>
+          <code class="inline">LOCAL_MODEL_STRUCTURE</code> is enumerated but
+          <em>not</em> protected — the framework's threat model openly admits the
+          teacher's internal splits are not defended. The surrogate that leaves
+          the client is the only object the DP analysis covers.
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>ThreatModel — frozen, slotted, default-safe</h3>
+        <pre class="code py">@dataclass(frozen=True, slots=True)
+class ThreatModel:
+    """Compact description of who's attacking what, with what assumptions.
+
+    Defaults are the most common federated setting: honest-but-curious server,
+    membership privacy for individual training records via row-level DP.
+    """
+
+    adversary: AdversaryCapability = AdversaryCapability.HONEST_BUT_CURIOUS_SERVER
+    protected: tuple[ProtectedAsset, ...] = (
+        ProtectedAsset.INDIVIDUAL_TRAINING_RECORD,
+    )
+    target_epsilon: float = 1.0
+    target_delta: float = 1e-5
+    notes: str = ""
+
+    def summary(self) -> str:
+        return (
+            f"Adversary: {self.adversary.value}\n"
+            f"Protects: {[p.value for p in self.protected]}\n"
+            f"Target:   ε ≤ {self.target_epsilon}, δ ≤ {self.target_delta:.0e}\n"
+            f"Notes:    {self.notes or '(none)'}"
+        )</pre>
+        <p>
+          <code class="inline">frozen=True</code> + <code class="inline">slots=True</code>
+          make the threat model immutable and small. The default ε ≤ 1.0,
+          δ ≤ 1e-5 is the canonical "moderate-DP" budget; the
+          <code class="inline">summary()</code> string is written verbatim into
+          experiment reports so the paper's threat-model paragraph is always
+          consistent with the runtime config.
+        </p>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p12"><span class="label">← Previous</span><span class="name">12 · Surrogate Distiller</span></a>
+        <a class="next" data-target="p14"><span class="label">Next →</span><span class="name">14 · DP Mechanisms</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 14 — DP Mechanisms
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p14">
+      <div class="hero">
+        <div class="crumb">Privacy · Hook A · 14 / 27</div>
+        <h2>DP Mechanisms — Laplace, Gaussian, Null</h2>
+        <p class="lead">
+          The three concrete privatisers that implement <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">DPMechanismProtocol</code>.
+          Each takes a soft-label matrix and returns a noisy version plus a
+          per-round privacy cost (ε, δ).
+        </p>
+        <span class="file-pill">src/fedrf_distill/privacy/mechanisms.py</span>
+      </div>
+
+      <div class="block">
+        <h3>BaseDPMechanism — the ABC with a noise-sampling hook</h3>
+        <pre class="code py">@dataclass
+class BaseDPMechanism(ABC):
+    """Abstract base for every DP mechanism that protects soft labels."""
+
+    rng: np.random.Generator = field(default_factory=np.random.default_rng)
+
+    name: str = "base"
+    sensitivity: float = 1.0  # default L1 sensitivity
+
+    @abstractmethod
+    def _sample_noise(self, shape: tuple[int, ...], epsilon: float, delta: float) -&gt; np.ndarray:
+        """Return a noise array matching ``shape``."""
+
+    def privatize(
+        self,
+        x: SoftLabels,
+        epsilon: float,
+        delta: float = 0.0,
+    ) -> SoftLabels:
+        """Return ``x + noise`` clipped to a valid probability simplex."""
+        if epsilon &lt;= 0:
+            raise ConfigurationError(f"epsilon must be &gt; 0, got {epsilon}")
+        if not 0 &lt;= delta &lt; 1:
+            raise ConfigurationError(f"delta must be in [0, 1), got {delta}")
+        x = np.asarray(x, dtype=np.float64)
+        noise = self._sample_noise(x.shape, epsilon, delta)
+        out = x + noise
+        np.clip(out, 0.0, 1.0, out=out)
+        row_sums = out.sum(axis=1, keepdims=True)
+        row_sums = np.where(row_sums &lt;= 0, 1.0, row_sums)
+        return out / row_sums  # type: ignore[no-any-return]</pre>
+        <p>
+          <strong>Template-method pattern:</strong> subclasses only implement
+          <code class="inline">_sample_noise</code>; the public
+          <code class="inline">privatize</code> handles validation, clipping, and
+          row renormalisation uniformly. Clip-and-renormalise is privacy-preserving
+          by the post-processing theorem of DP.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>LaplaceMechanism — pure ε-DP (δ = 0)</h3>
+        <pre class="code py">@dataclass
+class LaplaceMechanism(BaseDPMechanism):
+    """Pure ε-DP via i.i.d. Laplace noise.
+
+    Scale ``b = sensitivity / ε``. δ is ignored (always 0).
+    """
+
+    name: str = "laplace"
+    sensitivity: float = 2.0  # L1 sensitivity for one-row swap
+
+    def _sample_noise(
+        self, shape: tuple[int, ...], epsilon: float, delta: float
+    ) -> np.ndarray:
+        b = self.sensitivity / epsilon
+        return self.rng.laplace(loc=0.0, scale=b, size=shape)</pre>
+        <p>
+          L1 sensitivity Δ₁ = 2: swapping one training row can move at most one
+          unit of probability mass from class A to class B, total L1 change 2.
+          Scale <code class="inline">b = 2/ε</code>.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>GaussianMechanism — (ε, δ)-DP via the classical analytic bound</h3>
+        <pre class="code py">@dataclass
+class GaussianMechanism(BaseDPMechanism):
+    """(ε, δ)-DP via i.i.d. Gaussian noise.
+
+    Uses the classical analytic bound
+
+        σ ≥ Δ₂ · √(2 ln(1.25 / δ)) / ε
+    """
+
+    name: str = "gaussian"
+    sensitivity: float = float(np.sqrt(2.0))  # L2 sensitivity for one-row swap
+
+    def _sample_noise(
+        self, shape: tuple[int, ...], epsilon: float, delta: float
+    ) -> np.ndarray:
+        if delta &lt;= 0:
+            raise ConfigurationError(
+                "GaussianMechanism requires delta &gt; 0; pass δ ∈ (0, 1)."
+            )
+        sigma = self.sensitivity * float(np.sqrt(2.0 * np.log(1.25 / delta))) / epsilon
+        return self.rng.normal(loc=0.0, scale=sigma, size=shape)</pre>
+        <p>
+          L2 sensitivity Δ₂ = √2 (Pythagorean bound on the L1 = 2 simplex move).
+          Hard-fails if δ ≤ 0 — the Gaussian mechanism has no pure-DP variant.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>NullDPMechanism — the no-privacy baseline</h3>
+        <pre class="code py">@dataclass
+class NullDPMechanism(BaseDPMechanism):
+    """Pass-through; useful as the no-privacy control in experiments."""
+
+    name: str = "null"
+    sensitivity: float = 0.0
+
+    def _sample_noise(self, shape, epsilon, delta) -> np.ndarray:
+        return np.zeros(shape, dtype=np.float64)
+
+    def privatize(self, x, epsilon, delta=0.0):
+        # Skip clipping/renorm; identity is faster and side-effect free.
+        return np.asarray(x, dtype=np.float64)</pre>
+        <p>
+          Note: <code class="inline">NullDPMechanism</code> overrides
+          <code class="inline">privatize</code> directly to bypass the clip/renorm
+          step the base class would do — keeping no-DP runs bit-identical to
+          unprivatised soft labels.
+        </p>
+      </div>
+
+      <div class="callout danger"><strong>Sensitivity bounds, verbatim</strong>
+        <ul style="margin:8px 0 0 18px">
+          <li><strong>Laplace</strong>: <code class="inline">sensitivity = 2.0</code> (L1).</li>
+          <li><strong>Gaussian</strong>: <code class="inline">sensitivity = float(np.sqrt(2.0))</code> (L2).</li>
+          <li><strong>Null</strong>: <code class="inline">sensitivity = 0.0</code> — no analysis needed.</li>
+        </ul>
+        These are derived from the same neighbouring-dataset argument (swap one
+        training row → at most one row of soft-label output changes).
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p13"><span class="label">← Previous</span><span class="name">13 · Threat Model</span></a>
+        <a class="next" data-target="p15"><span class="label">Next →</span><span class="name">15 · Accountant</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 15 — Privacy Accountant
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p15">
+      <div class="hero">
+        <div class="crumb">Privacy · Hook A · 15 / 27</div>
+        <h2>Privacy Accountant — composing ε across rounds</h2>
+        <p class="lead">
+          Single-round DP isn't enough — across T federated rounds, each client
+          burns ε on every emission. The accountant tracks cumulative
+          (ε, δ) using either Basic Composition or Rényi DP (RDP) and aborts
+          rounds that would breach the budget.
+        </p>
+        <span class="file-pill">src/fedrf_distill/privacy/accountant.py</span>
+      </div>
+
+      <div class="block">
+        <h3>PrivacyAccountantProtocol — shared interface</h3>
+        <pre class="code py">@dataclass(frozen=True, slots=True)
+class PrivacyLedgerEntry:
+    """One row in the audit log of privacy expenditure."""
+
+    round_idx: int
+    client_id: int | None  # None for server-side aggregate steps
+    mechanism: str
+    epsilon: float
+    delta: float
+    sigma: float | None = None  # noise scale, when applicable
+
+
+@runtime_checkable
+class PrivacyAccountantProtocol(Protocol):
+    """Common interface for any DP accountant."""
+
+    def record(
+        self,
+        round_idx: int,
+        mechanism: str,
+        epsilon: float,
+        delta: float,
+        client_id: int | None = None,
+        sigma: float | None = None,
+    ) -> None: ...
+
+    def cumulative(self) -> tuple[float, float]: ...
+
+    @property
+    def ledger(self) -> list[PrivacyLedgerEntry]: ...</pre>
+        <p>
+          Two accountants implement this protocol — pick via
+          <code class="inline">cfg.dp.accountant: "basic" | "rdp"</code>.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>BasicCompositionAccountant — Dwork-Roth additive</h3>
+        <pre class="code py">@dataclass
+class BasicCompositionAccountant:
+    """ε and δ accumulate additively across all recorded events.
+
+    Theorem (Dwork-Roth, 2014): the composition of k mechanisms, each
+    (εᵢ, δᵢ)-DP, is (Σ εᵢ, Σ δᵢ)-DP. This is loose but unconditional.
+    """
+
+    _ledger: list[PrivacyLedgerEntry] = field(default_factory=list)
+
+    def record(self, round_idx, mechanism, epsilon, delta,
+               client_id=None, sigma=None) -> None:
+        self._ledger.append(
+            PrivacyLedgerEntry(
+                round_idx=round_idx,
+                client_id=client_id,
+                mechanism=mechanism,
+                epsilon=epsilon,
+                delta=delta,
+                sigma=sigma,
+            )
+        )
+
+    def cumulative(self) -> tuple[float, float]:
+        eps = sum(e.epsilon for e in self._ledger)
+        delta = sum(e.delta for e in self._ledger)
+        return eps, delta</pre>
+      </div>
+
+      <div class="block">
+        <h3>RDPAccountant — Rényi DP for Gaussian</h3>
+        <p>
+          Records the noise scale <code class="inline">σ</code> per event and
+          converts the running RDP at a grid of orders α to an (ε, δ)-DP statement
+          via Mironov (2017) Proposition 3:
+        </p>
+        <pre class="code py">ε_DP(δ) = min_α  RDP(α) + log(1/δ) / (α - 1)</pre>
+        <pre class="code py">@dataclass
+class RDPAccountant:
+    target_delta: float = 1e-5
+    alphas: tuple[float, ...] = field(
+        default_factory=lambda: tuple(
+            list(range(2, 64)) + [128.0, 256.0, 512.0, 1024.0]
+        )
+    )
+    _ledger: list[PrivacyLedgerEntry] = field(default_factory=list)
+    # rdp[i] = sum of α_i-RDP contributions so far
+    _rdp: np.ndarray = field(init=False)
+
+    def __post_init__(self) -> None:
+        self._rdp = np.zeros(len(self.alphas), dtype=np.float64)
+
+    def record(self, round_idx, mechanism, epsilon, delta,
+               client_id=None, sigma=None) -> None:
+        # For Gaussian mechanism with sensitivity 1 and noise σ, α-RDP = α / (2σ²).
+        # Callers must pass `sigma` for Gaussian; for any other mechanism we fall
+        # back to basic composition for that event.
+        if mechanism == "gaussian" and sigma is not None and sigma &gt; 0:
+            increments = np.asarray(self.alphas, dtype=np.float64) / (2.0 * sigma**2)
+            self._rdp += increments
+        else:
+            # Treat as a pure ε, δ event — add to the *converted* output ε later.
+            pass
+        self._ledger.append(PrivacyLedgerEntry(
+            round_idx=round_idx, client_id=client_id, mechanism=mechanism,
+            epsilon=epsilon, delta=delta, sigma=sigma,
+        ))
+
+    def cumulative(self) -> tuple[float, float]:
+        """Return tightest (ε, δ) over the grid of α."""
+        alphas = np.asarray(self.alphas, dtype=np.float64)
+        with np.errstate(divide="ignore"):
+            log_term = np.log(1.0 / self.target_delta) / (alphas - 1.0)
+        eps_grid = self._rdp + log_term
+        # Fold in any non-Gaussian events via basic composition for safety
+        non_g = [e for e in self._ledger if e.mechanism != "gaussian" or e.sigma is None]
+        extra_eps = sum(e.epsilon for e in non_g)
+        extra_delta = sum(e.delta for e in non_g)
+        eps_total = float(eps_grid.min()) + extra_eps
+        return eps_total, self.target_delta + extra_delta</pre>
+        <div class="callout note"><strong>The α grid, verbatim</strong>
+          <code class="inline">tuple(list(range(2, 64)) + [128.0, 256.0, 512.0, 1024.0])</code>
+          — 62 integer orders between 2 and 63 inclusive plus four power-of-two
+          tail orders. The grid is wide enough to capture both small-σ
+          (high-RDP-curvature) and large-σ (large-α-needed) regimes; the final
+          <code class="inline">eps_grid.min()</code> picks the tightest α per call.
+        </div>
+        <div class="callout warn"><strong>Mixed mechanisms — soft fallback</strong>
+          If a Laplace event is recorded into the RDP accountant (or a Gaussian
+          event without σ), the RDP increment is skipped and the event's
+          <code class="inline">(ε, δ)</code> is added to the converted output
+          via basic composition. This keeps mixed runs sound at the cost of
+          tightness on the non-Gaussian portion.
+        </div>
+      </div>
+
+      <div class="callout note"><strong>Where exhaustion is detected</strong>
+        <code class="inline">cumulative()</code> is queried by
+        <code class="inline">FederatedCoordinator.round</code> after every
+        recording step — if the running ε exceeds
+        <code class="inline">target_budget.epsilon</code>, the coordinator raises
+        <code class="inline">PrivacyBudgetExhausted</code> (Page 04). The
+        accountants themselves never raise.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p14"><span class="label">← Previous</span><span class="name">14 · DP Mechanisms</span></a>
+        <a class="next" data-target="p16"><span class="label">Next →</span><span class="name">16 · Attack (Legacy)</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 16 — Privacy / Attack (legacy)
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p16">
+      <div class="hero">
+        <div class="crumb">Privacy · Hook A · 16 / 27</div>
+        <h2>Legacy MIA (confidence-based)</h2>
+        <p class="lead">
+          The original membership inference module — kept for backwards
+          compatibility. <b>The newer Yeom-style loss-threshold attack in
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">eval/mia.py</code> is preferred</b> because it produces tighter,
+          comparable AUCs across architectures.
+        </p>
+        <span class="file-pill">src/fedrf_distill/privacy/attack.py</span>
+      </div>
+
+      <div class="block">
+        <h3>MIAResult — three fields, all set per call</h3>
+        <pre class="code py">@dataclass(slots=True)
+class MIAResult:
+    """Output of one MIA run."""
+
+    auc: float
+    """AUC of the membership classifier. 0.5 = chance (best privacy)."""
+
+    advantage: float
+    """``2 * (AUC - 0.5)`` — the adversary's gain over chance, in [-1, 1]."""
+
+    tpr_at_low_fpr: float
+    """True-positive rate at 1% false-positive rate. The relevant metric for
+    privacy auditing (Carlini-style)."""</pre>
+        <p>
+          Three diagnostics: AUC (aggregate ranking), advantage (linear rescale
+          centred on chance), and TPR@1%FPR (the Carlini-preferred strict-privacy
+          metric). All computed from the same threshold sweep.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>membership_inference_attack — confidence as the test statistic</h3>
+        <pre class="code py">def membership_inference_attack(
+    target_model: ModelAdapterProtocol,
+    member_X: FeatureMatrix,
+    nonmember_X: FeatureMatrix,
+) -> MIAResult:
+    """Run a confidence-based MIA against ``target_model``."""
+    p_member = target_model.predict_proba(member_X)
+    p_nonmember = target_model.predict_proba(nonmember_X)
+    score_member = p_member.max(axis=1)
+    score_nonmember = p_nonmember.max(axis=1)
+
+    scores = np.concatenate([score_member, score_nonmember])
+    labels = np.concatenate(
+        [np.ones(len(score_member)), np.zeros(len(score_nonmember))]
+    )
+
+    auc = _roc_auc(labels, scores)
+    advantage = float(2.0 * (auc - 0.5))
+    tpr_at_low_fpr = _tpr_at_fpr(labels, scores, target_fpr=0.01)
+    return MIAResult(auc=auc, advantage=advantage, tpr_at_low_fpr=tpr_at_low_fpr)</pre>
+        <p>
+          Standard Shokri-style attack simplification (Yeom et al. 2018): the
+          test statistic is <code class="inline">max(p)</code> — high confidence
+          implies "likely training member". This module asks the
+          <em>target</em> for predictions directly and skips shadow-model training
+          since the soft labels are already released.
+        </p>
+      </div>
+
+      <div class="block">
+        <h3>Lightweight metric helpers (no sklearn dependency)</h3>
+        <pre class="code py">def _roc_auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
+    """Compute ROC AUC without sklearn (avoids cross-dataset overhead)."""
+    order = np.argsort(-y_score)
+    y_sorted = y_true[order]
+    n_pos = int(y_sorted.sum())
+    n_neg = len(y_sorted) - n_pos
+    if n_pos == 0 or n_neg == 0:
+        return 0.5
+    cum_pos = np.cumsum(y_sorted)
+    # AUC = (Σ rank_pos − n_pos(n_pos+1)/2) / (n_pos * n_neg)
+    rank_sum = np.sum(np.where(y_sorted &gt; 0, np.arange(1, len(y_sorted) + 1), 0))
+    auc = (rank_sum - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg)
+    return float(auc)
+
+
+def _tpr_at_fpr(y_true, y_score, target_fpr) -> float:
+    """TPR at the lowest threshold whose FPR ≤ target_fpr."""
+    order = np.argsort(-y_score)
+    y_sorted = y_true[order]
+    tp = np.cumsum(y_sorted)
+    fp = np.cumsum(1.0 - y_sorted)
+    n_pos = max(tp[-1], 1.0)
+    n_neg = max(fp[-1], 1.0)
+    tpr = tp / n_pos
+    fpr = fp / n_neg
+    mask = fpr &lt;= target_fpr
+    if not mask.any():
+        return 0.0
+    return float(tpr[mask].max())</pre>
+      </div>
+
+      <div class="callout warn"><strong>Why keep it?</strong>
+        Confidence MIA is the fastest reasonable attack: no per-sample CE loss,
+        no labels required for the non-member set. The newer Yeom loss-threshold
+        attack in <code class="inline">eval/mia.py</code> (Page 26) is preferred
+        for the paper's empirical privacy curve because it bounds advantage more
+        tightly, but both are still run on every config for triangulation.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p15"><span class="label">← Previous</span><span class="name">15 · Accountant</span></a>
+        <a class="next" data-target="p17"><span class="label">Next →</span><span class="name">17 · Aggregators</span></a>
+      </div>
+    </section>
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 17 — Aggregators (3 implementations)
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p17">
+      <div class="hero">
+        <div class="crumb">Aggregation · 17 / 27</div>
+        <h2>Aggregators — three strategies for combining K clients</h2>
+        <p class="lead">
+          The aggregator is what the coordinator runs after collecting
+          <code class="inline">ClientUpdate</code>s. It re-instantiates each
+          client's surrogate via <code class="inline">deserialize_adapter</code>,
+          runs it against the shared <code class="inline">proxy_X</code>, and
+          returns a single <code class="inline">BaseModelAdapter</code>.
+          We provide three: a hard-vote baseline, the canonical proxy
+          re-distillation, and a sample-count-weighted variant (FedAvg-style).
+        </p>
+        <span class="file-pill">src/fedrf_distill/aggregation/</span>
+      </div>
+
+      <div class="block">
+        <h3>The protocol</h3>
+        <pre class="code py">@runtime_checkable
+class AggregatorProtocol(Protocol):
+    """Combines K client surrogates into a single global surrogate.
+
+    The default `ProxyRedistillationAggregator` runs each surrogate on a shared
+    proxy dataset, averages the probability outputs, then re-distils that ensemble
+    into one new global surrogate.
+    """
+
+    name: str
+
+    def aggregate(
+        self,
+        client_updates: list[ClientUpdate],
+        proxy_X: FeatureMatrix,
+        classes: list[int],
+    ) -> ModelAdapterProtocol: ...</pre>
+      </div>
+
+      <div class="block">
+        <h3>1 · MajorityVoteAggregator</h3>
+        <p>
+          Predicts a discrete label per proxy row from each client, takes the
+          per-row mode, then trains a fresh student on
+          <code class="inline">(proxy_X, vote_labels)</code>. No probability
+          information survives — intentionally the weakest baseline.
+        </p>
+        <pre class="code py">@dataclass
+class MajorityVoteAggregator:
+    """Predict hard label on proxy via majority vote, then fit a new student."""
+
+    name: ClassVar[str] = "majority_vote"
+
+    student_framework: str = "sklearn_dt"
+    student_kwargs: dict = field(default_factory=dict)
+    random_state: int | None = None
+
+    def aggregate(
+        self,
+        client_updates: list[ClientUpdate],
+        proxy_X: FeatureMatrix,
+        classes: list[int],
+    ) -> BaseModelAdapter:
+        if not client_updates:
+            raise AggregationError("Cannot aggregate an empty client set.")
+
+        votes = np.zeros((proxy_X.shape[0], len(classes)), dtype=np.int64)
+        class_to_col = {c: i for i, c in enumerate(classes)}
+        for upd in client_updates:
+            student = deserialize_adapter(
+                upd.surrogate_blob, upd.surrogate_class_path
+            )
+            preds = student.predict(proxy_X)
+            for i, p in enumerate(preds):
+                votes[i, class_to_col[int(p)]] += 1
+        vote_labels = np.asarray(classes, dtype=np.int64)[np.argmax(votes, axis=1)]
+
+        kw = dict(self.student_kwargs)
+        if self.random_state is not None and "random_state" not in kw:
+            kw["random_state"] = self.random_state
+        student = make_model(self.student_framework, **kw)
+        student.fit(proxy_X, vote_labels)
+        return student</pre>
+      </div>
+
+      <div class="block">
+        <h3>2 · ProxyRedistillationAggregator (canonical)</h3>
+        <p>
+          Weighted average of per-client probability matrices (after column
+          alignment via <code class="inline">_align_columns</code>) followed by
+          re-distillation into one global surrogate via
+          <code class="inline">SurrogateDistiller</code>.
+        </p>
+        <pre class="code py">@dataclass
+class ProxyRedistillationAggregator:
+    """Average client surrogate predictions on proxy data, then re-distil."""
+
+    name: ClassVar[str] = "proxy_redistillation"
+
+    student_framework: str = "sklearn_dt"
+    distillation_mode: DistillationMode = DistillationMode.ARGMAX_WEIGHTED
+    student_kwargs: dict = field(default_factory=dict)
+    random_state: int | None = None
+    weighting: str = "uniform"  # uniform | n_samples
+
+    def aggregate(
+        self,
+        client_updates: list[ClientUpdate],
+        proxy_X: FeatureMatrix,
+        classes: list[int],
+    ) -> BaseModelAdapter:
+        if not client_updates:
+            raise AggregationError("Cannot aggregate an empty client set.")
+        if proxy_X.size == 0:
+            raise AggregationError("Cannot aggregate with an empty proxy_X.")
+
+        # 1) Get each client's predict_proba on the proxy
+        per_client_p: list[np.ndarray] = []
+        weights: list[float] = []
+        for upd in client_updates:
+            student = deserialize_adapter(
+                upd.surrogate_blob, upd.surrogate_class_path
+            )
+            p = student.predict_proba(proxy_X)
+            p = _align_columns(p, student.classes(), classes)
+            per_client_p.append(p)
+            weights.append(self._weight_for(upd))
+
+        weights_arr = np.asarray(weights, dtype=np.float64)
+        weights_arr /= weights_arr.sum() if weights_arr.sum() > 0 else 1.0
+        ensemble = np.average(np.stack(per_client_p), axis=0, weights=weights_arr)
+        # Renormalise defensively (averaging stochastic rows can drift epsilon-tiny)
+        ensemble /= np.maximum(ensemble.sum(axis=1, keepdims=True), 1e-12)
+
+        # 2) Re-distil into one global surrogate
+        distiller = SurrogateDistiller(
+            student_framework=self.student_framework,
+            mode=self.distillation_mode,
+            student_kwargs=self.student_kwargs,
+            random_state=self.random_state,
+        )
+        return distiller.distill(proxy_X, ensemble, classes)
+
+    def _weight_for(self, upd: ClientUpdate) -> float:
+        if self.weighting == "uniform":
+            return 1.0
+        if self.weighting == "n_samples":
+            return float(max(upd.n_samples, 1))
+        raise AggregationError(f"Unknown weighting scheme: {self.weighting}")</pre>
+      </div>
+
+      <div class="block">
+        <h3>3 · ConfidenceWeightedAggregator</h3>
+        <p>
+          A one-line subclass of
+          <code class="inline">ProxyRedistillationAggregator</code> that flips
+          the weighting scheme to <code class="inline">"n_samples"</code> —
+          larger clients contribute proportionally more to the ensemble average.
+          This is the FedAvg analogue in our distillation pipeline.
+        </p>
+        <pre class="code py">@dataclass
+class ConfidenceWeightedAggregator(ProxyRedistillationAggregator):
+    """Re-distil with sample-count weighting."""
+
+    name: str = "confidence_weighted"  # type: ignore[assignment]
+    weighting: str = "n_samples"</pre>
+      </div>
+
+      <div class="callout note"><strong>Column alignment</strong>
+        <code class="inline">_align_columns(proba, fitted_classes, global_classes)</code>
+        re-indexes a per-client probability matrix so its columns follow the
+        coordinator's <code class="inline">classes</code> order, zero-padding any
+        classes the client never saw locally. This is what makes Non-IID Dirichlet
+        partitions safe to ensemble: a client that only saw classes {0, 2} can
+        still contribute to a global {0, 1, 2, 3} aggregation.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p16"><span class="label">← Previous</span><span class="name">16 · Attack (Legacy)</span></a>
+        <a class="next" data-target="p18"><span class="label">Next →</span><span class="name">18 · Meta-Learner</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 18 — Meta-Learner (Stacking)
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p18">
+      <div class="hero">
+        <div class="crumb">Meta · 18 / 27</div>
+        <h2>StackingMetaLearner — local + global feature fusion</h2>
+        <p class="lead">
+          Given a just-broadcast global surrogate <code class="inline">G</code>
+          and a client's local data <code class="inline">(X_local, y_local)</code>,
+          stacking augments features as
+          <code class="inline">X_aug = [X_local || G.predict_proba(X_local)]</code>
+          and refits the client's local model on
+          <code class="inline">(X_aug, y_local)</code>. Wolpert (1992) re-cast
+          for FL. Crucially, <strong>y_local is never modified</strong>: mixing
+          y_local with G's argmax (as some prior work does) would bias M toward
+          G and erase the local advantage.
+        </p>
+        <span class="file-pill">src/fedrf_distill/meta/stacking.py</span>
+      </div>
+
+      <div class="block">
+        <h3>The factory protocol</h3>
+        <pre class="code py">class ModelFactory(Protocol):
+    """Callable that returns a fresh, unfitted :class:`ModelAdapterProtocol`."""
+
+    def __call__(self) -> ModelAdapterProtocol: ...</pre>
+      </div>
+
+      <div class="block">
+        <h3>StackingMetaLearner.refine</h3>
+        <pre class="code py">@dataclass
+class StackingMetaLearner:
+    """Refines a local model by appending the global surrogate's soft labels."""
+
+    name: ClassVar[str] = "stacking"
+
+    # If True, normalise the augmented probability columns to zero-mean, unit-
+    # variance before fitting — sometimes helps when local features are heavily
+    # scaled (e.g. age in years, income in USD). Trees are invariant to monotone
+    # transforms, so this is off by default.
+    standardise_proba_cols: bool = False
+
+    def refine(
+        self,
+        X_local: FeatureMatrix,
+        y_local: LabelVector,
+        global_surrogate: ModelAdapterProtocol,
+        local_model_factory: ModelFactory,
+    ) -> StackedAdapter:
+        """Return a freshly-fitted local model trained on stacked features."""
+        X_local = np.asarray(X_local, dtype=np.float64)
+        proba = np.asarray(global_surrogate.predict_proba(X_local), dtype=np.float64)
+        if self.standardise_proba_cols:
+            proba, _stats = _fit_standardise(proba)
+        else:
+            _stats = None
+        X_aug = np.concatenate([X_local, proba], axis=1)
+
+        new_model = local_model_factory()
+        new_model.fit(X_aug, y_local)
+        return StackedAdapter(
+            inner=new_model,
+            global_surrogate=global_surrogate,
+            standardise_stats=_stats,
+        )</pre>
+      </div>
+
+      <div class="block">
+        <h3>StackedAdapter — auto-augments at predict-time</h3>
+        <p>
+          The wrapper returned by <code class="inline">refine</code> is itself a
+          <code class="inline">BaseModelAdapter</code>, so it's a drop-in
+          replacement for the original local model. It bypasses the base class'
+          fit/predict_proba flow because <code class="inline">_inner</code> is
+          already fitted.
+        </p>
+        <pre class="code py">class StackedAdapter(BaseModelAdapter):
+    """Wraps a refined local model + the global surrogate used during training.
+
+    Predictions on raw X are turned into stacked predictions automatically.
+    Serialisation includes the global surrogate so the wire format remains
+    self-contained.
+    """
+
+    framework: ClassVar[str] = "stacked"
+
+    def __init__(
+        self,
+        inner: ModelAdapterProtocol,
+        global_surrogate: ModelAdapterProtocol,
+        standardise_stats: tuple[np.ndarray, np.ndarray] | None = None,
+    ) -> None:
+        super().__init__()
+        self._inner = inner
+        self._global = global_surrogate
+        self._stats = standardise_stats
+        self._fitted = True
+        self._classes = list(inner.classes())
+
+    def predict_proba(self, X: FeatureMatrix) -> SoftLabels:
+        X_aug = self._augment(X)
+        return self._inner.predict_proba(X_aug)
+
+    def predict(self, X: FeatureMatrix) -> LabelVector:
+        X_aug = self._augment(X)
+        return self._inner.predict(X_aug)
+
+    def n_estimators(self) -> int:
+        return self._inner.n_estimators()
+
+    def _augment(self, X: FeatureMatrix) -> FeatureMatrix:
+        X = np.asarray(X, dtype=np.float64)
+        proba = np.asarray(self._global.predict_proba(X), dtype=np.float64)
+        if self._stats is not None:
+            mu, sd = self._stats
+            proba = (proba - mu) / sd
+        return np.concatenate([X, proba], axis=1)</pre>
+      </div>
+
+      <div class="callout warn"><strong>Privacy boundary</strong>
+        The meta-learner is fit on <i>local</i> data and stays on-device. The
+        global model's probabilities act as features but never leave the client,
+        so this layer does not consume any DP budget.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p17"><span class="label">← Previous</span><span class="name">17 · Aggregators</span></a>
+        <a class="next" data-target="p19"><span class="label">Next →</span><span class="name">19 · Client</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 19 — Federated Client
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p19">
+      <div class="hero">
+        <div class="crumb">Topology · 19 / 27</div>
+        <h2>FederatedClient — the leaf of the system</h2>
+        <p class="lead">
+          One client owns its local data <code class="inline">(X_local, y_local)</code>,
+          a teacher (full RF/boosting ensemble), and all the policy bits
+          injected by DI: soft-label generator, DP mechanism, surrogate
+          distiller, optional meta-learner.
+          <code class="inline">FederatedClient</code> is the only place where
+          private data lives; everything else operates on aggregates.
+        </p>
+        <span class="file-pill">src/fedrf_distill/client/client.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Construction</h3>
+        <pre class="code py">@dataclass
+class FederatedClient:
+    """Stateful federated client."""
+
+    client_id: ClientID
+    X_local: FeatureMatrix
+    y_local: LabelVector
+    teacher_factory: Any  # Callable[[], ModelAdapterProtocol]
+    soft_label_generator: SoftLabelGenerator
+    distiller: SurrogateDistillerProtocol
+    dp_mechanism: DPMechanismProtocol
+    epsilon_per_round: float = 1.0
+    delta_per_round: float = 1e-5
+    meta_learner: MetaLearnerProtocol | None = None
+
+    teacher: ModelAdapterProtocol | None = field(default=None, init=False)
+    global_surrogate: ModelAdapterProtocol | None = field(default=None, init=False)
+    refined_model: ModelAdapterProtocol | None = field(default=None, init=False)
+    classes: list[int] = field(default_factory=list, init=False)
+
+    def __post_init__(self) -> None:
+        self.X_local = np.asarray(self.X_local, dtype=np.float64)
+        self.y_local = np.asarray(self.y_local, dtype=np.int64)
+        if self.X_local.shape[0] != self.y_local.shape[0]:
+            raise ValueError(
+                f"client {self.client_id}: X has {self.X_local.shape[0]} rows, "
+                f"y has {self.y_local.shape[0]}."
+            )</pre>
+      </div>
+
+      <div class="block">
+        <h3>local_train — one round of work</h3>
+        <p>
+          Teacher fit → soft labels → DP privatisation → distil into surrogate
+          → package as <code class="inline">ClientUpdate</code>. The surrogate
+          is the only artifact that leaves the client.
+        </p>
+        <pre class="code py">def local_train(self) -> ClientUpdate:
+    """Teacher fit → soft labels → DP → surrogate → packaged update."""
+    # 1) Train teacher
+    self.teacher = self.teacher_factory()
+    self.teacher.fit(self.X_local, self.y_local)
+    self.classes = self.teacher.classes()
+
+    # 2) Soft labels
+    proba = self.soft_label_generator.generate(self.teacher, self.X_local)
+
+    # 3) Privacy
+    proba_priv = self.dp_mechanism.privatize(
+        proba, epsilon=self.epsilon_per_round, delta=self.delta_per_round
+    )
+
+    # 4) Distil → surrogate
+    surrogate = self.distiller.distill(self.X_local, proba_priv, self.classes)
+    blob, class_path = serialize_adapter(surrogate)
+
+    # 5) Package
+    return ClientUpdate(
+        client_id=self.client_id,
+        framework=surrogate.framework,
+        surrogate_blob=blob,
+        surrogate_class_path=class_path,
+        n_samples=int(self.X_local.shape[0]),
+        classes=list(self.classes),
+        eps_spent_this_round=float(self.epsilon_per_round)
+        if self.dp_mechanism.name != "null"
+        else 0.0,
+        metadata={"teacher_framework": self.teacher.framework},
+    )</pre>
+      </div>
+
+      <div class="block">
+        <h3>apply_global — receive broadcast, optionally refine</h3>
+        <pre class="code py">def apply_global(self, artifact: GlobalArtifact) -> None:
+    """Store the broadcast global surrogate; optionally run meta-learning."""
+    self.global_surrogate = deserialize_adapter(
+        artifact.global_surrogate_blob, artifact.global_surrogate_class_path
+    )
+
+    if self.meta_learner is not None:
+        # The local model factory restores a teacher-style adapter; we want
+        # the same teacher type as last round.
+        self.refined_model = self.meta_learner.refine(  # type: ignore[assignment]
+            X_local=self.X_local,
+            y_local=self.y_local,
+            global_surrogate=self.global_surrogate,
+            local_model_factory=self.teacher_factory,
+        )</pre>
+      </div>
+
+      <div class="block">
+        <h3>evaluate_local — best-available view</h3>
+        <pre class="code py">def evaluate_local(
+    self, X: FeatureMatrix, y: LabelVector
+) -> dict[str, float]:
+    """Return accuracy / F1 of the *current best* local view of the model."""
+    model = self.refined_model or self.global_surrogate or self.teacher
+    if model is None:
+        return {"accuracy": float("nan"), "f1_macro": float("nan")}
+    from fedrf_distill.metrics.classification import classification_metrics
+
+    y_pred = model.predict(X)
+    return classification_metrics(y, y_pred)</pre>
+      </div>
+
+      <div class="callout danger"><strong>Privacy invariant</strong>
+        The surrogate <code class="inline">blob</code> in the returned
+        <code class="inline">ClientUpdate</code> is the <i>only</i> data that
+        flows toward the coordinator. <code class="inline">eps_spent_this_round</code>
+        is reported as 0 only when the DP mechanism's
+        <code class="inline">name == "null"</code> — every other mechanism
+        charges the per-round budget.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p18"><span class="label">← Previous</span><span class="name">18 · Meta-Learner</span></a>
+        <a class="next" data-target="p20"><span class="label">Next →</span><span class="name">20 · Coordinator</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 20 — Federated Coordinator
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p20">
+      <div class="hero">
+        <div class="crumb">Topology · 20 / 27</div>
+        <h2>FederatedCoordinator — the orchestrator at the root</h2>
+        <p class="lead">
+          The coordinator owns the proxy set, the aggregator, the privacy
+          accountant, and the canonical global class set. Each call to
+          <code class="inline">round(...)</code> ingests
+          <code class="inline">ClientUpdate</code>s, charges the accountant,
+          aggregates, and emits a <code class="inline">GlobalArtifact</code>
+          for broadcast.
+        </p>
+        <span class="file-pill">src/fedrf_distill/coordinator/coordinator.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Construction</h3>
+        <pre class="code py">@dataclass
+class FederatedCoordinator:
+    """The server side of FedRF-Distill."""
+
+    aggregator: AggregatorProtocol
+    proxy_X: FeatureMatrix
+    classes: list[int]
+    accountant: PrivacyAccountantProtocol = field(
+        default_factory=BasicCompositionAccountant
+    )
+    target_budget: PrivacyBudget | None = None
+    _history: list[GlobalArtifact] = field(default_factory=list, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self.proxy_X = np.asarray(self.proxy_X, dtype=np.float64)</pre>
+      </div>
+
+      <div class="block">
+        <h3>round — one aggregation step</h3>
+        <pre class="code py">def round(
+    self,
+    client_updates: list[ClientUpdate],
+    round_idx: int,
+    budget: PrivacyBudget,
+) -> GlobalArtifact:
+    """Run one aggregation round and return the artifact to broadcast.
+
+    ``budget`` is the *remaining* total budget at entry; we use it only
+    to ensure we don't push ourselves over.
+    """
+    # 1) Record each client's privacy cost into the ledger.
+    for upd in client_updates:
+        self.accountant.record(
+            round_idx=round_idx,
+            client_id=int(upd.client_id),
+            mechanism=upd.metadata.get("dp_mechanism", "unknown"),  # type: ignore[arg-type]
+            epsilon=float(upd.eps_spent_this_round),
+            delta=0.0,
+            sigma=upd.metadata.get("sigma"),  # type: ignore[arg-type]
+        )
+
+    # 2) Refuse to continue if the running ledger has exceeded the target.
+    running_eps, _ = self.accountant.cumulative()
+    if self.target_budget is not None and running_eps > self.target_budget.epsilon:
+        from fedrf_distill.core.exceptions import PrivacyBudgetExhausted
+
+        raise PrivacyBudgetExhausted(
+            requested_eps=running_eps,
+            remaining_eps=self.target_budget.epsilon,
+        )
+
+    # 3) Aggregate
+    global_student = self.aggregator.aggregate(
+        client_updates, self.proxy_X, self.classes
+    )
+
+    # 4) Package
+    blob, class_path = serialize_adapter(global_student)
+    artifact = GlobalArtifact(
+        round_idx=round_idx,
+        global_surrogate_blob=blob,
+        global_surrogate_class_path=class_path,
+        classes=list(self.classes),
+        aggregation_strategy=self.aggregator.name,
+        metadata={
+            "n_clients": len(client_updates),
+            "proxy_size": int(self.proxy_X.shape[0]),
+            "cumulative_eps": running_eps,
+        },
+    )
+    self._history.append(artifact)
+    return artifact
+
+@property
+def history(self) -> list[GlobalArtifact]:
+    return list(self._history)</pre>
+      </div>
+
+      <div class="callout note"><strong>What's NOT here</strong>
+        The coordinator does not call <code class="inline">client.local_train()</code>
+        itself — that's the orchestration runner's job (see page 21). The
+        coordinator is a pure function of <code class="inline">list[ClientUpdate]</code>,
+        which keeps it deployable as a server with no knowledge of how the
+        clients ran in parallel.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p19"><span class="label">← Previous</span><span class="name">19 · Client</span></a>
+        <a class="next" data-target="p21"><span class="label">Next →</span><span class="name">21 · Runner</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 21 — Orchestration / Runner
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p21">
+      <div class="hero">
+        <div class="crumb">Topology · 21 / 27</div>
+        <h2>ExperimentRunner — from YAML to RoundResult[]</h2>
+        <p class="lead">
+          The top-level driver. Takes one <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">ExperimentConfig</code>, builds every
+          component, runs T rounds, and returns the trajectory. Most CLI scripts
+          are thin wrappers over this class.
+        </p>
+        <span class="file-pill">src/fedrf_distill/orchestration/runner.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Builder helpers — five small switch tables</h3>
+        <pre class="code py">def _build_partitioner(cfg: ExperimentConfig):
+    p = cfg.partition
+    if p.strategy == "iid":
+        return IIDPartitioner()
+    if p.strategy == "dirichlet":
+        return DirichletPartitioner(alpha=p.alpha)
+    if p.strategy == "pathological":
+        return PathologicalPartitioner(k_classes_per_client=p.k_classes_per_client)
+    if p.strategy == "quantity_skew":
+        return QuantitySkewPartitioner(skew_exponent=p.skew_exponent)
+    raise ConfigurationError(f"Unknown partition strategy: {p.strategy}")
+
+
+def _build_dp_mechanism(cfg: ExperimentConfig):
+    rng = np.random.default_rng(cfg.dp.seed)
+    if cfg.dp.mechanism == "null":
+        return NullDPMechanism(rng=rng)
+    if cfg.dp.mechanism == "laplace":
+        return LaplaceMechanism(rng=rng)
+    if cfg.dp.mechanism == "gaussian":
+        return GaussianMechanism(rng=rng)
+    raise ConfigurationError(f"Unknown DP mechanism: {cfg.dp.mechanism}")
+
+
+def _build_aggregator(cfg: ExperimentConfig):
+    a = cfg.aggregator
+    common = dict(
+        student_framework=a.student_framework,
+        student_kwargs=dict(a.student_kwargs),
+        random_state=cfg.random_state,
+    )
+    if a.strategy == "proxy_redistillation":
+        return ProxyRedistillationAggregator(
+            distillation_mode=cfg.distillation.mode, **common
+        )
+    if a.strategy == "confidence_weighted":
+        return ConfidenceWeightedAggregator(
+            distillation_mode=cfg.distillation.mode, **common
+        )
+    if a.strategy == "majority_vote":
+        return MajorityVoteAggregator(**common)
+    raise ConfigurationError(f"Unknown aggregation strategy: {a.strategy}")
+
+
+def _build_accountant(cfg: ExperimentConfig):
+    if cfg.dp.accountant == "basic":
+        return BasicCompositionAccountant()
+    if cfg.dp.accountant == "rdp":
+        return RDPAccountant(target_delta=cfg.dp.target_delta)
+    raise ConfigurationError(f"Unknown accountant: {cfg.dp.accountant}")</pre>
+      </div>
+
+      <div class="block">
+        <h3>build_clients — K clients with Hook-B framework override</h3>
+        <pre class="code py">def build_clients(
+    cfg: ExperimentConfig,
+    shards: list[tuple[np.ndarray, np.ndarray]],
+) -> list[FederatedClient]:
+    """Instantiate K federated clients per the config."""
+    n_clients = len(shards)
+    # Per-client framework override (Hook B)
+    per_client = cfg.model.frameworks_per_client
+    if per_client and len(per_client) != n_clients:
+        raise ConfigurationError(
+            f"frameworks_per_client has {len(per_client)} entries but there are "
+            f"{n_clients} clients."
+        )
+
+    distiller = SurrogateDistiller(
+        student_framework=cfg.model.student_framework,
+        mode=cfg.distillation.mode,
+        student_kwargs=dict(cfg.model.student_kwargs),
+        random_state=cfg.random_state,
+    )
+    soft_gen = SoftLabelGenerator(
+        temperature=cfg.distillation.temperature,
+        floor=cfg.distillation.floor,
+    )
+    meta = (
+        StackingMetaLearner(standardise_proba_cols=cfg.meta.standardise_proba_cols)
+        if cfg.meta.enabled and cfg.meta.strategy == "stacking"
+        else None
+    )
+
+    clients: list[FederatedClient] = []
+    for k, (X_k, y_k) in enumerate(shards):
+        teacher_framework = per_client[k] if per_client else cfg.model.teacher_framework
+        teacher_kwargs = dict(cfg.model.teacher_kwargs)
+        teacher_kwargs.setdefault("random_state", cfg.random_state + k)
+
+        def factory(
+            fwk: str = teacher_framework, kw: dict[str, Any] = teacher_kwargs
+        ):  # closure-safe defaults
+            return make_model(fwk, **kw)
+
+        dp = _build_dp_mechanism(cfg)
+        clients.append(
+            FederatedClient(
+                client_id=ClientID(k),
+                X_local=X_k,
+                y_local=y_k,
+                teacher_factory=factory,
+                soft_label_generator=soft_gen,
+                distiller=distiller,
+                dp_mechanism=dp,
+                epsilon_per_round=cfg.dp.epsilon_per_round,
+                delta_per_round=cfg.dp.delta_per_round,
+                meta_learner=meta,
+            )
+        )
+    return clients
+
+
+def build_coordinator(
+    cfg: ExperimentConfig,
+    classes: list[int],
+    n_features: int,
+    feature_ref: np.ndarray | None = None,
+) -> FederatedCoordinator:
+    """Instantiate the federated coordinator."""
+    proxy_cfg = ProxyDataConfig(
+        source=ProxySource(cfg.proxy.source),
+        n_samples=cfg.proxy.n_samples,
+        seed=cfg.proxy.seed,
+        n_features=n_features,
+    )
+    proxy_X = build_proxy_dataset(proxy_cfg, external=feature_ref)
+    return FederatedCoordinator(
+        aggregator=_build_aggregator(cfg),
+        proxy_X=proxy_X,
+        classes=classes,
+        accountant=_build_accountant(cfg),
+        target_budget=PrivacyBudget(
+            epsilon=cfg.dp.target_epsilon, delta=cfg.dp.target_delta
+        ),
+    )</pre>
+      </div>
+
+      <div class="block">
+        <h3>ExperimentRunner.run — load · partition · build · loop · evaluate</h3>
+        <pre class="code py">@dataclass
+class ExperimentRunner:
+    """Stateful driver of the federated round loop."""
+
+    cfg: ExperimentConfig
+    round_results: list[RoundResult] = field(default_factory=list, init=False)
+
+    def run(self) -> list[RoundResult]:
+        from fedrf_distill.utils.seeding import set_global_seed
+
+        set_global_seed(self.cfg.random_state)
+
+        # 1) Load + split
+        ds = load_dataset(self.cfg.data.name)
+        n = ds.X.shape[0]
+        rng = np.random.default_rng(self.cfg.data.random_state)
+        order = rng.permutation(n)
+        n_test = int(round(n * self.cfg.data.test_fraction))
+        test_idx = order[:n_test]
+        train_idx = order[n_test:]
+        X_train, y_train = ds.X[train_idx], ds.y[train_idx]
+        X_test, y_test = ds.X[test_idx], ds.y[test_idx]
+        classes = sorted(int(c) for c in np.unique(ds.y).tolist())
+
+        # 2) Partition train
+        partitioner = _build_partitioner(self.cfg)
+        shards = partitioner.partition(
+            X_train,
+            y_train,
+            n_clients=self.cfg.partition.n_clients,
+            seed=self.cfg.partition.seed,
+        )
+
+        # 3) Build clients + coordinator
+        clients = build_clients(self.cfg, shards)
+        coordinator = build_coordinator(
+            self.cfg,
+            classes=classes,
+            n_features=X_train.shape[1],
+            feature_ref=X_train,
+        )
+
+        # 4) Round loop
+        for t in range(self.cfg.n_rounds):
+            with Timer() as timer:
+                updates = [c.local_train() for c in clients]
+                artifact = coordinator.round(
+                    updates, round_idx=t, budget=PrivacyBudget(
+                        epsilon=self.cfg.dp.target_epsilon,
+                        delta=self.cfg.dp.target_delta,
+                    )
+                )
+                for c in clients:
+                    c.apply_global(artifact)
+            # 5) Evaluate global on test set
+            global_model = deserialize_adapter(
+                artifact.global_surrogate_blob, artifact.global_surrogate_class_path
+            )
+            global_pred = global_model.predict(X_test)
+            global_proba = global_model.predict_proba(X_test)
+            global_metrics = classification_metrics(y_test, global_pred, global_proba)
+            cumulative_eps, cumulative_delta = coordinator.accountant.cumulative()
+            total_bytes = sum(len(u.surrogate_blob) for u in updates)
+
+            self.round_results.append(
+                RoundResult(
+                    round_idx=t,
+                    global_accuracy=global_metrics["accuracy"],
+                    global_f1_macro=global_metrics["f1_macro"],
+                    global_auc=global_metrics.get("auc"),
+                    per_client_metrics=[],  # populated by per-client eval in tests
+                    total_bytes_communicated=total_bytes,
+                    cumulative_epsilon=cumulative_eps,
+                    cumulative_delta=cumulative_delta,
+                    wall_clock_seconds=timer.elapsed,
+                )
+            )
+        return self.round_results</pre>
+      </div>
+
+      <div class="callout success"><strong>Reused by the eval pipeline</strong>
+        The <code class="inline">EvaluationPipeline</code> (page 25) reuses
+        these builders rather than re-implementing them, so eval metrics
+        describe the system that would actually be deployed.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p20"><span class="label">← Previous</span><span class="name">20 · Coordinator</span></a>
+        <a class="next" data-target="p22"><span class="label">Next →</span><span class="name">22 · Configuration</span></a>
+      </div>
+    </section>
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 22 — Configuration (Pydantic schema)
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p22">
+      <div class="hero">
+        <div class="crumb">Plumbing · 22 / 27</div>
+        <h2>Configuration — Pydantic v2 schema</h2>
+        <p class="lead">
+          Every experiment is a YAML file validated against
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">ExperimentConfig</code>. Pydantic catches typos, type errors, and
+          out-of-range values <i>before</i> the slow training loop starts.
+        </p>
+        <span class="file-pill">src/fedrf_distill/config/schema.py</span>
+      </div>
+
+      <div class="block">
+        <h3>Top-level ExperimentConfig</h3>
+        <pre class="code py">class ExperimentConfig(BaseModel):
+    """Top-level experiment configuration."""
+
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    name: str
+    output_dir: str = "experiments/results"
+    n_rounds: int = 10
+    random_state: int = 42
+
+    data: DataConfig
+    partition: PartitionConfig = Field(default_factory=PartitionConfig)
+    proxy: ProxyConfig = Field(default_factory=ProxyConfig)
+    model: ModelConfig = Field(default_factory=ModelConfig)
+    distillation: DistillationConfig = Field(default_factory=DistillationConfig)
+    dp: DPConfig = Field(default_factory=DPConfig)
+    aggregator: AggregatorConfig = Field(default_factory=AggregatorConfig)
+    meta: MetaConfig = Field(default_factory=MetaConfig)
+
+    @field_validator("n_rounds")
+    @classmethod
+    def _positive_rounds(cls, v: int) -> int:
+        if v &lt;= 0:
+            raise ValueError("n_rounds must be &gt; 0")
+        return v</pre>
+      </div>
+
+      <div class="block">
+        <h3>Sub-configs (all use <code class="inline">extra="forbid"</code>)</h3>
+        <pre class="code py">class DataConfig(BaseModel):
+    """Which dataset, with which preprocessing."""
+
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    name: str  # Registry key, e.g. 'adult', 'covertype'.
+    test_fraction: float = 0.2
+    val_fraction: float = 0.0
+    random_state: int = 0
+
+
+class PartitionConfig(BaseModel):
+    """How to slice train data across K clients."""
+
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    strategy: Literal["iid", "dirichlet", "pathological", "quantity_skew"] = "dirichlet"
+    n_clients: int = 10
+    alpha: float = 0.5                # used by dirichlet
+    k_classes_per_client: int = 2     # used by pathological
+    skew_exponent: float = 1.5        # used by quantity_skew
+    seed: int = 0
+
+
+class ProxyConfig(BaseModel):
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    source: Literal["synthetic_uniform", "synthetic_gaussian", "external"] = (
+        "synthetic_uniform"
+    )
+    n_samples: int = 2000
+    seed: int = 0
+
+
+class ModelConfig(BaseModel):
+    """Teacher / student / per-client framework configuration."""
+
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    teacher_framework: str = "sklearn_rf"
+    teacher_kwargs: dict[str, Any] = Field(default_factory=dict)
+    student_framework: str = "sklearn_dt"
+    student_kwargs: dict[str, Any] = Field(default_factory=dict)
+
+    # When non-empty, override the teacher framework on a per-client basis.
+    # ``frameworks_per_client[k]`` must match the key registered with the model
+    # factory. Used to demonstrate cross-framework heterogeneity (Hook B).
+    frameworks_per_client: list[str] = Field(default_factory=list)
+
+
+class DistillationConfig(BaseModel):
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    mode: DistillationMode = DistillationMode.ARGMAX_WEIGHTED
+    temperature: float = 1.0
+    floor: float = 0.0
+
+
+class DPConfig(BaseModel):
+    """Differential privacy configuration (Hook A)."""
+
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    mechanism: Literal["null", "laplace", "gaussian"] = "laplace"
+    epsilon_per_round: float = 1.0
+    delta_per_round: float = 1e-5
+    target_epsilon: float = 8.0
+    target_delta: float = 1e-5
+    accountant: Literal["basic", "rdp"] = "basic"
+    seed: int = 0
+
+
+class AggregatorConfig(BaseModel):
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    strategy: Literal[
+        "proxy_redistillation", "confidence_weighted", "majority_vote"
+    ] = "proxy_redistillation"
+    student_framework: str = "sklearn_dt"
+    student_kwargs: dict[str, Any] = Field(default_factory=dict)
+
+
+class MetaConfig(BaseModel):
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    enabled: bool = True
+    strategy: Literal["stacking", "none"] = "stacking"
+    standardise_proba_cols: bool = False</pre>
+      </div>
+
+      <div class="callout note"><strong>Hook B in YAML</strong>
+        Set <code class="inline">model.frameworks_per_client: ["xgboost",
+        "lightgbm", "sklearn_rf", ...]</code> — a list of length
+        <code class="inline">n_clients</code> — to enable cross-framework
+        heterogeneity. Leave the list empty and every client uses
+        <code class="inline">cfg.model.teacher_framework</code>.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p21"><span class="label">← Previous</span><span class="name">21 · Runner</span></a>
+        <a class="next" data-target="p23"><span class="label">Next →</span><span class="name">23 · Utils</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 23 — Utils
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p23">
+      <div class="hero">
+        <div class="crumb">Plumbing · 23 / 27</div>
+        <h2>Utils — Serialization, Timer, Seeding</h2>
+        <p class="lead">
+          Three small modules with one responsibility each: ship adapters as
+          bytes, measure wall-clock time, and pin RNGs across libraries.
+        </p>
+        <span class="file-pill">src/fedrf_distill/utils/</span>
+      </div>
+
+      <div class="block">
+        <h3>serialization.py — colon-separated class path</h3>
+        <p>
+          The wire format is <code class="inline">"module:QualName"</code> with
+          a <strong>colon</strong> separator (not a dot), so nested classes
+          inside a module are unambiguous. The receiver imports the module,
+          walks attributes for the qualname, refuses anything that isn't a
+          <code class="inline">BaseModelAdapter</code> subclass, then calls
+          its <code class="inline">deserialize</code> classmethod.
+        </p>
+        <pre class="code py">def serialize_adapter(adapter: BaseModelAdapter) -> tuple[bytes, str]:
+    """Return ``(blob, class_path)`` for safe transport over the wire."""
+    blob = adapter.serialize()
+    class_path = f"{type(adapter).__module__}:{type(adapter).__qualname__}"
+    return blob, class_path
+
+
+def deserialize_adapter(blob: bytes, class_path: str) -> BaseModelAdapter:
+    """Import the declared class and call its :meth:`deserialize`.
+
+    Raises
+    ------
+    FedRFDistillError
+        If the class cannot be imported or is not a BaseModelAdapter.
+    """
+    try:
+        module_name, qualname = class_path.split(":", maxsplit=1)
+        module = importlib.import_module(module_name)
+        cls = module
+        for part in qualname.split("."):
+            cls = getattr(cls, part)
+    except (ValueError, ImportError, AttributeError) as exc:
+        raise FedRFDistillError(
+            f"Cannot resolve adapter class '{class_path}': {exc}"
+        ) from exc
+
+    if not (isinstance(cls, type) and issubclass(cls, BaseModelAdapter)):
+        raise FedRFDistillError(
+            f"Resolved class '{class_path}' is not a BaseModelAdapter subclass."
+        )
+
+    obj = cls.deserialize(blob)
+    return cast(BaseModelAdapter, obj)</pre>
+      </div>
+
+      <div class="block">
+        <h3>timer.py — perf_counter context manager</h3>
+        <pre class="code py">@dataclass
+class Timer:
+    """Records elapsed wall-clock seconds when used as a context manager."""
+
+    elapsed: float = 0.0
+    _start: float = field(default=0.0, init=False, repr=False)
+
+    def __enter__(self) -> Timer:
+        self._start = time.perf_counter()
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.elapsed = time.perf_counter() - self._start</pre>
+      </div>
+
+      <div class="block">
+        <h3>seeding.py — Python + NumPy + PYTHONHASHSEED</h3>
+        <pre class="code py">def set_global_seed(seed: int) -> None:
+    """Seed Python, NumPy, and ML backend RNGs."""
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+
+    # Optional dependencies — silently skip if missing
+    try:  # pragma: no cover
+        import xgboost  # noqa: F401
+
+        # XGBoost respects the seed passed to the estimator; no global seed.
+    except ImportError:
+        pass
+
+    try:  # pragma: no cover
+        import lightgbm  # noqa: F401
+    except ImportError:
+        pass</pre>
+        <div class="callout warn"><strong>Reproducibility caveat</strong>
+          XGBoost/LightGBM have no <i>global</i> seed — they respect the
+          <code class="inline">random_state</code> kwarg per estimator instead,
+          which is why our <code class="inline">build_clients</code> sets
+          <code class="inline">teacher_kwargs.setdefault("random_state",
+          cfg.random_state + k)</code>. Parallel splits (sklearn
+          <code class="inline">n_jobs &gt; 1</code>) may still produce tiny
+          perturbations between runs.
+        </div>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p22"><span class="label">← Previous</span><span class="name">22 · Configuration</span></a>
+        <a class="next" data-target="p24"><span class="label">Next →</span><span class="name">24 · Metrics</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 24 — Metrics
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p24">
+      <div class="hero">
+        <div class="crumb">Plumbing · 24 / 27</div>
+        <h2>Metrics — numpy-only accuracy, F1, AUC, fidelity</h2>
+        <p class="lead">
+          We deliberately avoid sklearn here to keep this module free of heavy
+          imports — sklearn's metric module pulls in a lot of sub-modules. For
+          accuracy, macro-F1, OVR macro-AUC, and surrogate fidelity, a few
+          numpy lines suffice.
+        </p>
+        <span class="file-pill">src/fedrf_distill/metrics/classification.py</span>
+      </div>
+
+      <div class="block">
+        <h3>classification_metrics — the public entry point</h3>
+        <pre class="code py">def classification_metrics(
+    y_true: LabelVector,
+    y_pred: LabelVector,
+    y_proba: SoftLabels | None = None,
+) -> dict[str, float]:
+    """Return ``accuracy``, ``f1_macro``, and (if ``y_proba``) ``auc``."""
+    y_true = np.asarray(y_true, dtype=np.int64)
+    y_pred = np.asarray(y_pred, dtype=np.int64)
+
+    accuracy = float((y_pred == y_true).mean())
+    f1_macro = _f1_macro(y_true, y_pred)
+    metrics: dict[str, float] = {"accuracy": accuracy, "f1_macro": f1_macro}
+
+    if y_proba is not None and y_proba.size:
+        try:
+            metrics["auc"] = _auc_macro_ovr(y_true, y_proba)
+        except ValueError:
+            metrics["auc"] = float("nan")
+    return metrics</pre>
+      </div>
+
+      <div class="block">
+        <h3>_f1_macro and _auc_macro_ovr</h3>
+        <pre class="code py">def _f1_macro(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    classes = np.unique(np.concatenate([y_true, y_pred]))
+    f1s = []
+    for c in classes:
+        tp = int(((y_pred == c) &amp; (y_true == c)).sum())
+        fp = int(((y_pred == c) &amp; (y_true != c)).sum())
+        fn = int(((y_pred != c) &amp; (y_true == c)).sum())
+        if tp == 0:
+            f1s.append(0.0)
+            continue
+        precision = tp / (tp + fp)
+        recall = tp / (tp + fn)
+        f1s.append(2 * precision * recall / (precision + recall))
+    return float(np.mean(f1s)) if f1s else 0.0
+
+
+def _auc_macro_ovr(y_true: np.ndarray, y_proba: np.ndarray) -> float:
+    """Macro one-vs-rest AUC. Skips classes with zero positives in ``y_true``."""
+    classes = np.unique(y_true)
+    if y_proba.shape[1] &lt; len(classes):
+        raise ValueError("y_proba has fewer columns than there are classes.")
+    aucs = []
+    for j, c in enumerate(classes):
+        y_bin = (y_true == c).astype(np.int64)
+        if y_bin.sum() in (0, len(y_bin)):
+            continue
+        aucs.append(_roc_auc(y_bin, y_proba[:, j]))
+    return float(np.mean(aucs)) if aucs else float("nan")
+
+
+def _roc_auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
+    order = np.argsort(-y_score)
+    y_sorted = y_true[order]
+    n_pos = int(y_sorted.sum())
+    n_neg = len(y_sorted) - n_pos
+    if n_pos == 0 or n_neg == 0:
+        return 0.5
+    rank_sum = float(np.sum(np.where(y_sorted &gt; 0, np.arange(1, len(y_sorted) + 1), 0)))
+    return (rank_sum - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg)</pre>
+      </div>
+
+      <div class="block">
+        <h3>surrogate_fidelity — KL + argmax agreement</h3>
+        <pre class="code py">def surrogate_fidelity(
+    teacher_proba: SoftLabels,
+    student_proba: SoftLabels,
+) -> dict[str, float]:
+    """Return KL(teacher‖student) and agreement rate on argmax."""
+    t = np.clip(teacher_proba, 1e-12, 1.0)
+    s = np.clip(student_proba, 1e-12, 1.0)
+    kl = float((t * (np.log(t) - np.log(s))).sum(axis=1).mean())
+    agree = float((np.argmax(t, axis=1) == np.argmax(s, axis=1)).mean())
+    return {"kl_div": kl, "argmax_agreement": agree}</pre>
+        <div class="callout note"><strong>Edge case</strong>
+          <code class="inline">_auc_macro_ovr</code> skips classes that appear
+          0 or N times in <code class="inline">y_true</code> — these have
+          undefined AUC. If <i>all</i> classes are skipped (extreme Non-IID
+          test slice) the function returns <code class="inline">float("nan")</code>
+          rather than throwing, so a tiny shard doesn't break the whole eval
+          run.
+        </div>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p23"><span class="label">← Previous</span><span class="name">23 · Utils</span></a>
+        <a class="next" data-target="p25"><span class="label">Next →</span><span class="name">25 · Eval Pipeline</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 25 — Eval Pipeline (NEW)
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p25">
+      <div class="hero">
+        <div class="crumb">Eval Pipeline · 25 / 27</div>
+        <h2>EvaluationPipeline — the new top-level evaluator</h2>
+        <p class="lead">
+          A thin wrapper around <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">ExperimentRunner</code> that adds per-client
+          metrics, surrogate fidelity, and Yeom-style MIA — everything we need
+          for paper-grade evaluation in a single artifact.
+        </p>
+        <span class="file-pill">src/fedrf_distill/eval/pipeline.py</span>
+      </div>
+
+      <div class="block">
+        <h3>EvaluationPipeline construction</h3>
+        <pre class="code py">@dataclass
+class EvaluationPipeline:
+    """Run one experiment end-to-end and capture the full eval payload."""
+
+    cfg: ExperimentConfig
+    compute_per_client: bool = True
+    compute_fidelity: bool = True
+    compute_mia: bool = True
+    mia_n_members: int = 500
+    mia_n_nonmembers: int = 500</pre>
+      </div>
+
+      <div class="block">
+        <h3>EvaluationResult — JSON-serializable output</h3>
+        <pre class="code py">@dataclass
+class EvaluationResult:
+    """Comprehensive output of one :meth:`EvaluationPipeline.run` invocation."""
+
+    config_name: str
+    dataset: str
+    dp_mechanism: str
+    epsilon_per_round: float
+    n_clients: int
+    n_rounds: int
+    round_results: list[RoundResult]
+    mia: MIAResult | None = None
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def final_accuracy(self) -> float:
+        return self.round_results[-1].global_accuracy if self.round_results else float("nan")
+
+    @property
+    def final_f1(self) -> float:
+        return self.round_results[-1].global_f1_macro if self.round_results else float("nan")
+
+    @property
+    def total_bytes(self) -> int:
+        return sum(r.total_bytes_communicated for r in self.round_results)
+
+    @property
+    def final_epsilon(self) -> float:
+        return self.round_results[-1].cumulative_epsilon if self.round_results else 0.0
+
+    def to_dict(self) -> dict[str, Any]: ...
+    def to_json(self, path: Path) -> None: ...</pre>
+      </div>
+
+      <div class="block">
+        <h3>run — reuse builders, then per-client instrumentation</h3>
+        <pre class="code py">from fedrf_distill.orchestration.runner import (
+    _build_partitioner, build_clients, build_coordinator,
+)
+
+def run(self) -> EvaluationResult:
+    from fedrf_distill.utils.seeding import set_global_seed
+
+    set_global_seed(self.cfg.random_state)
+
+    # 1) Load + split (mirrors orchestration.runner)
+    ds = load_dataset(self.cfg.data.name)
+    n = ds.X.shape[0]
+    rng = np.random.default_rng(self.cfg.data.random_state)
+    order = rng.permutation(n)
+    n_test = int(round(n * self.cfg.data.test_fraction))
+    test_idx = order[:n_test]
+    train_idx = order[n_test:]
+    X_train, y_train = ds.X[train_idx], ds.y[train_idx]
+    X_test, y_test = ds.X[test_idx], ds.y[test_idx]
+    classes = sorted(int(c) for c in np.unique(ds.y).tolist())
+
+    # 2) Partition + 3) Build clients/coordinator (Hook B-aware)
+    partitioner = _build_partitioner(self.cfg)
+    shards = partitioner.partition(
+        X_train, y_train,
+        n_clients=self.cfg.partition.n_clients,
+        seed=self.cfg.partition.seed,
+    )
+    clients = build_clients(self.cfg, shards)
+    coordinator = build_coordinator(
+        self.cfg, classes=classes,
+        n_features=X_train.shape[1], feature_ref=X_train,
+    )
+
+    # 4) Round loop with per-client instrumentation
+    round_results: list[RoundResult] = []
+    last_global_model = None
+    for t in range(self.cfg.n_rounds):
+        with Timer() as timer:
+            updates = [c.local_train() for c in clients]
+            artifact = coordinator.round(
+                updates, round_idx=t,
+                budget=PrivacyBudget(
+                    epsilon=self.cfg.dp.target_epsilon,
+                    delta=self.cfg.dp.target_delta,
+                ),
+            )
+            for c in clients:
+                c.apply_global(artifact)
+
+        # 5) Global metrics
+        global_model = deserialize_adapter(
+            artifact.global_surrogate_blob, artifact.global_surrogate_class_path
+        )
+        last_global_model = global_model
+        global_pred = global_model.predict(X_test)
+        global_proba = global_model.predict_proba(X_test)
+        global_metrics = classification_metrics(y_test, global_pred, global_proba)
+        cum_eps, cum_delta = coordinator.accountant.cumulative()
+
+        # 6) Per-client metrics + fidelity (KL teacher‖surrogate on proxy)
+        client_metrics: list[ClientRoundMetrics] = []
+        if self.compute_per_client:
+            for c, upd in zip(clients, updates, strict=True):
+                local = c.evaluate_local(X_test, y_test)
+                fid = 0.0
+                if self.compute_fidelity and c.teacher is not None:
+                    teacher_proba = c.teacher.predict_proba(coordinator.proxy_X)
+                    surrogate = deserialize_adapter(
+                        upd.surrogate_blob, upd.surrogate_class_path
+                    )
+                    student_proba = surrogate.predict_proba(coordinator.proxy_X)
+                    fid = float(surrogate_fidelity(teacher_proba, student_proba)["argmax_agreement"])
+                client_metrics.append(
+                    ClientRoundMetrics(
+                        client_id=ClientID(int(c.client_id)),
+                        local_accuracy=float(local.get("accuracy", float("nan"))),
+                        local_f1_macro=float(local.get("f1_macro", float("nan"))),
+                        local_auc=local.get("auc"),
+                        surrogate_fidelity=fid,
+                        bytes_uploaded=len(upd.surrogate_blob),
+                        eps_spent=float(upd.eps_spent_this_round),
+                        framework=upd.framework,
+                    )
+                )
+
+        round_results.append(RoundResult(
+            round_idx=t,
+            global_accuracy=global_metrics["accuracy"],
+            global_f1_macro=global_metrics["f1_macro"],
+            global_auc=global_metrics.get("auc"),
+            per_client_metrics=client_metrics,
+            total_bytes_communicated=sum(len(u.surrogate_blob) for u in updates),
+            cumulative_epsilon=cum_eps, cumulative_delta=cum_delta,
+            wall_clock_seconds=timer.elapsed,
+        ))
+
+    # 7) Optional MIA on the final global surrogate
+    mia_result: MIAResult | None = None
+    if self.compute_mia and last_global_model is not None:
+        mia_result = yeom_membership_inference(
+            model=last_global_model,
+            members_X=X_train, members_y=y_train,
+            nonmembers_X=X_test, nonmembers_y=y_test,
+            n_members=self.mia_n_members,
+            n_nonmembers=self.mia_n_nonmembers,
+            seed=self.cfg.random_state,
+        )
+
+    return EvaluationResult(... )  # see source for full assembly</pre>
+        <div class="callout success"><strong>Single source of truth</strong>
+          The pipeline imports <code class="inline">_build_partitioner</code>,
+          <code class="inline">build_clients</code>, and
+          <code class="inline">build_coordinator</code> from the production
+          runner. Eval can't drift from the deployed system.
+        </div>
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p24"><span class="label">← Previous</span><span class="name">24 · Metrics</span></a>
+        <a class="next" data-target="p26"><span class="label">Next →</span><span class="name">26 · MIA</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 26 — Eval / MIA (Yeom)
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p26">
+      <div class="hero">
+        <div class="crumb">Eval Pipeline · 26 / 27</div>
+        <h2>Yeom-style Membership Inference Attack</h2>
+        <p class="lead">
+          The empirical privacy probe. Members of the training set tend to receive
+          lower cross-entropy loss than non-members. We threshold on per-sample
+          loss to predict membership, then report ROC, advantage, and TPR@1%FPR.
+        </p>
+        <span class="file-pill">src/fedrf_distill/eval/mia.py</span>
+      </div>
+
+      <div class="block">
+        <h3>MIAResult — the exact fields</h3>
+        <pre class="code py">@dataclass(slots=True)
+class MIAResult:
+    """Result of a single Yeom loss-threshold attack."""
+
+    attack_auc: float
+    """AUC of the loss threshold attack (0.5 = chance, 1.0 = perfect)."""
+
+    attack_advantage: float
+    """TPR − FPR at the optimal threshold. Yeom's "advantage" metric."""
+
+    tpr_at_1_fpr: float
+    """True-positive rate at 1% false-positive rate (Carlini-style)."""
+
+    member_mean_loss: float
+    """Mean cross-entropy loss on members. Lower = more memorisation."""
+
+    nonmember_mean_loss: float
+    """Mean cross-entropy loss on non-members."""
+
+    n_members: int
+    n_nonmembers: int</pre>
+      </div>
+
+      <div class="block">
+        <h3>yeom_membership_inference</h3>
+        <pre class="code py">def yeom_membership_inference(
+    model: ModelAdapterProtocol,
+    members_X: FeatureMatrix,
+    members_y: LabelVector,
+    nonmembers_X: FeatureMatrix,
+    nonmembers_y: LabelVector,
+    n_members: int = 500,
+    n_nonmembers: int = 500,
+    seed: int = 0,
+) -> MIAResult:
+    """Mount a Yeom loss-threshold MIA against ``model``."""
+    rng = np.random.default_rng(seed)
+    members_X, members_y = _maybe_subsample(members_X, members_y, n_members, rng)
+    nonmembers_X, nonmembers_y = _maybe_subsample(
+        nonmembers_X, nonmembers_y, n_nonmembers, rng
+    )
+
+    member_loss = _ce_loss(model, members_X, members_y)
+    nonmember_loss = _ce_loss(model, nonmembers_X, nonmembers_y)
+
+    # Attack scores: lower loss → more "member-ish". Convert to "membership
+    # score" by negating so larger = more likely member; ROC AUC then aligns.
+    scores = np.concatenate([-member_loss, -nonmember_loss])
+    labels = np.concatenate(
+        [np.ones(len(member_loss), dtype=np.int64),
+         np.zeros(len(nonmember_loss), dtype=np.int64)]
+    )
+
+    auc = _roc_auc(labels, scores)
+    advantage, _ = _max_advantage(labels, scores)
+    tpr_at_1_fpr = _tpr_at_fpr(labels, scores, fpr_target=0.01)
+
+    return MIAResult(
+        attack_auc=float(auc),
+        attack_advantage=float(advantage),
+        tpr_at_1_fpr=float(tpr_at_1_fpr),
+        member_mean_loss=float(member_loss.mean()),
+        nonmember_mean_loss=float(nonmember_loss.mean()),
+        n_members=int(len(member_loss)),
+        n_nonmembers=int(len(nonmember_loss)),
+    )</pre>
+      </div>
+
+      <div class="block">
+        <h3>_ce_loss — robust to non-{0..C-1} class sets</h3>
+        <pre class="code py">def _ce_loss(
+    model: ModelAdapterProtocol, X: FeatureMatrix, y: LabelVector
+) -> np.ndarray:
+    """Per-sample categorical cross-entropy: −log p(y|x)."""
+    proba = np.asarray(model.predict_proba(X), dtype=np.float64)
+    proba = np.clip(proba, 1e-12, 1.0)
+    classes = np.asarray(model.classes(), dtype=np.int64)
+    # Map labels to column indices in case the model's classes aren't 0..C-1.
+    class_to_col = {int(c): i for i, c in enumerate(classes)}
+    cols = np.array([class_to_col.get(int(label), 0) for label in y], dtype=np.int64)
+    return -np.log(proba[np.arange(len(y)), cols])</pre>
+      </div>
+
+      <div class="callout note"><strong>Connection to ε</strong>
+        Yeom Theorem 1 gives the link between formal and empirical privacy:
+        <code class="inline">advantage ≤ 1 − e^(−ε)</code>. So an empirical
+        <code class="inline">attack_advantage ≈ 0.0</code> is evidence of
+        strong privacy regardless of the analytic ε from the accountant;
+        <code class="inline">advantage</code> near 1 means the analytic bound
+        is the <i>only</i> protection — and a curious coordinator could mount
+        this exact attack against the broadcast global surrogate.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p25"><span class="label">← Previous</span><span class="name">25 · Eval Pipeline</span></a>
+        <a class="next" data-target="p27"><span class="label">Next →</span><span class="name">27 · Aggregate &amp; Report</span></a>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PAGE 27 — Aggregate & Report
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="p27">
+      <div class="hero">
+        <div class="crumb">Eval Pipeline · 27 / 27</div>
+        <h2>Aggregate &amp; Report — multi-run synthesis</h2>
+        <p class="lead">
+          Two modules that turn N evaluation JSON files into the
+          paper-ready markdown report. <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">aggregate.py</code> reshapes the data;
+          <code style="background:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px">report.py</code> renders the tables.
+        </p>
+        <span class="file-pill">src/fedrf_distill/eval/aggregate.py · report.py</span>
+      </div>
+
+      <div class="block">
+        <h3>EvalSummary + privacy_utility_table</h3>
+        <pre class="code py">@dataclass(slots=True)
+class EvalSummary:
+    """One-row summary of an :class:`EvaluationResult`."""
+
+    config_name: str
+    dataset: str
+    dp_mechanism: str
+    epsilon_per_round: float
+    n_clients: int
+    n_rounds: int
+    final_accuracy: float
+    final_f1_macro: float
+    final_auc: float | None
+    final_cumulative_epsilon: float
+    final_cumulative_delta: float
+    total_bytes: int
+    total_wall_clock_seconds: float
+    mia_attack_auc: float | None
+    mia_attack_advantage: float | None
+    mia_tpr_at_1_fpr: float | None
+
+
+def privacy_utility_table(
+    results: list[dict[str, Any]] | None = None,
+    *,
+    paths: list[Path] | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Build a privacy-utility frontier table (one row per config).
+
+    Pass either pre-loaded ``results`` (list of payload dicts) or ``paths``
+    (a directory / list of files) — never both.
+
+    Returns rows sorted by ``final_cumulative_epsilon`` ascending so the
+    no-DP baseline lands at the top and high-ε runs at the bottom.
+    """
+    if results is None and paths is None:
+        raise ValueError("Pass either `results` or `paths`.")
+    if results is not None and paths is not None:
+        raise ValueError("Pass `results` or `paths`, not both.")
+
+    payloads = results if results is not None else load_results(paths)  # type: ignore[arg-type]
+    rows = [asdict(summarise(p)) for p in payloads]
+    rows.sort(key=lambda r: (r["dataset"], r["final_cumulative_epsilon"]))
+    return rows</pre>
+      </div>
+
+      <div class="block">
+        <h3>Other reshaping helpers — pandas-free</h3>
+        <pre class="code py">def load_results(paths: list[Path] | Path) -> list[dict[str, Any]]:
+    """Load one or more eval JSON artifacts.
+
+    Accepts a single path, a list of paths, or a directory (in which case
+    every ``*.json`` file directly under it is loaded).
+    """
+    if isinstance(paths, Path):
+        if paths.is_dir():
+            paths = sorted(paths.glob("*.json"))
+        else:
+            paths = [paths]
+
+    results: list[dict[str, Any]] = []
+    for p in paths:
+        with p.open() as fh:
+            payload = json.load(fh)
+        payload.setdefault("_source_path", str(p))
+        results.append(payload)
+    return results
+
+
+def per_round_table(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Tall table: one row per (config, round) — useful for line plots."""
+    # ... see source
+
+def per_client_table(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Tall table: one row per (config, round, client) — diagnostic only."""
+    # ... see source</pre>
+      </div>
+
+      <div class="block">
+        <h3>render_markdown_report — three sections + header</h3>
+        <pre class="code py">def render_markdown_report(
+    results: list[dict[str, Any]],
+    *,
+    title: str = "FedRF-Distill — Evaluation Report",
+) -> str:
+    """Render a self-contained markdown report."""
+    if not results:
+        return f"# {title}\n\n_No results._\n"
+
+    sections = [
+        _render_header(results, title),
+        _render_frontier_section(results),    # privacy-utility table
+        _render_per_round_section(results),   # one sub-table per config
+        _render_mia_section(results),         # optional, if MIA computed
+    ]
+    return "\n\n".join(s for s in sections if s) + "\n"</pre>
+      </div>
+
+      <div class="block">
+        <h3>The em-dash honesty trick for the null mechanism</h3>
+        <p>
+          The schema default for <code class="inline">DPConfig.epsilon_per_round</code>
+          is 1.0, which would falsely show up next to a no-DP run. The frontier
+          and MIA renderers both check
+          <code class="inline">dp_mechanism == "null"</code> and substitute an
+          em-dash so the table doesn't lie about the budget that was actually
+          applied.
+        </p>
+        <pre class="code py">eps_per_round = "—" if r["dp_mechanism"] == "null" else _fmt(r["epsilon_per_round"])</pre>
+      </div>
+
+      <div class="callout success"><strong>Why GFM tables?</strong>
+        <code class="inline">_markdown_table</code> emits GitHub-flavoured
+        markdown that renders cleanly in GitHub, internal DX pages, Notion,
+        and via pandoc into LaTeX. One artifact, four output formats — and
+        line-based tables stay diff-friendly so reviewers can spot regressions
+        across commits.
+      </div>
+
+      <div class="page-nav">
+        <a data-target="p26"><span class="label">← Previous</span><span class="name">26 · MIA</span></a>
+        <a class="disabled next"><span class="label">End →</span><span class="name">27 of 27 · You've reached the end</span></a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // SPA nav: click sidebar → toggle .active on matching .page
+  const items = document.querySelectorAll('.nav-item');
+  const pages = document.querySelectorAll('.page');
+  function show(targetId) {
+    pages.forEach(p => p.classList.toggle('active', p.id === targetId));
+    items.forEach(i => i.classList.toggle('active', i.dataset.target === targetId));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    location.hash = targetId;
+  }
+  items.forEach(i => i.addEventListener('click', () => show(i.dataset.target)));
+  // Page-nav (next/prev) buttons inside pages
+  document.addEventListener('click', e => {
+    const a = e.target.closest('.page-nav a[data-target]');
+    if (a && !a.classList.contains('disabled')) { show(a.dataset.target); }
+  });
+  // Deep-link via hash
+  if (location.hash) {
+    const id = location.hash.slice(1);
+    if (document.getElementById(id)) show(id);
+  }
+
+  // Lightweight Python syntax highlighter (post-render)
+  const PY_KW = /\b(import|from|as|def|class|return|if|elif|else|for|while|in|not|and|or|is|None|True|False|raise|try|except|finally|with|lambda|pass|break|continue|yield|global|nonlocal|assert|del|async|await|self|cls)\b/g;
+  const PY_BUILTIN = /\b(int|float|str|bool|list|dict|tuple|set|bytes|len|range|enumerate|zip|map|filter|sum|min|max|abs|sorted|reversed|isinstance|issubclass|getattr|setattr|hasattr|type|print|open|callable)\b/g;
+  function pyHighlight(el) {
+    let s = el.innerHTML;
+    // Order matters: comments first (consume rest-of-line), then strings, then keywords
+    s = s.replace(/#[^\n]*/g, m => '<span class="cmt">' + m + '</span>');
+    s = s.replace(/("""[\s\S]*?"""|'''[\s\S]*?'''|"[^"\n]*"|'[^'\n]*')/g, m => '<span class="str">' + m + '</span>');
+    s = s.replace(/(@[a-zA-Z_][\w.]*)/g, '<span class="dec">$1</span>');
+    s = s.replace(PY_KW, '<span class="kw">$1</span>');
+    s = s.replace(PY_BUILTIN, '<span class="fn">$1</span>');
+    s = s.replace(/\b(\d+\.?\d*)\b/g, '<span class="num">$1</span>');
+    el.innerHTML = s;
+  }
+  document.querySelectorAll('pre.code.py').forEach(pyHighlight);
+</script>
+
+</body>
+</html>

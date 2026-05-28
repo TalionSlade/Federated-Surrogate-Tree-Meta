@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Protocol Layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1600px; min-height: 1060px; }
+  .proto-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; margin-top: 26px; }
+  .proto {
+    background: white; border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px 24px; box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+    display: grid; grid-template-columns: 270px 1fr; gap: 22px;
+    position: relative;
+  }
+  .proto::before { content: ''; position: absolute; top: 0; left: 22px; right: 22px; height: 3px;
+                   background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+                   border-radius: 0 0 3px 3px; }
+  .proto .left h4 { font-size: 16px; font-weight: 700; color: var(--ink-strong); }
+  .proto .left .path {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    background: var(--luminate-light); color: var(--luminate-primary);
+    padding: 3px 7px; border-radius: 5px;
+    display: inline-block; margin: 6px 0 10px;
+  }
+  .proto .left p { font-size: 12px; color: var(--ink-muted); line-height: 1.55; }
+  .sig {
+    background: #11122e; color: #d6e0ff; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    padding: 12px 14px; line-height: 1.55; white-space: pre;
+    overflow-x: auto;
+  }
+  .sig .c { color: #8b95c1; }
+  .sig .k { color: #ff9bcd; }
+  .sig .s { color: #9bdc7c; }
+
+  .impls { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .impls .pill {
+    background: var(--surface-3); color: var(--ink-muted);
+    border: 1px solid var(--line-subtle); border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    padding: 3px 8px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Protocol Layer</h1>
+      <div class="subtitle">Every pluggable component is a <code>typing.Protocol</code> — structural typing, no inheritance</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 05 / 16</div>
+  </div>
+
+  <div class="proto-grid">
+    <div class="proto">
+      <div class="left">
+        <h4>ModelAdapterProtocol</h4>
+        <span class="path">core.protocols</span>
+        <p>Uniform interface over heterogeneous tree frameworks. Foundation for Hook B.</p>
+        <div class="impls">
+          <span class="pill">SklearnRF</span><span class="pill">SklearnDT</span><span class="pill">XGBoost</span><span class="pill">LightGBM</span><span class="pill">CatBoost</span>
+        </div>
+      </div>
+      <div class="sig"><span class="k">class</span> ModelAdapterProtocol(Protocol):
+    framework: str
+    <span class="k">def</span> fit(self, X, y) -> None: ...
+    <span class="k">def</span> predict_proba(self, X) -> SoftLabels: ...
+    <span class="k">def</span> predict(self, X) -> LabelVector: ...
+    <span class="k">def</span> classes(self) -> list[int]: ...
+    <span class="k">def</span> serialize(self) -> bytes: ...
+    @classmethod
+    <span class="k">def</span> deserialize(cls, blob): ...
+    <span class="k">def</span> n_estimators(self) -> int: ...</div>
+    </div>
+
+    <div class="proto">
+      <div class="left">
+        <h4>SurrogateDistillerProtocol</h4>
+        <span class="path">core.protocols</span>
+        <p>Distil teacher → student on (X, soft_labels). Two modes ship by default.</p>
+        <div class="impls">
+          <span class="pill">SurrogateDistiller (argmax+weight)</span><span class="pill">SurrogateDistiller (multi-output)</span>
+        </div>
+      </div>
+      <div class="sig"><span class="k">class</span> SurrogateDistillerProtocol(Protocol):
+    <span class="k">def</span> distill(
+        self,
+        X: FeatureMatrix,
+        soft_labels: SoftLabels,
+        classes: list[int],
+    ) -> ModelAdapterProtocol: ...</div>
+    </div>
+
+    <div class="proto">
+      <div class="left">
+        <h4>DPMechanismProtocol</h4>
+        <span class="path">core.protocols</span>
+        <p>Inject calibrated noise to achieve (ε, δ)-DP on soft labels.</p>
+        <div class="impls">
+          <span class="pill">Laplace</span><span class="pill">Gaussian</span><span class="pill">Null</span>
+        </div>
+      </div>
+      <div class="sig"><span class="k">class</span> DPMechanismProtocol(Protocol):
+    name: str
+    sensitivity: float
+    <span class="k">def</span> privatize(
+        self, x: SoftLabels,
+        epsilon: float, delta: float = 0.0,
+    ) -> SoftLabels: ...</div>
+    </div>
+
+    <div class="proto">
+      <div class="left">
+        <h4>AggregatorProtocol</h4>
+        <span class="path">core.protocols</span>
+        <p>Combine K client surrogates → one global surrogate.</p>
+        <div class="impls">
+          <span class="pill">ProxyRedistillation</span><span class="pill">ConfidenceWeighted</span><span class="pill">MajorityVote</span>
+        </div>
+      </div>
+      <div class="sig"><span class="k">class</span> AggregatorProtocol(Protocol):
+    name: str
+    <span class="k">def</span> aggregate(
+        self,
+        client_updates: list[ClientUpdate],
+        proxy_X: FeatureMatrix,
+        classes: list[int],
+    ) -> ModelAdapterProtocol: ...</div>
+    </div>
+
+    <div class="proto">
+      <div class="left">
+        <h4>MetaLearnerProtocol</h4>
+        <span class="path">core.protocols</span>
+        <p>Refine a local model using the global surrogate. Stacking is the canonical strategy.</p>
+        <div class="impls">
+          <span class="pill">StackingMetaLearner</span>
+        </div>
+      </div>
+      <div class="sig"><span class="k">class</span> MetaLearnerProtocol(Protocol):
+    name: str
+    <span class="k">def</span> refine(
+        self, X_local, y_local,
+        global_surrogate, local_model_factory,
+    ) -> ModelAdapterProtocol: ...</div>
+    </div>
+
+    <div class="proto">
+      <div class="left">
+        <h4>PartitionerProtocol</h4>
+        <span class="path">core.protocols</span>
+        <p>Slice a centralised dataset into K per-client shards under IID or non-IID regimes.</p>
+        <div class="impls">
+          <span class="pill">IID</span><span class="pill">Dirichlet</span><span class="pill">Pathological</span><span class="pill">QuantitySkew</span>
+        </div>
+      </div>
+      <div class="sig"><span class="k">class</span> PartitionerProtocol(Protocol):
+    name: str
+    <span class="k">def</span> partition(
+        self, X, y, n_clients, seed,
+    ) -> list[tuple[X_k, y_k]]: ...</div>
+    </div>
+
+    <div class="proto">
+      <div class="left">
+        <h4>ClientProtocol</h4>
+        <span class="path">core.protocols</span>
+        <p>Federated participant. Holds private data + teacher + DP. Stateful across rounds.</p>
+        <div class="impls">
+          <span class="pill">FederatedClient</span>
+        </div>
+      </div>
+      <div class="sig"><span class="k">class</span> ClientProtocol(Protocol):
+    client_id: ClientID
+    <span class="k">def</span> local_train(self) -> ClientUpdate: ...
+    <span class="k">def</span> apply_global(self, artifact) -> None: ...
+    <span class="k">def</span> evaluate_local(self, X, y) -> dict[str, float]: ...</div>
+    </div>
+
+    <div class="proto">
+      <div class="left">
+        <h4>CoordinatorProtocol</h4>
+        <span class="path">core.protocols</span>
+        <p>Server-side orchestrator. Owns proxy + aggregator + accountant; emits the round artifact.</p>
+        <div class="impls">
+          <span class="pill">FederatedCoordinator</span>
+        </div>
+      </div>
+      <div class="sig"><span class="k">class</span> CoordinatorProtocol(Protocol):
+    <span class="k">def</span> round(
+        self,
+        client_updates: list[ClientUpdate],
+        round_idx: int,
+        budget: PrivacyBudget,
+    ) -> GlobalArtifact: ...</div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

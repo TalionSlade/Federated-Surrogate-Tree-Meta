@@ -1,0 +1,59 @@
+# Full end-to-end demo on Breast Cancer (sklearn built-in — no network).
+# Demonstrates Hook A (DP on soft labels) + proxy-redistillation + stacking.
+name: breast_cancer_dp_laplace
+output_dir: experiments/results/breast_cancer_dp_laplace
+n_rounds: 5
+random_state: 42
+
+data:
+  name: breast_cancer
+  test_fraction: 0.2
+  random_state: 0
+
+partition:
+  strategy: dirichlet
+  n_clients: 10
+  alpha: 0.5
+  seed: 0
+
+proxy:
+  source: external          # use held-out X_train rows as the proxy
+  n_samples: 200
+  seed: 0
+
+model:
+  teacher_framework: sklearn_rf
+  teacher_kwargs:
+    n_estimators: 100
+    max_depth: 12
+    min_samples_leaf: 2
+  student_framework: sklearn_dt
+  student_kwargs:
+    max_depth: 5
+    min_samples_leaf: 3
+
+distillation:
+  mode: argmax_weighted
+  temperature: 1.0
+  floor: 0.0
+
+dp:
+  mechanism: laplace
+  epsilon_per_round: 0.5      # per client, per round
+  delta_per_round: 0.0
+  # 5 rounds × 10 clients × 0.5 = 25 ε under basic composition; budget 30 leaves headroom.
+  target_epsilon: 30.0
+  target_delta: 1.0e-5
+  accountant: basic
+  seed: 0
+
+aggregator:
+  strategy: proxy_redistillation
+  student_framework: sklearn_dt
+  student_kwargs:
+    max_depth: 5
+
+meta:
+  enabled: true
+  strategy: stacking
+  standardise_proba_cols: false

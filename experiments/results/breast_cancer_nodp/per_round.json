@@ -1,0 +1,62 @@
+[
+  {
+    "round_idx": 0,
+    "global_accuracy": 0.8947368421052632,
+    "global_f1_macro": 0.8844594594594595,
+    "global_auc": 0.07704293628808864,
+    "per_client_metrics": [],
+    "total_bytes_communicated": 16053,
+    "cumulative_epsilon": 0.0,
+    "cumulative_delta": 0.0,
+    "wall_clock_seconds": 1.622367416988709,
+    "extra": {}
+  },
+  {
+    "round_idx": 1,
+    "global_accuracy": 0.8947368421052632,
+    "global_f1_macro": 0.8844594594594595,
+    "global_auc": 0.07704293628808864,
+    "per_client_metrics": [],
+    "total_bytes_communicated": 16053,
+    "cumulative_epsilon": 0.0,
+    "cumulative_delta": 0.0,
+    "wall_clock_seconds": 1.5767624170111958,
+    "extra": {}
+  },
+  {
+    "round_idx": 2,
+    "global_accuracy": 0.8947368421052632,
+    "global_f1_macro": 0.8844594594594595,
+    "global_auc": 0.07704293628808864,
+    "per_client_metrics": [],
+    "total_bytes_communicated": 16053,
+    "cumulative_epsilon": 0.0,
+    "cumulative_delta": 0.0,
+    "wall_clock_seconds": 1.5152999169949908,
+    "extra": {}
+  },
+  {
+    "round_idx": 3,
+    "global_accuracy": 0.8947368421052632,
+    "global_f1_macro": 0.8844594594594595,
+    "global_auc": 0.07704293628808864,
+    "per_client_metrics": [],
+    "total_bytes_communicated": 16053,
+    "cumulative_epsilon": 0.0,
+    "cumulative_delta": 0.0,
+    "wall_clock_seconds": 1.5296071250049863,
+    "extra": {}
+  },
+  {
+    "round_idx": 4,
+    "global_accuracy": 0.9210526315789473,
+    "global_f1_macro": 0.9128366324016651,
+    "global_auc": 0.07340720221606647,
+    "per_client_metrics": [],
+    "total_bytes_communicated": 16053,
+    "cumulative_epsilon": 0.0,
+    "cumulative_delta": 0.0,
+    "wall_clock_seconds": 1.5860972499940544,
+    "extra": {}
+  }
+]

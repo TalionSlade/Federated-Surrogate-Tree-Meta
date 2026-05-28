@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — UML Class Diagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .canvas { width: 1700px; min-height: 1100px; }
+  .class-grid {
+    position: relative;
+    margin-top: 26px;
+  }
+  .uml {
+    position: absolute;
+    background: white;
+    border: 1.5px solid var(--luminate-medium);
+    border-radius: 6px;
+    box-shadow: 0 4px 14px -4px rgba(19, 1, 74, 0.18);
+    overflow: hidden;
+    min-width: 220px;
+    z-index: 2;
+  }
+  .uml .head {
+    background: var(--luminate-light);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--luminate-medium);
+  }
+  .uml .head .stereo {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    color: var(--luminate-medium); letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .uml .head .name {
+    font-size: 13.5px; font-weight: 700; color: var(--ink-strong);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .uml .attrs, .uml .ops {
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+  .uml .attrs { border-bottom: 1px solid var(--line); background: var(--surface-2); }
+  .uml .ops .pub::before { content: '+ '; color: var(--green); }
+  .uml .ops .prot::before { content: '# '; color: var(--amber); }
+  .uml .ops .priv::before { content: '- '; color: var(--red); }
+
+  .iface { border-color: #6245b7; }
+  .iface .head { background: #ede7fa; border-color: #6245b7; }
+  .iface .head .name { color: var(--luminate-primary); font-style: italic; }
+
+  .abstract .head .name { font-style: italic; }
+
+  .uml-edges { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .uml-edges line, .uml-edges path { stroke: var(--ink-faint); stroke-width: 1.5; fill: none; }
+  .uml-edges path.impl { stroke-dasharray: 6 4; }
+  .uml-edges .label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    fill: var(--ink-muted);
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>UML Class Diagram</h1>
+      <div class="subtitle">Interfaces (italic, dashed), abstract classes, concrete implementations</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 06 / 16</div>
+  </div>
+
+  <div class="class-grid" style="height: 950px;">
+
+    <!-- Edges -->
+    <svg class="uml-edges" viewBox="0 0 1640 950" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="impl" viewBox="0 0 12 10" refX="11" refY="5" markerWidth="11" markerHeight="9" orient="auto">
+          <path d="M0,0 L12,5 L0,10 z" fill="white" stroke="var(--ink-faint)"/>
+        </marker>
+        <marker id="assoc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"/>
+        </marker>
+      </defs>
+      <!-- Adapter impls -->
+      <path class="impl" d="M310,200 V250 H660" marker-end="url(#impl)"/>
+      <path class="impl" d="M310,200 V270 H660" marker-end="url(#impl)"/>
+      <path class="impl" d="M310,200 V290 H660" marker-end="url(#impl)"/>
+      <!-- Concrete classes implementing BaseModelAdapter -->
+      <line x1="850" y1="270" x2="1080" y2="270" marker-end="url(#impl)"/>
+      <line x1="850" y1="370" x2="1080" y2="370" marker-end="url(#impl)"/>
+      <line x1="850" y1="470" x2="1080" y2="470" marker-end="url(#impl)"/>
+      <!-- Client → ModelAdapter (uses) -->
+      <line x1="240" y1="540" x2="240" y2="180" stroke-dasharray="4 4" marker-end="url(#assoc)"/>
+      <!-- Coordinator → Aggregator -->
+      <line x1="780" y1="650" x2="650" y2="650" marker-end="url(#assoc)"/>
+      <!-- Coordinator → Accountant -->
+      <line x1="780" y1="750" x2="650" y2="750" marker-end="url(#assoc)"/>
+    </svg>
+
+    <!-- ModelAdapterProtocol -->
+    <div class="uml iface" style="top: 60px; left: 200px; width: 240px;">
+      <div class="head">
+        <div class="stereo">«protocol»</div>
+        <div class="name">ModelAdapterProtocol</div>
+      </div>
+      <div class="ops">
+        <div class="pub">fit(X, y)</div>
+        <div class="pub">predict_proba(X)</div>
+        <div class="pub">predict(X)</div>
+        <div class="pub">classes()</div>
+        <div class="pub">serialize() : bytes</div>
+        <div class="pub">deserialize(blob)</div>
+        <div class="pub">n_estimators()</div>
+      </div>
+    </div>
+
+    <!-- BaseModelAdapter (abstract) -->
+    <div class="uml abstract" style="top: 220px; left: 660px; width: 220px;">
+      <div class="head">
+        <div class="stereo">«abstract»</div>
+        <div class="name">BaseModelAdapter</div>
+      </div>
+      <div class="attrs">
+        <div># _fitted : bool</div>
+        <div># _classes : list[int]</div>
+      </div>
+      <div class="ops">
+        <div class="pub">fit(X, y)</div>
+        <div class="pub">predict_proba(X)</div>
+        <div class="prot">_fit_impl(X, y)</div>
+        <div class="prot">_predict_proba_impl(X)</div>
+      </div>
+    </div>
+
+    <!-- Concrete adapters column -->
+    <div class="uml" style="top: 230px; left: 1080px; width: 220px;">
+      <div class="head"><div class="name">SklearnRandomForestAdapter</div></div>
+      <div class="attrs"><div>- _estimator</div></div>
+    </div>
+    <div class="uml" style="top: 330px; left: 1080px; width: 220px;">
+      <div class="head"><div class="name">XGBoostAdapter</div></div>
+      <div class="attrs"><div>- _estimator</div></div>
+    </div>
+    <div class="uml" style="top: 430px; left: 1080px; width: 220px;">
+      <div class="head"><div class="name">LightGBMAdapter</div></div>
+      <div class="attrs"><div>- _estimator</div></div>
+    </div>
+    <div class="uml" style="top: 530px; left: 1080px; width: 220px;">
+      <div class="head"><div class="name">CatBoostAdapter</div></div>
+      <div class="attrs"><div>- _estimator</div></div>
+    </div>
+    <div class="uml" style="top: 630px; left: 1080px; width: 220px;">
+      <div class="head"><div class="name">SklearnDecisionTreeAdapter</div></div>
+      <div class="attrs"><div>- _estimator</div></div>
+    </div>
+
+    <!-- FederatedClient -->
+    <div class="uml" style="top: 540px; left: 180px; width: 280px;">
+      <div class="head">
+        <div class="stereo">orchestration</div>
+        <div class="name">FederatedClient</div>
+      </div>
+      <div class="attrs">
+        <div>- client_id : ClientID</div>
+        <div>- X_local, y_local</div>
+        <div>- teacher_factory</div>
+        <div>- soft_label_generator</div>
+        <div>- distiller</div>
+        <div>- dp_mechanism</div>
+        <div>- meta_learner?</div>
+      </div>
+      <div class="ops">
+        <div class="pub">local_train() : ClientUpdate</div>
+        <div class="pub">apply_global(artifact)</div>
+        <div class="pub">evaluate_local(X, y)</div>
+      </div>
+    </div>
+
+    <!-- FederatedCoordinator -->
+    <div class="uml" style="top: 600px; left: 780px; width: 300px;">
+      <div class="head">
+        <div class="stereo">orchestration</div>
+        <div class="name">FederatedCoordinator</div>
+      </div>
+      <div class="attrs">
+        <div>- aggregator : AggregatorProtocol</div>
+        <div>- proxy_X : FeatureMatrix</div>
+        <div>- classes : list[int]</div>
+        <div>- accountant : PrivacyAccountantProtocol</div>
+        <div>- target_budget : PrivacyBudget</div>
+      </div>
+      <div class="ops">
+        <div class="pub">round(updates, t, budget) : GlobalArtifact</div>
+        <div class="pub">history</div>
+      </div>
+    </div>
+
+    <!-- AggregatorProtocol -->
+    <div class="uml iface" style="top: 600px; left: 460px; width: 200px;">
+      <div class="head">
+        <div class="stereo">«protocol»</div>
+        <div class="name">AggregatorProtocol</div>
+      </div>
+      <div class="ops">
+        <div class="pub">aggregate(updates, X, classes)</div>
+      </div>
+    </div>
+
+    <!-- PrivacyAccountantProtocol -->
+    <div class="uml iface" style="top: 700px; left: 460px; width: 200px;">
+      <div class="head">
+        <div class="stereo">«protocol»</div>
+        <div class="name">PrivacyAccountantProtocol</div>
+      </div>
+      <div class="ops">
+        <div class="pub">record(...)</div>
+        <div class="pub">cumulative() : (ε, δ)</div>
+      </div>
+    </div>
+
+    <!-- DP Mechanism -->
+    <div class="uml" style="top: 60px; left: 1080px; width: 220px;">
+      <div class="head">
+        <div class="stereo">privacy</div>
+        <div class="name">BaseDPMechanism</div>
+      </div>
+      <div class="attrs">
+        <div># sensitivity : float</div>
+        <div># rng : Generator</div>
+      </div>
+      <div class="ops">
+        <div class="pub">privatize(P, ε, δ)</div>
+        <div class="prot">_sample_noise(...)</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
