@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1080px; }
 
@@ -88,7 +124,7 @@
       <h1>Aggregation Strategies</h1>
       <div class="subtitle">Three plug-replaceable aggregators implementing AggregatorProtocol — same input, very different bias-variance tradeoff</div>
     </div>
-    <div class="brand-pill">DIAGRAM 13 / 16</div>
+    <div class="brand-pill">DIAGRAM 13 / 18</div>
   </div>
 
   <div class="strats">
@@ -269,6 +305,117 @@ G(x) = mode<sub>k</sub>(ŷₖ)
           <tr><td class="lab">MajorityVote</td><td>K-tree ensemble</td><td>K × 10 KB</td><td>No proxy available</td><td>0.812 ± 0.014</td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · AGGREGATION IS A SIMPLEX OPERATION ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">∑</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Merge in label space, not weight space</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — proxy redistillation derivation</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          $K$ client surrogates each produce a row of probabilities on the proxy. The average is the row-wise barycentre in $\Delta^{K-1}$:
+        </div>
+        <div class="math-display">$\bar{P}[i] = \sum_{k=1}^{K} \gamma_k \cdot S_k.\mathrm{predict\_proba}(x_i),\quad \gamma_k \ge 0,\ \sum_k \gamma_k = 1$</div>
+        <div class="math-display">$G \;=\; \arg\min_{T} \sum_{i} \mathcal{L}\bigl(T(x_i),\, \bar{P}[i]\bigr) + \alpha\,|T|$</div>
+        <div class="math-display">$\mathrm{Var}(\bar{P}) \;\le\; \sum_{k} \gamma_k^2\,\mathrm{Var}(P_k) \;\le\; \dfrac{1}{K}\max_k \mathrm{Var}(P_k)$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># Privacy: $\bar{P}$ inherits $\min_k(\varepsilon_k, \delta_k)$ by post-processing</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — re-distil, don't ensemble</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>A K-tree ensemble is K× the size on the wire.</strong> Re-distillation produces one final tree of ~10 KB — the same wire format as any client surrogate.<br><br>
+          <strong>The averaged P̄ has lower variance than any single client P<sub>k</sub>.</strong> Re-distilling on this smoother target gives a globally-better student than naive ensembling.<br><br>
+          <strong>The output is itself a ModelAdapterProtocol</strong> — the broadcast artifact is wire-compatible with the next round's clients. Recursion works.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — three strategies, one signature</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>All three aggregators implement <code>AggregatorProtocol</code></strong>: <code>aggregate(updates, proxy_X, classes) → ModelAdapter</code>. The runner sees only the protocol.<br><br>
+          <strong>Strategy choice is empirical, not theoretical.</strong> Proxy-redistillation wins on most non-IID regimes; confidence-weighted wins under heavy quantity skew; majority-vote is the ablation baseline.<br><br>
+          <strong>The proxy is shared across rounds.</strong> One sample, many uses. Re-sampling per round would waste epsilon if the proxy were private — but it's public.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · what every symbol above means ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · AGGREGATION ALGEBRA</div>
+        <h3>Every symbol used in the proxy barycentre, redistillation, and variance bound — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Client surrogates &amp; proxy domain</div>
+      <div class="nsym">\(K\)</div>
+        <div class="ndef">Number of clients participating in the round; the cardinality of the surrogate collection averaged on the proxy.</div>
+        <div class="nsrc"><code>len(updates)</code> in <code>ProxyRedistillationAggregator.aggregate</code>; set by <code>cfg.federation.n_clients</code>.</div>
+      <div class="nsym">\(S_k\)</div>
+        <div class="ndef">Per-client surrogate tree (the wire artefact) wrapping \(\mathrm{predict\_proba}: \mathbb{R}^d \to \Delta^{|\mathcal{C}|-1}\).</div>
+        <div class="nsrc">Deserialised from <code>ClientUpdate.surrogate_blob</code> via <code>safe_deserialize</code>; implements <code>ModelAdapterProtocol</code>.</div>
+      <div class="nsym">\(x_i\)</div>
+        <div class="ndef">A row of the public proxy feature matrix. The shared evaluation point at which every \(S_k\) is queried.</div>
+        <div class="nsrc"><code>proxy_X[i]</code> built by <code>build_proxy_dataset</code> in <code>data/proxy.py</code> (held-out / synthetic / public).</div>
+      <div class="nsym">\(S_k.\mathrm{predict\_proba}(x_i)\)</div>
+        <div class="ndef">Row-stochastic probability vector emitted by client \(k\)'s surrogate at proxy point \(x_i\); lives in \(\Delta^{|\mathcal{C}|-1}\).</div>
+        <div class="nsrc"><code>S_k.predict_proba(proxy_X)</code> called inside <code>aggregation/proxy_redistillation.py</code>.</div>
+
+      <div class="notation-section-row">Barycentre weights &amp; aggregate target</div>
+      <div class="nsym">\(\gamma_k\)</div>
+        <div class="ndef">Non-negative simplex weight assigned to client \(k\). Uniform \(1/K\) for proxy-redistillation; confidence-derived for ConfidenceWeighted; one-hot per row for MajorityVote.</div>
+        <div class="nsrc">Computed in <code>_compute_weights</code> of each aggregator (e.g. <code>confidence_weighted.py</code>); defaults to <code>np.full(K, 1/K)</code>.</div>
+      <div class="nsym">\(\bar{P}[i]\)</div>
+        <div class="ndef">Row-wise barycentre on the proxy — the convex combination \(\sum_k \gamma_k S_k.\mathrm{predict\_proba}(x_i)\). The redistillation <em>target</em>.</div>
+        <div class="nsrc"><code>P_bar = np.average(stacked_probs, axis=0, weights=gammas)</code> in <code>proxy_redistillation.py</code>.</div>
+      <div class="nsym">\(\Delta^{K-1}\)</div>
+        <div class="ndef">The probability simplex over class indices — non-negative entries summing to 1. Each row of \(\bar{P}\) and every \(S_k\) output lives here.</div>
+        <div class="nsrc">Enforced by the <code>predict_proba</code> contract on <code>ModelAdapterProtocol</code> and re-checked after averaging.</div>
+
+      <div class="notation-section-row">Redistillation objective</div>
+      <div class="nsym">\(T\)</div>
+        <div class="ndef">Candidate decision tree in the depth-bounded hypothesis class; the argmin variable of the redistillation objective.</div>
+        <div class="nsrc">Iterated over implicitly by sklearn's CART; concretised as <code>DecisionTreeClassifier</code> inside <code>SurrogateTreeDistiller</code>.</div>
+      <div class="nsym">\(\mathcal{L}\)</div>
+        <div class="ndef">Pointwise distillation loss between student output and target row — weighted 0-1 (Mode A) or squared error (Mode B).</div>
+        <div class="nsrc">Selected by <code>cfg.distillation.mode</code>; consumed inside <code>SurrogateTreeDistiller.distill</code>.</div>
+      <div class="nsym">\(\alpha\,|T|\)</div>
+        <div class="ndef">Complexity regulariser on the tree (proxy for <code>max_depth</code>, <code>min_samples_leaf</code>, <code>ccp_alpha</code>). Keeps the wire payload small.</div>
+        <div class="nsrc"><code>cfg.distillation.max_depth</code> and <code>ccp_alpha</code> passed to the sklearn estimator constructor.</div>
+      <div class="nsym">\(G\)</div>
+        <div class="ndef">Global redistilled surrogate — \(\arg\min\) of the objective. The single tree broadcast back to all clients.</div>
+        <div class="nsrc"><code>G = self.distiller.distill(proxy_X, P_bar, classes)</code>; wrapped as <code>GlobalArtifact</code> by the coordinator.</div>
+
+      <div class="notation-section-row">Variance bound &amp; privacy inheritance</div>
+      <div class="nsym">\(P_k\)</div>
+        <div class="ndef">Per-client probability surface evaluated on the proxy (a per-row random vector). Variance is taken over the DP noise and the partition randomness.</div>
+        <div class="nsrc"><code>S_k.predict_proba(proxy_X)</code>; equals the post-DP target after the noised distillation step.</div>
+      <div class="nsym">\(\mathrm{Var}(\cdot)\)</div>
+        <div class="ndef">Component-wise variance of a probability surface; the quantity Jensen's inequality bounds when averaging in label space. The double bound shows uniform weights minimise variance.</div>
+        <div class="nsrc">Measured empirically in <code>aggregation/_telemetry.py</code> (per-row std across clients); reported in <code>RoundResult.aggregation_metrics["proxy_var"]</code>.</div>
+      <div class="nsym">\(\varepsilon_k, \delta_k\)</div>
+        <div class="ndef">Per-client privacy budget already paid to produce \(\tilde P_k\) (and therefore \(S_k\)). \(\bar P\) inherits \(\min_k(\varepsilon_k,\delta_k)\) by post-processing.</div>
+        <div class="nsrc"><code>PrivacyAccountant.cumulative()</code> rows; aggregator never spends new budget — it only reads <code>ClientUpdate.epsilon</code>.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> Aggregation in FedRF-Distill is a <em>simplex operation</em>: every step (\(\bar P\), redistil into \(G\)) is a deterministic function of public proxy points \(x_i\) and already-privatised \(S_k\) outputs, so the broadcast \(G\) inherits the strictest client budget without any additional noise.
     </div>
   </div>
 

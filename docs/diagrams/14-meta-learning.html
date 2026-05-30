@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1080px; }
 
@@ -101,7 +137,7 @@
       <h1>Meta-Learning — StackingMetaLearner</h1>
       <div class="subtitle">Refine the local model by stacking it on top of the global surrogate's predictions</div>
     </div>
-    <div class="brand-pill">DIAGRAM 14 / 16</div>
+    <div class="brand-pill">DIAGRAM 14 / 18</div>
   </div>
 
   <div class="stages">
@@ -215,6 +251,115 @@ class StackingMetaLearner:
       <div class="num"><div class="big">0.821</div><div class="lab">acc — global G only</div></div>
       <div class="num"><div class="big">0.844</div><div class="lab">acc — StackedAdapter</div></div>
       <div class="num"><div class="big">+5.2 pp</div><div class="lab">vs. local baseline</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · WHY STACKING (NOT FedAvg) ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">‖</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Stacked generalisation — the Wolpert 1992 idea</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — formal stacking</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          The refined model is the composition of an augmenter (concatenate $G$'s prediction) and a base learner that's free to ignore it:
+        </div>
+        <div class="math-display">$\varphi_G:\mathbb{R}^{d} \to \mathbb{R}^{d+K},\quad \varphi_G(x) = x \oplus G.\mathrm{predict\_proba}(x)$</div>
+        <div class="math-display">$M_k(x) \;=\; M_k^{\mathrm{raw}}\bigl(\varphi_G(x)\bigr),\quad M_k^{\mathrm{raw}} = \mathrm{RF}.\mathrm{fit}\bigl(\{(\varphi_G(x_i),\,y_i)\}\bigr)$</div>
+        <div class="math-display">$\mathrm{err}(M_k) \;\le\; \min\bigl(\mathrm{err}(S_k),\,\mathrm{err}(G)\bigr) + \varepsilon_{\mathrm{stack}},\quad \varepsilon_{\mathrm{stack}} \xrightarrow{n_{\mathrm{local}}\to\infty} 0$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># $G_{\mathrm{proba}}$ columns are scale-free ⇒ no standardisation required for trees</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — stacking is the only choice for trees</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Trees have no weight tensor to average.</strong> FedAvg is undefined. FedProx, FedNova, SCAFFOLD — all rely on a gradient or a parameter difference. None apply.<br><br>
+          <strong>Stacking sidesteps this entirely.</strong> The global G becomes a <em>feature</em>, the local model decides how much to trust it. Trees discover the trust weight by selecting the G-proba columns at the most informative splits.<br><br>
+          <strong>If G is bad on this client</strong>, the refined tree ignores the augmented columns and falls back to the raw features — no harm done.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — model the trust, not the parameters</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Federated learning is fundamentally an <em>opinion-merging</em> problem.</strong> The global model has one opinion (from all clients), the local model has another (from its private data). Stacking is the math for "trust this much of each".<br><br>
+          <strong>StackedAdapter auto-augments at predict-time.</strong> Caller never has to remember the trick. The drop-in nature means any downstream evaluator works unchanged.<br><br>
+          <strong>The local model and the global model see different worlds.</strong> Combining them lets the federation benefit from <em>both</em> — without one overriding the other.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · what every symbol above means ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · STACKED META-LEARNING</div>
+        <h3>Every symbol in the augmenter, refined predictor, and Breiman-style bound — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Inputs to the augmenter</div>
+      <div class="nsym">\(x\)</div>
+        <div class="ndef">A single feature row drawn from client \(k\)'s local data; element of \(\mathbb{R}^d\).</div>
+        <div class="nsrc"><code>X_local[i]</code> inside <code>StackingMetaLearner.refine</code>; never crosses the wire.</div>
+      <div class="nsym">\(d\)</div>
+        <div class="ndef">Original feature dimensionality, shared across the federation (must match the global feature schema).</div>
+        <div class="nsrc"><code>X_local.shape[1]</code>; validated against <code>cfg.data.n_features</code>.</div>
+      <div class="nsym">\(K\)</div>
+        <div class="ndef">Number of classes — equivalently the width of \(G.\mathrm{predict\_proba}\). The added column count after augmentation.</div>
+        <div class="nsrc"><code>len(G.classes_)</code>; aligned across clients by <code>SoftLabelGenerator</code>'s class-padding step.</div>
+      <div class="nsym">\(y_i\)</div>
+        <div class="ndef">Hard label for training row \(i\); the target the refined base learner is fit against.</div>
+        <div class="nsrc"><code>y_local[i]</code> — the only step where hard labels (not soft) re-enter the pipeline.</div>
+
+      <div class="notation-section-row">Stacking augmentation</div>
+      <div class="nsym">\(G\)</div>
+        <div class="ndef">Global surrogate received from the coordinator at the start of the meta phase. The first-level learner whose opinions are concatenated.</div>
+        <div class="nsrc"><code>self.global_model</code> on the client; passed in as the third positional arg to <code>meta_learner.refine</code>.</div>
+      <div class="nsym">\(G.\mathrm{predict\_proba}(x)\)</div>
+        <div class="ndef">Global model's soft prediction at \(x\); row-stochastic vector in \(\Delta^{K-1}\). Treated as an opaque feature block.</div>
+        <div class="nsrc"><code>G.predict_proba(X_local)</code> called once at the top of <code>StackingMetaLearner.refine</code>.</div>
+      <div class="nsym">\(\oplus\)</div>
+        <div class="ndef">Horizontal concatenation operator on row vectors: \(\mathbb{R}^d \times \mathbb{R}^K \to \mathbb{R}^{d+K}\).</div>
+        <div class="nsrc"><code>np.hstack([X_local, G_proba])</code> inside <code>_augment</code> of <code>meta/stacking.py</code>.</div>
+      <div class="nsym">\(\varphi_G\)</div>
+        <div class="ndef">The augmenter — a deterministic feature map parameterised by the fixed global \(G\). Applied identically at fit-time and predict-time.</div>
+        <div class="nsrc"><code>StackedAdapter._augment</code>; captured as a closure over <code>self.global_model</code>.</div>
+
+      <div class="notation-section-row">Refined predictor &amp; generalisation bound</div>
+      <div class="nsym">\(M_k^{\mathrm{raw}}\)</div>
+        <div class="ndef">Second-level learner fit on the augmented features — typically a Random Forest. Inner estimator of the stacked adapter.</div>
+        <div class="nsrc"><code>self.inner = self.teacher_factory(); self.inner.fit(phi_X, y_local)</code> in <code>StackingMetaLearner.refine</code>.</div>
+      <div class="nsym">\(M_k\)</div>
+        <div class="ndef">The full refined client model — composition \(M_k^{\mathrm{raw}} \circ \varphi_G\). The deliverable of the meta phase.</div>
+        <div class="nsrc"><code>StackedAdapter(inner=M_raw, global_model=G)</code>; auto-augments at <code>predict</code> / <code>predict_proba</code>.</div>
+      <div class="nsym">\(\mathrm{err}(\cdot)\)</div>
+        <div class="ndef">Generalisation (population) error of a classifier on client \(k\)'s data distribution; the quantity Wolpert/Breiman bound.</div>
+        <div class="nsrc">Estimated by held-out test accuracy in <code>eval(M_k, X_test, y_test)</code>; reported as <code>round_result.meta_acc</code>.</div>
+      <div class="nsym">\(S_k\)</div>
+        <div class="ndef">Client \(k\)'s local surrogate from the distillation phase — the "trust only the local data" baseline the stack must not regress past.</div>
+        <div class="nsrc"><code>self.surrogate</code> after <code>local_train</code>; cached on the client for the err-bound diagnostic.</div>
+      <div class="nsym">\(\varepsilon_{\mathrm{stack}}\)</div>
+        <div class="ndef">Excess risk introduced by stacking with a finite training set; vanishes as \(n_{\mathrm{local}}\to\infty\) when the meta-learner is consistent.</div>
+        <div class="nsrc">Not computed directly; bounded operationally by ensuring <code>n_local \ge 50</code> in <code>cfg.meta.min_samples</code>.</div>
+      <div class="nsym">\(n_{\mathrm{local}}\)</div>
+        <div class="ndef">Row count on client \(k\) — the sample size driving the stacking consistency rate.</div>
+        <div class="nsrc"><code>X_local.shape[0]</code>; surfaced as <code>ClientUpdate.n_samples</code>.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> Stacking is the only federation-compatible refinement for tree-based learners — there is no weight tensor to FedAvg. By making \(G\) a <em>feature</em> rather than a parameter, \(M_k\) can ignore the global when it disagrees, giving the \(\min(\mathrm{err}(S_k),\mathrm{err}(G))\) bound for free.
     </div>
   </div>
 

@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1700px; min-height: 1080px; }
   .stages {
@@ -99,7 +135,7 @@
       <h1>One Federation Round, Stage by Stage</h1>
       <div class="subtitle">From raw local data to a refined, cross-client-aware model — in 7 steps</div>
     </div>
-    <div class="brand-pill">DIAGRAM 02 / 16</div>
+    <div class="brand-pill">DIAGRAM 02 / 18</div>
   </div>
 
   <div class="stages">
@@ -193,6 +229,128 @@
     <div class="legend-item"><div class="legend-swatch" style="background: var(--luminate-light); border: 1px solid var(--luminate-medium);"></div>Client-side op</div>
     <div class="legend-item"><div class="legend-swatch" style="background: #fff5dd; border: 1px solid var(--amber);"></div>Server-side op</div>
     <div class="legend-item"><div class="legend-swatch" style="background: #fdecec; border: 1px solid var(--red);"></div>DP injection point</div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · ROUND-LEVEL ALGEBRA ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">∮</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">One round = 7 typed transformations</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — type signature of a round</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          Round \(t\) is a sequence of total functions across 3 swim-lanes:
+        </div>
+        <div class="math-display">
+          $$\begin{aligned}
+          \text{fit:} \quad &amp; (X_k, y_k) \mapsto \mathcal{T}_k \\
+          \text{soft:} \quad &amp; \mathcal{T}_k(X_k) \mapsto P_k \in \Delta^{K-1} \\
+          \text{DP:} \quad &amp; \mathcal{M}(P_k;\, \varepsilon, \delta) \mapsto \tilde{P}_k \\
+          \text{distil:} \quad &amp; (X_k, \tilde{P}_k) \mapsto S_k
+          \end{aligned}$$
+        </div>
+        <div class="math-display">
+          $$\begin{aligned}
+          \text{agg:} \quad &amp; \{S_k\}_{k=1}^{K} \mapsto G \\
+          \text{ledger:} \quad &amp; (\varepsilon, \delta) \mapsto (\varepsilon_{\text{cum}}, \delta_{\text{cum}}) \\
+          \text{stack:} \quad &amp; (X_k, y_k, G) \mapsto M_k
+          \end{aligned}$$
+        </div>
+        <div style="font-size:12px; color:#9bdc7c; margin-top:8px; font-family:'JetBrains Mono', monospace;">
+          # Invariant: \(\tilde{P}_k \in \Delta^{K-1}\) after clip + renorm
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — this exact shape</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Privacy must be injected once and only once.</strong> Putting DP between the teacher's <em>raw</em> soft labels and the student's training data means every downstream object — the surrogate, the aggregate, the meta-refined model — inherits (ε, δ)-DP <em>for free</em> by post-processing.<br><br>
+          <strong>Step 5 averages on a proxy</strong> because client surrogates have <em>incomparable</em> internals (different splits, different feature thresholds) — but they all map <code>X → Δ<sup>k-1</sup></code>. The probability simplex is the canonical common ground.<br><br>
+          <strong>Step 7 happens after broadcast</strong> so the local model can use the global as an evidence feature, not blindly replace itself.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — why a fixed cadence</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          A federated round is the <strong>atomic unit of trust</strong>: clients commit a privatised distillation, coordinator commits an aggregated distillation, accountant commits a ledger entry. Either all 7 steps succeed or the round is rolled back.<br><br>
+          <strong>No partial trust.</strong> Coordinator never sees a raw soft label; client never trusts the global until the artifact's class path is verified by <code>safe_deserialize</code>.<br><br>
+          <strong>Bound the surface, not the depth.</strong> 7 steps × T rounds is small; the depth of each tree is small. The framework's power comes from <em>composing simple privatised steps</em>, not from a single heroic algorithm.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · what every symbol above means ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · ROUND-LEVEL ALGEBRA</div>
+        <h3>Every symbol used in the round map above — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Local data &amp; teacher (client side)</div>
+      <div class="nsym">\(X_k, y_k\)</div>
+        <div class="ndef">Private feature matrix and label vector on client \(k\); shapes \((n_k, d)\) and \((n_k,)\). Never crosses the wire.</div>
+        <div class="nsrc"><code>FederatedClient.X_local</code>, <code>FederatedClient.y_local</code> — set in the constructor from a <code>Partitioner</code> shard.</div>
+      <div class="nsym">\(n_k, d\)</div>
+        <div class="ndef">Row count on client \(k\); feature dimensionality (constant across all clients).</div>
+        <div class="nsrc"><code>X_k.shape[0]</code> and <code>X_k.shape[1]</code>. \(n_k\) is reported in <code>ClientUpdate.n_samples</code>.</div>
+      <div class="nsym">\(\mathcal{T}_k\)</div>
+        <div class="ndef">Local teacher fit on \((X_k, y_k)\) — typically a Random Forest / XGBoost / LightGBM.</div>
+        <div class="nsrc"><code>self.teacher = self.teacher_factory(); self.teacher.fit(X_local, y_local)</code> in <code>client.local_train()</code>.</div>
+
+      <div class="notation-section-row">Soft labels &amp; DP privatisation</div>
+      <div class="nsym">\(P_k\)</div>
+        <div class="ndef">Raw teacher posteriors on the client's own data; shape \((n_k, |\mathcal{C}|)\), row-stochastic.</div>
+        <div class="nsrc"><code>P = self.teacher.predict_proba(self.X_local)</code> via <code>SoftLabelGenerator.generate</code>.</div>
+      <div class="nsym">\(\Delta^{K-1}\)</div>
+        <div class="ndef">The \((|\mathcal{C}|-1)\)-dimensional probability simplex — non-negative entries summing to 1. Each row of \(P_k\) or \(\tilde{P}_k\) lives here.</div>
+        <div class="nsrc">Maintained by <code>clip(.,0,1)</code> then row-normalisation in <code>privacy/mechanisms.py</code>.</div>
+      <div class="nsym">\(\mathcal{M}\)</div>
+        <div class="ndef">DP mechanism (<code>LaplaceMechanism</code>, <code>GaussianMechanism</code>, <code>NullDPMechanism</code>) — the only randomised step.</div>
+        <div class="nsrc">Injected via <code>cfg.dp.mechanism</code>; built in <code>_build_dp_mechanism(runner)</code>.</div>
+      <div class="nsym">\(\varepsilon, \delta\)</div>
+        <div class="ndef">Per-round privacy budget pair. \(\varepsilon\) bounds divergence between neighbouring datasets; \(\delta\) the failure probability.</div>
+        <div class="nsrc"><code>cfg.dp.target_epsilon / n_rounds</code> and <code>cfg.dp.target_delta</code>.</div>
+      <div class="nsym">\(\tilde{P}_k\)</div>
+        <div class="ndef">Privatised soft labels — sole noised object in the pipeline. Same shape as \(P_k\), still row-stochastic.</div>
+        <div class="nsrc">Returned by <code>self.dp_mechanism.privatize(P, ε, δ)</code>. Computed as \(\mathrm{clip}_{[0,1]}(P+\eta) / \mathrm{rowsum}\).</div>
+
+      <div class="notation-section-row">Distillation &amp; aggregation</div>
+      <div class="nsym">\(S_k\)</div>
+        <div class="ndef">Per-client surrogate tree (≈10 KB) fit on \((X_k, \tilde{P}_k)\). The wire payload.</div>
+        <div class="nsrc"><code>S_k = self.distiller.distill(X_local, P̃, classes)</code> — returns a <code>BaseModelAdapter</code>.</div>
+      <div class="nsym">\(\{S_k\}_{k=1}^{K}\)</div>
+        <div class="ndef">Collection of all client surrogates received this round.</div>
+        <div class="nsrc">Coordinator receives them as <code>updates: list[ClientUpdate]</code> with <code>surrogate_blob</code> fields.</div>
+      <div class="nsym">\(G\)</div>
+        <div class="ndef">Global surrogate distilled from the averaged client predictions on <code>proxy_X</code>. The broadcast model.</div>
+        <div class="nsrc"><code>G = aggregator.aggregate(updates, proxy_X, classes)</code> → wrapped in <code>GlobalArtifact</code>.</div>
+
+      <div class="notation-section-row">Privacy ledger &amp; meta-refinement</div>
+      <div class="nsym">\(\varepsilon_{\text{cum}}, \delta_{\text{cum}}\)</div>
+        <div class="ndef">Cumulative privacy spend across all rounds so far. Used to enforce the target budget.</div>
+        <div class="nsrc"><code>coordinator.accountant.cumulative()</code>. Basic composition: linear; RDP: \(\sqrt{R}\)-scaling.</div>
+      <div class="nsym">\(M_k\)</div>
+        <div class="ndef">Client \(k\)'s refined local model after stacking; wrapped as <code>StackedAdapter(inner, G)</code>.</div>
+        <div class="nsrc"><code>self.refined_model = self.meta_learner.refine(X_local, y_local, G, teacher_factory)</code>.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Invariant.</strong> The single noise injection at step DP — and the fact that every later step (distil, aggregate, stack) is a deterministic function of \(\tilde{P}_k\) and public data (<code>proxy_X</code>) — is what gives \(G\) and \(M_k\) their \((\varepsilon, \delta)\)-DP guarantee for free, by the post-processing closure of differential privacy.
+    </div>
   </div>
 
 </div>

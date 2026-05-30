@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1080px; }
 
@@ -101,7 +137,7 @@
       <h1>DP Mechanisms — Hook A</h1>
       <div class="subtitle">Three calibrated noise injectors that turn raw soft labels P into (ε, δ)-DP soft labels P̃</div>
     </div>
-    <div class="brand-pill">DIAGRAM 08 / 16</div>
+    <div class="brand-pill">DIAGRAM 08 / 18</div>
   </div>
 
   <div class="mech-grid">
@@ -203,6 +239,114 @@ P̃ = P</div>
         <div class="t">distill on P̃</div>
         <div class="d">Surrogate inherits (ε, δ)-DP</div>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · WHY THESE NOISE CALIBRATIONS ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">η</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Sensitivity is the entire game</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — sensitivity derivation</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          Sensitivity $\Delta_f$ bounds how much one row swap can move the output. For one row of $P$ (a probability vector summing to 1):
+        </div>
+        <div class="math-display">$\Delta_1 = \max_{D \sim D'} \lVert P(D) - P(D') \rVert_1 \le 2$</div>
+        <div class="math-display">$\Delta_2 = \max_{D \sim D'} \lVert P(D) - P(D') \rVert_2 \le \sqrt{2}$</div>
+        <div class="math-display">$b = \dfrac{\Delta_1}{\varepsilon} \;\Longrightarrow\; \text{pure }\varepsilon\text{-DP (Laplace)}$</div>
+        <div class="math-display">$\sigma \;\ge\; \dfrac{\Delta_2 \cdot \sqrt{2\ln(1.25/\delta)}}{\varepsilon} \;\Longrightarrow\; (\varepsilon,\delta)\text{-DP (Gaussian)}$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># Tighter bound: Mironov 2017 (RDP)</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — three mechanisms, three regimes</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Laplace</strong> — heavy-tailed, gives pure ε-DP (δ=0). Best when you need <em>no failure probability</em> and few rounds.<br><br>
+          <strong>Gaussian</strong> — subgaussian tails, gives (ε, δ)-DP with δ&gt;0. Best when you compose many rounds — its RDP composition is essentially √T-scaling, vs T-scaling for Laplace.<br><br>
+          <strong>Null</strong> — no noise. Used <em>only</em> for the utility-ceiling baseline. Producing it lets papers prove "DP costs X% accuracy".<br><br>
+          The choice <em>is</em> a hyperparameter we sweep in the experimental grid.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — calibrate noise, not algorithms</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>The same teacher / student / aggregator runs in all three regimes.</strong> Privacy is achieved by <em>adding properly-scaled noise</em>, not by inventing a new algorithm.<br><br>
+          <strong>Clip-then-renormalise is post-processing.</strong> It can't <em>increase</em> ε — it can only restore the simplex constraint. Free safety.<br><br>
+          <strong>The RNG seed is part of the experiment config.</strong> Reproducibility is not optional; the framework refuses to run with seed=None in the experiment runner.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · SENSITIVITY & NOISE CALIBRATION ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · LAPLACE / GAUSSIAN CALIBRATION</div>
+        <h3>Every symbol in the sensitivity and noise-scale formulas — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">The query &amp; its neighbours</div>
+      <div class="nsym">\(P\)</div>
+        <div class="ndef">Raw soft-label matrix; one row per training sample, row-stochastic.</div>
+        <div class="nsrc"><code>distillation/soft_labels.py:SoftLabelGenerator.generate()</code> → <code>teacher.predict_proba(X_local)</code>.</div>
+      <div class="nsym">\(P(D),\ P(D')\)</div>
+        <div class="ndef">The single-row output of the query under neighbouring datasets — used to define worst-case sensitivity.</div>
+        <div class="nsrc">Both materialised inside <code>tests/test_privacy_sensitivity.py</code> via leave-one-out probes.</div>
+      <div class="nsym">\(D \sim D'\)</div>
+        <div class="ndef">"Neighbouring" relation — datasets differ by one row.</div>
+        <div class="nsrc">Conceptual; defines the max-over in the sensitivity bound.</div>
+      <div class="nsym">\(\Delta_f\)</div>
+        <div class="ndef">Sensitivity of the query \(f\) — max norm-distance between outputs on neighbouring inputs.</div>
+        <div class="nsrc">Stored as <code>self.sensitivity</code> on each <code>BaseDPMechanism</code> subclass.</div>
+
+      <div class="notation-section-row">Norms &amp; sensitivities</div>
+      <div class="nsym">\(\Delta_1\)</div>
+        <div class="ndef">\(\ell_1\)-sensitivity of one row of \(P\). For a probability vector, swapping one row changes total mass by at most 2.</div>
+        <div class="nsrc"><code>LaplaceMechanism.sensitivity = 2.0</code> in <code>privacy/mechanisms.py</code>.</div>
+      <div class="nsym">\(\Delta_2\)</div>
+        <div class="ndef">\(\ell_2\)-sensitivity of one row of \(P\). Tight upper bound is \(\sqrt{2}\) for probability vectors.</div>
+        <div class="nsrc"><code>GaussianMechanism.sensitivity = math.sqrt(2)</code> in <code>privacy/mechanisms.py</code>.</div>
+      <div class="nsym">\(\lVert\cdot\rVert_1,\ \lVert\cdot\rVert_2\)</div>
+        <div class="ndef">\(\ell_1\) and \(\ell_2\) norms used to measure inter-row distance.</div>
+        <div class="nsrc"><code>numpy.linalg.norm(..., ord=1)</code> / <code>ord=2</code> in sensitivity tests.</div>
+
+      <div class="notation-section-row">Noise scales &amp; mechanism parameters</div>
+      <div class="nsym">\(b\)</div>
+        <div class="ndef">Scale parameter of the Laplace distribution \(\mathrm{Lap}(0,b)\); calibrated as \(b=\Delta_1/\varepsilon\) for pure \(\varepsilon\)-DP.</div>
+        <div class="nsrc"><code>b = self.sensitivity / epsilon</code> in <code>LaplaceMechanism._sample_noise()</code>.</div>
+      <div class="nsym">\(\sigma\)</div>
+        <div class="ndef">Std-dev of the Gaussian \(\mathcal{N}(0,\sigma^2)\); calibrated as \(\Delta_2\sqrt{2\ln(1.25/\delta)}/\varepsilon\) for \((\varepsilon,\delta)\)-DP.</div>
+        <div class="nsrc"><code>sigma = self.sensitivity * math.sqrt(2*math.log(1.25/delta)) / epsilon</code> in <code>GaussianMechanism._sample_noise()</code>.</div>
+      <div class="nsym">\(\eta\)</div>
+        <div class="ndef">The actual noise draw added to \(P\) row-wise. Either \(\mathrm{Lap}(0,b)\) or \(\mathcal{N}(0,\sigma^2)\).</div>
+        <div class="nsrc">Drawn via <code>self.rng.laplace(...)</code> or <code>self.rng.normal(...)</code>; <code>rng</code> seeded from <code>cfg.seed</code>.</div>
+      <div class="nsym">\(\varepsilon\)</div>
+        <div class="ndef">Per-call privacy budget — only this step consumes ε.</div>
+        <div class="nsrc">Argument to <code>privatize(P, ε, δ)</code>; recorded in the accountant ledger.</div>
+      <div class="nsym">\(\delta\)</div>
+        <div class="ndef">Failure probability for Gaussian; must be 0 for Laplace (which gives pure \(\varepsilon\)-DP).</div>
+        <div class="nsrc">Argument to <code>privatize</code>; validated by <code>GaussianMechanism</code> (\(\delta&gt;0\)) and <code>LaplaceMechanism</code> (\(\delta=0\)).</div>
+      <div class="nsym">\(\ln(1.25/\delta)\)</div>
+        <div class="ndef">Analytic constant from Dwork-Roth's Gaussian-mechanism calibration theorem.</div>
+        <div class="nsrc">Hardcoded inside <code>GaussianMechanism</code>; replaced by Mironov-RDP if RDP accountant is selected.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Invariant.</strong> Both \(b=\Delta_1/\varepsilon\) and \(\sigma\ge\Delta_2\sqrt{2\ln(1.25/\delta)}/\varepsilon\) hold the same shape: noise scale = (sensitivity) / (budget). Tighten the sensitivity, halve the noise — but every term in the formula is a constant determined by the query shape, not by the data.
     </div>
   </div>
 

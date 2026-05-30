@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Surrogate Tree Creation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
+<style>
+  .canvas { width: 1600px; min-height: 1800px; }
+
+  /* Top-row ingredients */
+  .ingredients {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 22px;
+  }
+  .ingredient {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 22px 18px; position: relative;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04), 0 12px 28px -12px rgba(19, 1, 74, 0.12);
+  }
+  .ingredient::before {
+    content: ''; position: absolute; top:0; left:24px; right:24px; height:3px;
+    background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
+    border-radius: 0 0 3px 3px;
+  }
+  .ingredient .role {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--ink-muted); letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .ingredient h4 { font-size: 16px; color: var(--ink-strong); margin-bottom: 6px; font-weight: 700; }
+  .ingredient .type {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    background: var(--surface-3); color: var(--luminate-primary);
+    padding: 3px 7px; border-radius: 4px; display: inline-block; margin-bottom: 12px;
+  }
+  .ingredient p { font-size: 13px; line-height: 1.55; color: var(--ink); }
+  .ingredient .formula-mini {
+    margin-top: 12px; padding: 9px 12px;
+    background: var(--luminate-light); border-radius: 7px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--luminate-primary); line-height: 1.55;
+  }
+
+  /* Big objective panel */
+  .objective {
+    margin-top: 40px;
+    background: white; border: 1px solid var(--line); border-radius: 18px;
+    padding: 30px 34px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .objective h3 { font-size: 18px; font-weight: 700; color: var(--ink-strong); margin-bottom: 14px; }
+  .objective .obj-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 28px;
+  }
+  .objective .obj-card {
+    background: var(--surface-2); border: 1px solid var(--line-subtle); border-radius: 12px;
+    padding: 22px 24px;
+  }
+  .objective .obj-card h4 {
+    font-size: 14px; color: var(--luminate-primary); font-weight: 700; margin-bottom: 8px;
+  }
+  .objective .eq-block {
+    background: #fafbfd; border: 1px solid var(--line-subtle); border-radius: 8px;
+    padding: 14px 16px; margin: 10px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    color: var(--ink-strong); line-height: 1.85;
+  }
+
+  /* Mode-comparison grid */
+  .modes {
+    margin-top: 40px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 22px;
+  }
+  .mode {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 26px; position: relative;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .mode::before {
+    content: ''; position: absolute; top:0; left:24px; right:24px; height: 3px;
+    border-radius: 0 0 3px 3px;
+  }
+  .mode.weighted::before { background: linear-gradient(90deg, var(--amber), #e0a64a); }
+  .mode.regression::before { background: linear-gradient(90deg, var(--green), #2bb958); }
+
+  .mode .label {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .mode.weighted .label { color: var(--amber); }
+  .mode.regression .label { color: var(--green); }
+  .mode h4 { font-size: 17px; color: var(--ink-strong); margin-bottom: 10px; font-weight: 700; }
+  .mode p { font-size: 13px; line-height: 1.55; color: var(--ink); margin-bottom: 10px; }
+  .mode .code-block {
+    background: #0a0119; color: #d6e0ff;
+    border-radius: 9px; padding: 16px 18px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.75;
+    white-space: pre-wrap; overflow-x: auto; margin: 12px 0;
+  }
+  .mode .code-block .c { color: #8b95c1; }
+  .mode .code-block .k { color: #ff9bcd; }
+  .mode .code-block .g { color: #9bdc7c; }
+
+  /* Algorithm flow */
+  .algo {
+    margin-top: 40px;
+    background: white; border: 1px solid var(--line); border-radius: 18px;
+    padding: 30px 34px;
+  }
+  .algo h3 { font-size: 18px; font-weight: 700; color: var(--ink-strong); margin-bottom: 20px; }
+  .algo-steps {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+  }
+  .algo-step {
+    background: var(--surface-2); border: 1px solid var(--line-subtle);
+    border-radius: 10px; padding: 14px 14px 18px;
+    position: relative;
+  }
+  .algo-step .n {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--luminate-primary); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .algo-step h5 { font-size: 12.5px; font-weight: 700; color: var(--ink-strong); margin-bottom: 6px; }
+  .algo-step p {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    line-height: 1.55; color: var(--ink);
+  }
+
+  /* Decision diagrams */
+  .decision-row {
+    margin-top: 36px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px;
+  }
+  .decision-card {
+    background: white; border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .decision-card h4 {
+    font-size: 14px; color: var(--ink-strong); font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .decision-card .ans {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--ink-muted); margin-bottom: 10px;
+  }
+  .decision-card .body { font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Surrogate Tree Creation</h1>
+      <div class="subtitle">How (X, P̃) becomes a 10 KB DecisionTreeClassifier — modes, math, mindset</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 17 / 18</div>
+  </div>
+
+  <!-- ═══ INGREDIENTS ═══ -->
+  <div class="ingredients">
+    <div class="ingredient">
+      <div class="role">Input · features</div>
+      <h4>X<sub>local</sub></h4>
+      <div class="type">np.ndarray (n, d)</div>
+      <p>Client_k's private feature matrix. Never transmitted off-device — only its <em>compressed image</em> through the student leaves.</p>
+      <div class="formula-mini">X ∈ ℝ<sup>n × d</sup><br>n: local rows, d: features</div>
+    </div>
+
+    <div class="ingredient">
+      <div class="role">Input · soft labels</div>
+      <h4>P̃ (DP-noised)</h4>
+      <div class="type">np.ndarray (n, k)</div>
+      <p>Teacher's <code>predict_proba</code> output already privatised through the DP mechanism. Each row is a probability simplex.</p>
+      <div class="formula-mini">P̃[i] ∈ Δ<sup>k−1</sup><br>Σⱼ P̃[i,j] = 1, P̃[i,j] ≥ 0</div>
+    </div>
+
+    <div class="ingredient">
+      <div class="role">Input · classes</div>
+      <h4>classes_</h4>
+      <div class="type">array-like (k,)</div>
+      <p>Global class label vector. Required for the student to align its output columns with the federation's canonical class order.</p>
+      <div class="formula-mini">classes_ = [c₀, c₁, …, c<sub>k−1</sub>]</div>
+    </div>
+
+    <div class="ingredient">
+      <div class="role">Output · student</div>
+      <h4>SurrogateTree</h4>
+      <div class="type">DecisionTreeClassifier</div>
+      <p>A shallow, weight-aware DT that mimics the teacher's soft predictions on the local distribution. Ships as a pickle blob.</p>
+      <div class="formula-mini">depth ≤ 6, ≈ 5–15 KB<br>callable: S.predict_proba(X')</div>
+    </div>
+  </div>
+
+  <!-- ═══ STUDENT OBJECTIVE ═══ -->
+  <div class="objective">
+    <h3>Student objective — what S<sub>k</sub> is trying to <em>approximate</em></h3>
+    <div class="obj-grid">
+      <div class="obj-card">
+        <h4>Idealised distillation loss</h4>
+        <p style="font-size:13px; line-height:1.6; color:var(--ink);">
+          The student S<sub>k</sub> is the minimiser of an empirical KL-divergence between its own predictive distribution and the (privatised) teacher's:
+        </p>
+        <div class="eq-block">
+S<sub>k</sub><sup>★</sup> = argmin<sub>S∈𝓢</sub> &nbsp; (1/n) Σᵢ KL(P̃[i] ‖ S.predict_proba(xᵢ))
+        </div>
+        <p style="font-size:12.5px; color:var(--ink-muted); line-height:1.55;">
+          Here 𝓢 is the hypothesis class of depth-bounded decision trees. Because CART cannot directly minimise KL on probability targets, the implementation reduces this to <strong>two tractable surrogate problems</strong> shown to the right.
+        </p>
+      </div>
+
+      <div class="obj-card">
+        <h4>Hypothesis class — why a tree?</h4>
+        <p style="font-size:13px; line-height:1.6; color:var(--ink);">
+          A depth-h decision tree partitions ℝ<sup>d</sup> into at most <strong>2<sup>h</sup></strong> axis-aligned hyper-rectangles. Each leaf stores an empirical class distribution.
+        </p>
+        <div class="eq-block">
+S(x) = Σ<sub>ℓ ∈ leaves</sub> 𝟙{x ∈ R<sub>ℓ</sub>} · π<sub>ℓ</sub>
+        </div>
+        <p style="font-size:12.5px; color:var(--ink-muted); line-height:1.55;">
+          Three properties make trees uniquely suited for federated distillation:
+          <strong>(i)</strong> weighted samples are first-class in sklearn (<code>sample_weight</code> is accepted by <code>.fit</code> natively);
+          <strong>(ii)</strong> serialised size is O(2<sup>h</sup>) integers — bandwidth-friendly;
+          <strong>(iii)</strong> the leaf distribution π<sub>ℓ</sub> is itself a probability simplex, so the student is a valid <code>ModelAdapter</code> without retrofitting a softmax head.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODE COMPARISON ═══ -->
+  <div class="modes">
+    <div class="mode weighted">
+      <div class="label">▌ Mode A · DEFAULT</div>
+      <h4>argmax-and-weight</h4>
+      <p>Convert each soft row into a <strong>(hard-label, confidence)</strong> pair: the most likely class becomes the target, and the row's peak probability becomes its training weight. CART then runs <em>weighted Gini</em> internally — low-confidence rows tug the splits less than high-confidence rows.</p>
+      <div class="code-block"><span class="c"># surrogate.py · _argmax_and_weight()</span>
+y_hat = np.argmax(P_tilde, axis=1)        <span class="c"># (n,)</span>
+w     = np.max(P_tilde,    axis=1)        <span class="c"># (n,)</span>
+
+tree = <span class="k">DecisionTreeClassifier</span>(
+    max_depth=max_depth,
+    min_samples_leaf=2,
+    random_state=seed,
+)
+tree.fit(X, y_hat, sample_weight=w)
+
+<span class="c"># predict_proba reads leaf-wise empirical distribution</span>
+S.predict_proba(x) = π<sub>leaf(x)</sub>  <span class="g">∈ Δ^(k-1)</span></div>
+      <p style="font-size:12px; color:var(--ink-muted); line-height:1.5;">
+        <strong>Math:</strong> minimises Σᵢ wᵢ · 𝟙{S(xᵢ) ≠ ŷᵢ} = weighted 0–1 loss. Variance scales with H(P̃[i]) — uncertain rows contribute less to splits.
+      </p>
+    </div>
+
+    <div class="mode regression">
+      <div class="label">▌ Mode B · OPTIONAL</div>
+      <h4>multi-output regression</h4>
+      <p>Treat each soft row as a <strong>k-dimensional regression target</strong>. CART minimises MSE jointly across all k outputs, learning a leaf-wise mean probability vector. Slightly larger trees, but closer to the true KL objective.</p>
+      <div class="code-block"><span class="c"># surrogate.py · _regression_mode()</span>
+tree = <span class="k">DecisionTreeRegressor</span>(
+    criterion=<span style="color:#ffb380;">"squared_error"</span>,
+    max_depth=max_depth,
+    random_state=seed,
+)
+tree.fit(X, P_tilde)   <span class="c"># P_tilde shape: (n, k)</span>
+
+<span class="c"># Predictions are leaf-mean vectors;</span>
+<span class="c"># wrap to enforce simplex projection</span>
+raw = tree.predict(x)                          <span class="c"># ∈ ℝ^k</span>
+S.predict_proba(x) = <span class="g">simplex_project(raw)</span>
+                   = clip(raw, 0) / Σ clip(raw, 0)</div>
+      <p style="font-size:12px; color:var(--ink-muted); line-height:1.5;">
+        <strong>Math:</strong> minimises (1/n) Σᵢ ‖P̃[i] − S(xᵢ)‖² ≈ Bregman divergence in L2 norm. Better correlated with KL when P̃ is near-uniform.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══ ALGORITHM FLOW ═══ -->
+  <div class="algo">
+    <h3>End-to-end algorithm — <code>SurrogateDistiller.distill(X, P̃, classes)</code></h3>
+    <div class="algo-steps">
+      <div class="algo-step">
+        <div class="n">1</div>
+        <h5>Validate</h5>
+        <p>Check P̃ rows are simplices (sum≈1, ≥0). Reject NaN. Confirm classes_ length matches P̃.shape[1].</p>
+      </div>
+      <div class="algo-step">
+        <div class="n">2</div>
+        <h5>Mode select</h5>
+        <p>Branch on <code>mode ∈ {"argmax", "regress"}</code>. Default is argmax — chosen for size + interpretability.</p>
+      </div>
+      <div class="algo-step">
+        <div class="n">3</div>
+        <h5>Derive targets</h5>
+        <p>Argmax: y_hat, w ← argmax/max of P̃.<br>Regress: target ← P̃ (passthrough).</p>
+      </div>
+      <div class="algo-step">
+        <div class="n">4</div>
+        <h5>Fit CART</h5>
+        <p>Build greedy depth-bounded tree using weighted Gini (argmax) or weighted MSE (regress). O(n·d·h) time.</p>
+      </div>
+      <div class="algo-step">
+        <div class="n">5</div>
+        <h5>Wrap</h5>
+        <p>Embed in <code>SurrogateAdapter</code> exposing <code>predict_proba</code> + <code>classes_</code>. Conforms to <code>ModelAdapter</code> Protocol.</p>
+      </div>
+      <div class="algo-step">
+        <div class="n">6</div>
+        <h5>Serialize</h5>
+        <p>pickle.dumps(adapter) → blob ≈ 5–15 KB. ClientUpdate = {blob, class_path, ε, δ, n}.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ KEY DESIGN DECISIONS ═══ -->
+  <div class="decision-row">
+    <div class="decision-card">
+      <h4>Why depth ≤ 6 (not unlimited)?</h4>
+      <div class="ans">— a bound between bias and privacy</div>
+      <div class="body">
+        Each additional level <em>doubles</em> the leaf count, which means each leaf is fitted on half as many rows — pushing it toward memorising single training points. That is a privacy disaster (memorisation ⇒ MIA-attackable). Depth 6 ⇒ ≤ 64 leaves, so each leaf averages over ~ n/64 rows — a structural smoothing prior compatible with the DP guarantee.
+      </div>
+    </div>
+
+    <div class="decision-card">
+      <h4>Why sample_weight is mandatory (mode A)?</h4>
+      <div class="ans">— preserving teacher confidence in CART</div>
+      <div class="body">
+        Without weights, a row with P̃ = [0.51, 0.49] (almost a tie) contributes the same to the Gini criterion as a row with P̃ = [0.99, 0.01] (extremely confident). The peak-probability weight makes the tree <em>defer to the teacher's certainty</em>, exactly the same effect as KL-weighting in soft-label classification.
+      </div>
+    </div>
+
+    <div class="decision-card">
+      <h4>Why aligned classes_, not local classes_?</h4>
+      <div class="ans">— federation interop</div>
+      <div class="body">
+        Client_k may not have seen all global classes (label-skew partitioner). Without aligning <code>classes_</code> to the federation's canonical order, the global aggregator's averaging step would silently mis-align columns. Padding zero columns for unseen classes preserves probability-vector semantics without lying about what the local teacher saw.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">🌳</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">A surrogate tree is a structural compression of (X, P̃)</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — formal compression</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          The surrogate distiller realises a measurable map $\psi$ from the $(n,d+K)$ joint table into the depth-$h$ DT space, with bounded description length:
+        </div>
+        <div class="math-display">$\psi\;:\;\mathbb{R}^{n\times d} \times \Delta^{n\times(K-1)} \;\longrightarrow\; \mathcal{T}_h,\quad (X,\tilde{P}) \mapsto S$</div>
+        <div class="math-display">$|\mathcal{T}_h| \;\le\; (2d)^{2^{h}-1} \cdot K^{2^{h}}$</div>
+        <div class="math-display">$|S|_{\mathrm{bits}} \;=\; O\!\bigl(2^{h}\,(\log d + \log K + \log n)\bigr)$</div>
+        <div class="math-display">$S^{\star} \;=\; \arg\min_{S\in\mathcal{T}_h} \sum_{i=1}^{n} w_i \cdot \mathbf{1}\{S(x_i) \neq \hat{y}_i\},\quad \hat{y}_i = \arg\max_j \tilde{P}[i,j],\ w_i = \max_j \tilde{P}[i,j]$</div>
+        <div class="math-display">$S^{\star} \;=\; \arg\min_{S\in\mathcal{T}_h} \sum_{i=1}^{n} \bigl\lVert \tilde{P}[i] - S.\mathrm{proba}(x_i) \bigr\rVert^{2}$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># Mode A: weighted 0-1. Mode B: multi-output L2. ≈ 5–15 KB for $h=6, d\le 30, K\le 10$</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — the tree is the privacy artefact</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          The student is not just <em>a compressed teacher</em> — it is <em>the only thing that leaves the device</em>. So three privacy-relevant facts must hold about it:<br><br>
+          <strong>1. Post-processing closure.</strong> By the Dwork post-processing theorem, any deterministic function of P̃ inherits its (ε, δ)-DP guarantee. ψ(X, ·) is such a function, so S inherits the privacy of P̃ <em>for free</em>.<br><br>
+          <strong>2. Bounded leakage.</strong> A depth-h tree has at most 2<sup>h</sup> distinct outputs, so its mutual information with the training set is bounded:<br>
+          <code>I(D; S) ≤ H(S) ≤ h · log(2d) + 2<sup>h</sup>·log k</code>.<br><br>
+          <strong>3. Reproducibility.</strong> Fixed random_state ⇒ S is a deterministic function of (X, P̃, seed) — the accountant can audit the chain without re-running the model.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — the tree is a contract</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>The surrogate is not a "compressed teacher" — it is a <em>declaration of what we are willing to share</em>.</strong> Every leaf node is a public statement: <em>"in this hyperrectangle, my data follows this empirical distribution."</em><br><br>
+          <strong>Bias as a feature, not a bug.</strong> A depth-6 tree <em>cannot</em> encode arbitrary subpopulations — that's the point. Structural under-capacity is a defensive prior against memorisation.<br><br>
+          <strong>Choose the loss to match the threat.</strong> Argmax mode is cheaper and ships smaller blobs — pick it when the federation is bandwidth-constrained. Regression mode is more faithful to KL — pick it when the downstream aggregator wants high-resolution probabilities for proxy redistillation.<br><br>
+          <strong>The wire format is the API.</strong> The aggregator must be able to <code>cls.deserialize(blob)</code> without trusting Client_k's Python environment. So the surrogate's serialised form is the only thing that matters: code-side cleverness that does not survive pickle is invisible.
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px; padding:18px 22px; background:rgba(255,255,255,0.05); border-radius:12px; border-left:3px solid #ffce9b; font-family:'JetBrains Mono', monospace; font-size:13px; color:#e8e3ff; line-height:1.7;">
+      <span style="color:#ffce9b;">∎</span>  <strong style="color:#fff;">Surrogate creation invariant:</strong>  for every Client_k, the artefact S<sub>k</sub> = ψ(X<sub>k</sub>, P̃<sub>k</sub>) is (a) a <code>ModelAdapter</code>, (b) ε<sub>k</sub>-DP w.r.t. D<sub>k</sub> via post-processing, (c) ≤ MAX_BLOB_BYTES, (d) deterministic given (X<sub>k</sub>, P̃<sub>k</sub>, seed). All four hold or the round fails fast.
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · what every symbol above means ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · DISTILLATION MAP</div>
+        <h3>Every symbol in the distillation map ψ, the hypothesis-class size, and the Mode A / Mode B losses — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Domain of ψ — features &amp; privatised soft labels</div>
+      <div class="nsym">\(n\)</div>
+        <div class="ndef">Number of training rows on the client (\(n = n_k\) in round-wide notation). Drives both the description length and the empirical loss sum.</div>
+        <div class="nsrc"><code>X.shape[0]</code> inside <code>SurrogateTreeDistiller.distill</code>.</div>
+      <div class="nsym">\(d\)</div>
+        <div class="ndef">Feature dimensionality; the column count of the input \(X\).</div>
+        <div class="nsrc"><code>X.shape[1]</code>; constant across the federation.</div>
+      <div class="nsym">\(K\)</div>
+        <div class="ndef">Number of classes (the \(\Delta^{K-1}\) corresponds to \(|\mathcal{C}|\) in round notation). Width of the soft-label table.</div>
+        <div class="nsrc"><code>len(classes)</code> argument to <code>distill</code>.</div>
+      <div class="nsym">\(X\)</div>
+        <div class="ndef">Feature matrix \(\in \mathbb{R}^{n\times d}\) — first input to ψ.</div>
+        <div class="nsrc"><code>X = self.X_local</code> on the client.</div>
+      <div class="nsym">\(\tilde P\)</div>
+        <div class="ndef">Privatised soft-label table \(\in \Delta^{n\times(K-1)}\) — second input to ψ. Each row is a probability vector.</div>
+        <div class="nsrc"><code>P̃ = self.dp_mechanism.privatize(P, ε, δ)</code>.</div>
+      <div class="nsym">\(\tilde P[i,j]\)</div>
+        <div class="ndef">Entry \((i,j)\) of \(\tilde P\) — privatised posterior of class \(j\) for sample \(i\).</div>
+        <div class="nsrc"><code>P̃[i, j]</code>; row-stochastic by construction.</div>
+      <div class="nsym">\(\Delta^{n\times(K-1)}\)</div>
+        <div class="ndef">Product simplex — \(n\) independent rows each in \(\Delta^{K-1}\). The codomain of every <code>predict_proba</code> on a table.</div>
+        <div class="nsrc">Enforced by clip-then-normalise in <code>privacy/mechanisms.py</code>.</div>
+
+      <div class="notation-section-row">Codomain — depth-bounded tree class</div>
+      <div class="nsym">\(h\)</div>
+        <div class="ndef">Maximum tree depth — the structural cap that bounds the hypothesis class.</div>
+        <div class="nsrc"><code>cfg.distillation.max_depth</code>; defaults to 6.</div>
+      <div class="nsym">\(\mathcal{T}_h\)</div>
+        <div class="ndef">Hypothesis class of axis-aligned decision trees of depth \(\le h\) with \(K\)-class leaf labels.</div>
+        <div class="nsrc">Implicitly enumerated by sklearn's <code>DecisionTreeClassifier/Regressor</code> with <code>max_depth=h</code>.</div>
+      <div class="nsym">\(|\mathcal{T}_h|\)</div>
+        <div class="ndef">Cardinality bound: at most \((2d)^{2^{h}-1} \cdot K^{2^{h}}\) — each of \(2^h-1\) internal nodes picks one of \(\le 2d\) split candidates, each of \(2^h\) leaves picks one of \(K\) labels.</div>
+        <div class="nsrc">Combinatorial — bounds <code>I(D; S)</code> in the privacy comment block.</div>
+      <div class="nsym">\(|S|_{\mathrm{bits}}\)</div>
+        <div class="ndef">Description length of a fitted surrogate: \(O(2^h(\log d + \log K + \log n))\). Drives the ~10 KB wire budget.</div>
+        <div class="nsrc">Reflected in <code>len(safe_serialize(S))</code>; checked against <code>MAX_BLOB_BYTES</code>.</div>
+      <div class="nsym">\(\psi\)</div>
+        <div class="ndef">The distillation map — a measurable function taking \((X, \tilde P)\) to a fitted surrogate \(S \in \mathcal{T}_h\).</div>
+        <div class="nsrc"><code>SurrogateTreeDistiller.distill</code> in <code>distillation/surrogate.py</code>.</div>
+      <div class="nsym">\(S\)</div>
+        <div class="ndef">The output surrogate — concrete element of \(\mathcal{T}_h\), the wire artefact.</div>
+        <div class="nsrc"><code>S = SurrogateAdapter(self._fit_tree(X, P̃))</code>.</div>
+
+      <div class="notation-section-row">Mode A — weighted 0-1 (argmax distillation)</div>
+      <div class="nsym">\(S^{\star}\)</div>
+        <div class="ndef">Empirical risk minimiser within \(\mathcal{T}_h\) — what the greedy CART search approximates.</div>
+        <div class="nsrc">Output of <code>DecisionTreeClassifier.fit(X, y_hat, sample_weight=w)</code>.</div>
+      <div class="nsym">\(\hat y_i\)</div>
+        <div class="ndef">Hard pseudo-label \(\arg\max_j \tilde P[i,j]\) — the teacher's most-confident class for row \(i\).</div>
+        <div class="nsrc"><code>y_hat = np.argmax(P̃, axis=1)</code> inside the Mode A branch.</div>
+      <div class="nsym">\(w_i\)</div>
+        <div class="ndef">Sample weight \(\max_j \tilde P[i,j]\) — the teacher's top-class confidence; down-weights low-margin rows.</div>
+        <div class="nsrc"><code>w = P̃.max(axis=1)</code>; passed as <code>sample_weight</code>.</div>
+      <div class="nsym">\(\mathbf{1}\{\cdot\}\)</div>
+        <div class="ndef">Indicator function — 1 if the predicate holds, 0 otherwise. Defines the 0-1 loss.</div>
+        <div class="nsrc">Implicit in sklearn's weighted classification error.</div>
+
+      <div class="notation-section-row">Mode B — multi-output L2 (regression distillation)</div>
+      <div class="nsym">\(S.\mathrm{proba}(x_i)\)</div>
+        <div class="ndef">The surrogate's predicted probability vector at \(x_i\) — element of \(\Delta^{K-1}\). The fit target.</div>
+        <div class="nsrc"><code>DecisionTreeRegressor.predict(X)</code> with multi-output \(K\)-column targets; row-renormalised at predict time.</div>
+      <div class="nsym">\(\lVert\cdot\rVert^{2}\)</div>
+        <div class="ndef">Squared \(\ell_2\) (Brier) loss between the privatised target row and the student's output row.</div>
+        <div class="nsrc"><code>criterion="squared_error"</code> in <code>DecisionTreeRegressor</code>.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> Both modes share the same ψ-signature — only the loss inside the argmin changes. Because ψ is a deterministic function of \((X, \tilde P, \mathrm{seed})\) and \(X\) is public-to-the-client, every \(S \in \mathcal{T}_h\) inherits the \(\tilde P\)-budget by Dwork's post-processing theorem.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

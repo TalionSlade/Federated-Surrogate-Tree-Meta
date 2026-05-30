@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1060px; }
   .proto-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; margin-top: 26px; }
@@ -53,7 +89,7 @@
       <h1>Protocol Layer</h1>
       <div class="subtitle">Every pluggable component is a <code>typing.Protocol</code> — structural typing, no inheritance</div>
     </div>
-    <div class="brand-pill">DIAGRAM 05 / 16</div>
+    <div class="brand-pill">DIAGRAM 05 / 18</div>
   </div>
 
   <div class="proto-grid">
@@ -200,6 +236,124 @@
     ) -> GlobalArtifact: ...</div>
     </div>
 
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · STRUCTURAL TYPING AS A SUBSTITUTION CALCULUS ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">≡</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Protocols are equivalence classes of behaviour</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — substitution principle</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          A protocol \(\mathcal{P}\) is a set of method signatures. Any object \(o\) with the right shape is in \(\mathcal{P}\). Liskov-style substitutability is enforced at the type-checker:
+        </div>
+        <div class="math-display">
+          $$o : \mathcal{P} \;\Longleftrightarrow\; \forall\, m \in \mathrm{sigs}(\mathcal{P}).\; \mathrm{hasattr}(o, m)\,\wedge\, \mathrm{type}(o.m) \subseteq \mathcal{P}.m$$
+        </div>
+        <div style="font-size:11.5px; color:#9bdc7c; margin:8px 0 4px 0; font-family:'JetBrains Mono', monospace;">
+          # Composition closure
+        </div>
+        <div class="math-display">
+          $$\mathcal{P}_{\text{Client}} \;\supseteq\; \mathcal{P}_{\text{Adapter}} \cup \mathcal{P}_{\text{DP}} \cup \mathcal{P}_{\text{Distil}} \cup \mathcal{P}_{\text{Meta}}^{?}$$
+        </div>
+        <div style="font-size:12px; color:#9bdc7c; margin-top:8px; font-family:'JetBrains Mono', monospace;">
+          # Result: \(O(1)\) swap cost — any impl change does not ripple through code
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — no inheritance</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          A research codebase has churn rates of 5–10× a production system. Inheritance trees freeze design decisions; protocols invite experimentation.<br><br>
+          <strong>Each protocol corresponds to a paper question.</strong> Want to ablate DP? Implement <code>DPMechanismProtocol</code>. Want to test a new aggregator? Implement <code>AggregatorProtocol</code>. The runner doesn't change.<br><br>
+          <strong>8 protocols × ~3 impls each = 6,561 wire-compatible experiments</strong>, all from one runtime.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — type the contract, not the implementation</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>A protocol declares <em>what something does</em>, not what it <em>is</em>.</strong> No <code>isinstance</code> checks anywhere in the codebase — duck typing with teeth.<br><br>
+          <strong>The composition root (orchestration) is the only place that sees concrete classes.</strong> Below it, every reference is via a protocol. This is the dependency-inversion principle made physical.<br><br>
+          <strong>Tests use protocol implementations directly</strong> — a fake DP mechanism, a stubbed aggregator. No mocks library required.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · protocol calculus ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · STRUCTURAL TYPING CALCULUS</div>
+        <h3>Every symbol used in the substitution principle &amp; composition closure above — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Substitution principle</div>
+      <div class="nsym">\(\mathcal{P}\)</div>
+        <div class="ndef">A protocol — a finite set of method signatures (name + types) describing a behavioural contract. Implementations are not classes that <em>inherit</em>; they are objects that <em>satisfy</em> the signatures structurally.</div>
+        <div class="nsrc">Declared with <code>typing.Protocol</code> in <code>protocols/*.py</code> (e.g. <code>ModelAdapterProtocol</code>, <code>DPMechanismProtocol</code>).</div>
+      <div class="nsym">\(o\)</div>
+        <div class="ndef">A candidate object — any Python instance. \(o : \mathcal{P}\) reads "o satisfies the protocol P".</div>
+        <div class="nsrc">Constructed by factories in <code>orchestration/factories.py</code>; passed positionally into the runner.</div>
+      <div class="nsym">\(o : \mathcal{P}\)</div>
+        <div class="ndef">The membership relation — \(o\) is a witness of protocol \(\mathcal{P}\) iff it carries every required method with a compatible signature.</div>
+        <div class="nsrc">Enforced statically by <code>mypy --strict</code>; never via <code>isinstance</code> at runtime.</div>
+      <div class="nsym">\(m\)</div>
+        <div class="ndef">A method (name and type signature) required by the protocol — e.g. <code>privatize(P, eps, delta) -&gt; np.ndarray</code>.</div>
+        <div class="nsrc">Declared as a method stub inside the <code>Protocol</code> body.</div>
+      <div class="nsym">\(\mathrm{sigs}(\mathcal{P})\)</div>
+        <div class="ndef">The set of all method signatures the protocol requires. The minimal contract surface.</div>
+        <div class="nsrc">Introspected by <code>typing.get_type_hints(Protocol)</code>; used in test scaffolding under <code>tests/protocols/</code>.</div>
+      <div class="nsym">\(\mathrm{hasattr}(o, m)\)</div>
+        <div class="ndef">The structural existence check: does the object expose this method? Necessary condition for \(o : \mathcal{P}\).</div>
+        <div class="nsrc">Implicit at protocol-attribute access; type-checker enforces presence statically.</div>
+      <div class="nsym">\(\mathrm{type}(o.m) \subseteq \mathcal{P}.m\)</div>
+        <div class="ndef">Subtyping condition: the object's method signature must be a subtype (covariant in returns, contravariant in args) of the protocol's signature.</div>
+        <div class="nsrc">Variance enforced by <code>mypy</code>; runtime witnesses are exercised by per-protocol contract tests.</div>
+
+      <div class="notation-section-row">Composition closure — the runner's contract</div>
+      <div class="nsym">\(\mathcal{P}_{\text{Client}}\)</div>
+        <div class="ndef">The aggregate protocol the federation runner depends on to instantiate a client. It is the <em>superset</em> of every sub-protocol the client must compose.</div>
+        <div class="nsrc"><code>protocols/client.py::ClientProtocol</code> — the runner's only client-side dependency.</div>
+      <div class="nsym">\(\mathcal{P}_{\text{Adapter}}\)</div>
+        <div class="ndef">Tree-model adapter contract: <code>fit</code>, <code>predict_proba</code>, <code>classes_</code>. Required so the client can wrap any backend.</div>
+        <div class="nsrc"><code>protocols/adapter.py::ModelAdapterProtocol</code>; satisfied by <code>SklearnTreeAdapter</code>, <code>XGBoostAdapter</code>, …</div>
+      <div class="nsym">\(\mathcal{P}_{\text{DP}}\)</div>
+        <div class="ndef">DP mechanism contract: <code>privatize(P, eps, delta) -&gt; P̃</code>. The only randomised arrow in the pipeline.</div>
+        <div class="nsrc"><code>protocols/dp.py::DPMechanismProtocol</code>; satisfied by <code>LaplaceMechanism</code>, <code>GaussianMechanism</code>, <code>NullDPMechanism</code>.</div>
+      <div class="nsym">\(\mathcal{P}_{\text{Distil}}\)</div>
+        <div class="ndef">Surrogate-distillation contract: <code>distill(X, P̃, classes) -&gt; BaseModelAdapter</code>. Maps soft-labels to a small student tree.</div>
+        <div class="nsrc"><code>protocols/distillation.py::DistillerProtocol</code>; satisfied by <code>SurrogateDistiller</code>.</div>
+      <div class="nsym">\(\mathcal{P}_{\text{Meta}}^{?}\)</div>
+        <div class="ndef">Optional meta-learner contract: <code>refine(X, y, G, factory) -&gt; StackedAdapter</code>. The "?" marks it as optional — clients may skip stacking.</div>
+        <div class="nsrc"><code>protocols/meta.py::MetaLearnerProtocol</code>; satisfied by <code>StackingMetaLearner</code> or omitted entirely.</div>
+      <div class="nsym">\(\supseteq\)</div>
+        <div class="ndef">Protocol-superset: \(\mathcal{P}_{\text{Client}}\) requires <em>at least</em> the union of the sub-protocol contracts — possibly more (e.g. <code>local_train</code>, <code>id</code>).</div>
+        <div class="nsrc">Composition closure enforced by <code>FederatedClient</code>'s constructor type signature.</div>
+      <div class="nsym">\(\cup\)</div>
+        <div class="ndef">Set union of signature sets — when composing sub-protocols into the client contract, their required methods accumulate.</div>
+        <div class="nsrc">Implicit in <code>FederatedClient.__init__</code>'s parameter list.</div>
+      <div class="nsym">\(O(1)\)</div>
+        <div class="ndef">Cost of swapping any one implementation. Because everything talks via protocols, a new backend doesn't ripple through call-sites — it just gets injected at the composition root.</div>
+        <div class="nsrc"><code>orchestration/factories.py</code> is the only file that mentions concrete classes; the rest of the codebase only knows protocols.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> Structural typing is what makes "8 protocols × ~3 implementations" combinatorially explorable: every \(o\) that satisfies \(\mathcal{P}\) is, by Liskov substitutability, a drop-in for every other such \(o\). The runner is closed under composition of sub-protocols; the type-checker is the only enforcement layer.
+    </div>
   </div>
 
 </div>

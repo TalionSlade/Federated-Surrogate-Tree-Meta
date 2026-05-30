@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1080px; }
 
@@ -97,7 +133,7 @@
       <h1>Threat Model</h1>
       <div class="subtitle">Adversaries, protected assets, and attack surfaces — formalised for Hook A's DP guarantee</div>
     </div>
-    <div class="brand-pill">DIAGRAM 07 / 16</div>
+    <div class="brand-pill">DIAGRAM 07 / 18</div>
   </div>
 
   <div class="actors">
@@ -205,6 +241,124 @@
     <div class="legend-item"><div class="legend-swatch" style="background: var(--surface-3);"></div>Knows</div>
     <div class="legend-item"><div class="legend-swatch" style="background: #fff5dd;"></div>Sees</div>
     <div class="legend-item"><div class="legend-swatch" style="background: #fdecec;"></div>Attempts</div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · THE DP GUARANTEE FORMALISED ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">⛨</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">(ε, δ)-DP — what the adversary is bounded to</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — Dwork's definition</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          A randomised mechanism $\mathcal{M}:\mathcal{D}\to\mathcal{Y}$ is $(\varepsilon,\delta)$-differentially private if for any pair of neighbouring datasets $D,D'$ (differing by one row) and any measurable $S\subseteq\mathcal{Y}$:
+        </div>
+        <div class="math-display">$\Pr[\mathcal{M}(D) \in S] \;\le\; e^{\varepsilon}\cdot \Pr[\mathcal{M}(D') \in S] \;+\; \delta$</div>
+        <div class="math-display">$\forall\,\mathcal{A},\ \forall\,\pi:\quad \bigl|\Pr_{\mathcal{A}}[\text{in } D \mid \mathcal{M}(D)] - \pi\bigr| \;\le\; \mathrm{bound}(\varepsilon,\delta)$</div>
+        <div class="math-display">$\forall\, f:\mathcal{Y}\to\mathcal{Z}:\quad f\circ\mathcal{M}\ \text{is}\ (\varepsilon,\delta)\text{-DP}$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># Post-processing ⇒ surrogate, G, M_k all inherit DP</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — three adversaries, one guarantee</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Honest client</strong> — trusted; the threat model assumes its process boundary is secure (OS-level).<br><br>
+          <strong>Honest-but-curious coordinator</strong> — runs the protocol but logs everything. DP bounds <em>what it can learn</em> from the soft labels.<br><br>
+          <strong>External eavesdropper</strong> — out of scope at the DP layer; addressed at deployment by TLS.<br><br>
+          The Dwork bound applies to the strongest threat in scope: the curious coordinator. Every other adversary is weaker, so it inherits the same protection.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — trust nothing, prove everything</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>We don't say "the data is safe."</strong> We say: <em>for any adversary, the probability they can identify one row's contribution is bounded by e<sup>ε</sup></em>. ε is the only knob.<br><br>
+          <strong>Pick ε before pick utility</strong> — the framework refuses to continue rounds that exceed the target budget. Privacy is the contract; accuracy is what falls out of it.<br><br>
+          <strong>Empirically validate analytically</strong> — the MIA in <code>privacy.attack</code> runs <em>after</em> training to <em>measure</em> the leak. Both numbers must agree.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · DP DEFINITION & POST-PROCESSING ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · (ε, δ)-DP FORMALISM</div>
+        <h3>Every symbol in Dwork's definition and the post-processing closure — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">The mechanism &amp; its data domain</div>
+      <div class="nsym">\(\mathcal{M}\)</div>
+        <div class="ndef">Randomised mechanism — the only stochastic step in the pipeline. Maps datasets to outputs.</div>
+        <div class="nsrc"><code>privacy/mechanisms.py:BaseDPMechanism.privatize(P, ε, δ)</code> — instances: <code>LaplaceMechanism</code>, <code>GaussianMechanism</code>, <code>NullDPMechanism</code>.</div>
+      <div class="nsym">\(\mathcal{D}\)</div>
+        <div class="ndef">Input data domain — the space of all valid client datasets (feature matrix + soft labels).</div>
+        <div class="nsrc">Conceptually <code>(X_local, P)</code>; concretely the soft-label row space inside <code>FederatedClient.local_train()</code>.</div>
+      <div class="nsym">\(\mathcal{Y}\)</div>
+        <div class="ndef">Output space of \(\mathcal{M}\) — the simplex of privatised soft-label rows \(\tilde{P}\).</div>
+        <div class="nsrc">Return type of <code>privatize()</code>: shape \((n_k,\, |\mathcal{C}|)\) row-stochastic array.</div>
+      <div class="nsym">\(D, D'\)</div>
+        <div class="ndef">Neighbouring datasets — differing by the addition / removal of a single row (the "one-row-out" semantics).</div>
+        <div class="nsrc">Implicit in the sensitivity bound proven in <code>privacy/mechanisms.py</code> docstrings; tested via leave-one-out in <code>tests/test_privacy_sensitivity.py</code>.</div>
+      <div class="nsym">\(S\)</div>
+        <div class="ndef">Any measurable subset of \(\mathcal{Y}\) — the "event" the adversary tries to discriminate on.</div>
+        <div class="nsrc">Not materialised in code; appears only in the DP proof obligation.</div>
+
+      <div class="notation-section-row">Privacy parameters</div>
+      <div class="nsym">\(\varepsilon\)</div>
+        <div class="ndef">Per-round privacy loss budget — bounds \(\log\)-ratio of output probabilities between neighbouring datasets.</div>
+        <div class="nsrc"><code>cfg.dp.target_epsilon / n_rounds</code> in <code>configs/*.yaml</code>; passed into <code>privatize(P, ε, δ)</code>.</div>
+      <div class="nsym">\(\delta\)</div>
+        <div class="ndef">Failure probability — the mass under which the \(e^{\varepsilon}\) bound is allowed to break.</div>
+        <div class="nsrc"><code>cfg.dp.target_delta</code>; typically \(10^{-5}\). Required &gt; 0 for Gaussian, must be 0 for Laplace.</div>
+      <div class="nsym">\(e^{\varepsilon}\)</div>
+        <div class="ndef">Multiplicative likelihood-ratio bound — the factor by which adversary's posterior on membership can shift.</div>
+        <div class="nsrc">Plugged into MIA hypothesis test as a worst-case TPR/FPR bound (verified empirically in <code>evaluation/mia.py</code>).</div>
+
+      <div class="notation-section-row">Adversaries &amp; post-processing</div>
+      <div class="nsym">\(\mathcal{A}\)</div>
+        <div class="ndef">An arbitrary adversary — any computable function of the mechanism's output (in scope: the honest-but-curious coordinator).</div>
+        <div class="nsrc">Operationalised by <code>evaluation/mia.py:MembershipInferenceAttack</code>.</div>
+      <div class="nsym">\(\pi\)</div>
+        <div class="ndef">Adversary's prior over the membership hypothesis — appears in the Bayesian-shift bound.</div>
+        <div class="nsrc">Implicit; not stored. Posterior shift is bounded by \(\mathrm{bound}(\varepsilon,\delta)\) at the threshold step.</div>
+      <div class="nsym">\(\mathrm{bound}(\varepsilon,\delta)\)</div>
+        <div class="ndef">The Kairouz-Oh-Viswanath posterior-shift bound — closed form in \((\varepsilon,\delta)\).</div>
+        <div class="nsrc">Reference bound in MIA reporting; not computed in code, used only as a sanity ceiling on empirical TPR.</div>
+      <div class="nsym">\(f:\mathcal{Y}\to\mathcal{Z}\)</div>
+        <div class="ndef">Any data-independent post-processing function — the post-processing theorem says \(f\circ\mathcal{M}\) inherits DP.</div>
+        <div class="nsrc">Realised by every downstream call: <code>SurrogateDistiller.distill</code>, <code>Aggregator.aggregate</code>, <code>MetaLearner.refine</code>.</div>
+      <div class="nsym">\(f\circ\mathcal{M}\)</div>
+        <div class="ndef">Composition of \(\mathcal{M}\) with a post-processor — still \((\varepsilon,\delta)\)-DP. The free guarantee.</div>
+        <div class="nsrc">Surrogate \(S_k\), global \(G\), refined \(M_k\) — all functions of \(\tilde{P}_k\) + public proxy data, so all DP.</div>
+
+      <div class="notation-section-row">Downstream DP-inheriting artefacts</div>
+      <div class="nsym">\(\text{surrogate}\)</div>
+        <div class="ndef">The per-client distilled tree \(S_k\) — function of \(\tilde{P}_k\) only, hence \((\varepsilon,\delta)\)-DP.</div>
+        <div class="nsrc"><code>distillation/surrogate.py:SurrogateDistiller.distill(X, P̃)</code>.</div>
+      <div class="nsym">\(G\)</div>
+        <div class="ndef">Global redistilled model — function of \(\{S_k\}\) + <code>proxy_X</code> (public).</div>
+        <div class="nsrc"><code>aggregation/proxy_redistillation.py:ProxyRedistillation.aggregate()</code>.</div>
+      <div class="nsym">\(M_k\)</div>
+        <div class="ndef">Client \(k\)'s meta-refined model — function of \(G\) + local data, DP-inherited through \(G\).</div>
+        <div class="nsrc"><code>meta/stacking.py:StackedAdapter</code> wrapping a fresh local re-fit.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Invariant.</strong> Once \(\mathcal{M}\) injects calibrated noise once at <code>privatize()</code>, the post-processing theorem \(\forall f:\ f\circ\mathcal{M}\) is \((\varepsilon,\delta)\)-DP guarantees that surrogate, global \(G\), and meta \(M_k\) all inherit the same DP bound — no further noise needed.
+    </div>
   </div>
 
 </div>

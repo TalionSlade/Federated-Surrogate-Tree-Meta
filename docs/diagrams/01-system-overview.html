@@ -5,78 +5,486 @@
 <title>FedRF-Distill — System Overview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
 <style>
-  .canvas { width: 1700px; min-height: 1080px; }
+  /* KaTeX overrides */
+  .katex { font-size: 1.05em; }
+  .math-display { background: #fafbfd; border: 1px solid #E3E4E5; border-radius: 9px; padding: 18px 22px; margin: 12px 0; overflow-x: auto; }
+  .math-inline { color: #13014a; }
+  .dark-math .katex { color: #fff !important; }
+  .dark-math .math-display { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 9px; padding: 16px 20px; margin: 10px 0; }
+  .dark-math .katex .mord, .dark-math .katex .mrel, .dark-math .katex .mop, .dark-math .katex .mbin, .dark-math .katex .mopen, .dark-math .katex .mclose, .dark-math .katex .mpunct { color: #ffffff !important; }
+</style>
+<style>
+  .canvas { width: 1760px; min-height: 1080px; padding: 56px 56px 80px; }
 
-  .layer-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 28px;
-    margin-top: 24px;
+  /* ─────────────────────────────────────────────────────────────
+     SECTION TITLES
+     ───────────────────────────────────────────────────────────── */
+  .section-title {
+    display: flex; align-items: baseline; gap: 14px;
+    margin: 44px 0 18px 0;
   }
-  .layer {
-    background: white;
+  .section-title .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em;
+    color: white; padding: 5px 11px; border-radius: 5px;
+    background: linear-gradient(135deg, #13014a, #3c228a);
+    text-transform: uppercase;
+  }
+  .section-title h2 {
+    font-size: 19px; font-weight: 700; color: var(--ink-strong); letter-spacing: -0.005em;
+  }
+  .section-title .sub {
+    font-size: 13px; color: var(--ink-muted); margin-left: auto; font-weight: 500;
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     E2E PIPELINE RIBBON  (top hero flow)
+     ───────────────────────────────────────────────────────────── */
+  .pipeline-wrap {
+    position: relative;
+    margin-top: 8px;
+    padding: 28px 26px 36px;
+    background: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
     border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 24px 26px;
-    box-shadow: 0 2px 4px rgba(19, 1, 74, 0.04), 0 16px 40px -16px rgba(19, 1, 74, 0.12);
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(19,1,74,0.04), 0 20px 50px -22px rgba(19,1,74,0.18);
+    overflow: hidden;
+  }
+  .pipeline-wrap::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, #13014a 0%, #3c228a 25%, #b87b00 45%, #cb2022 55%, #1b8e3d 75%, #1a4ea0 100%);
+  }
+
+  .pipeline-row {
+    display: grid;
+    grid-template-columns: 110px repeat(9, 1fr) 110px;
+    align-items: stretch;
+    gap: 6px;
     position: relative;
   }
-  .layer.purple::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 24px; right: 24px;
-    height: 4px;
-    background: linear-gradient(90deg, var(--luminate-primary), var(--luminate-medium));
-    border-radius: 0 0 4px 4px;
+  .pipeline-row.labels { grid-template-columns: 110px repeat(9, 1fr) 110px; }
+
+  .pipeline-endcap {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 18px 8px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #13014a 0%, #3c228a 100%);
+    color: white; text-align: center;
   }
-  .layer-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
-  .layer-icon {
-    width: 42px; height: 42px; border-radius: 11px;
-    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
-    color: white; font-weight: 700; font-size: 18px;
+  .pipeline-endcap .icon { font-size: 28px; line-height: 1; }
+  .pipeline-endcap .lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .pipeline-endcap .sub { font-family: 'JetBrains Mono', monospace; font-size: 9px; opacity: 0.75; margin-top: 2px; }
+
+  .pipeline-step {
+    position: relative;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    padding: 12px 11px 13px;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: transform 0.15s ease;
+    box-shadow: 0 1px 2px rgba(19,1,74,0.04);
+  }
+  .pipeline-step .step-num {
+    position: absolute; top: -9px; left: 11px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--luminate-primary); color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(60,34,138,0.35);
+  }
+  .pipeline-step .icon-row {
+    display: flex; align-items: center; gap: 7px; margin-top: 4px;
+  }
+  .pipeline-step .icon-box {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .pipeline-step .name {
+    font-size: 12px; font-weight: 700; color: var(--ink-strong); line-height: 1.2;
+  }
+  .pipeline-step .pkg {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; color: var(--ink-faint); line-height: 1.3;
+  }
+  .pipeline-step .desc {
+    font-size: 10.5px; color: var(--ink-muted); line-height: 1.45;
+    flex-grow: 1;
+  }
+  .pipeline-step .io {
+    margin-top: 6px; padding-top: 8px;
+    border-top: 1px dashed var(--line-subtle);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; line-height: 1.4;
+  }
+  .pipeline-step .io .arr {
+    display: block;
+    color: var(--luminate-primary); font-weight: 600;
+  }
+  .pipeline-step .io .var { color: var(--ink-strong); font-weight: 600; }
+  .pipeline-step .io .type { color: var(--ink-faint); }
+
+  /* phase color rails */
+  .pipeline-step.teach  { border-top: 3px solid #3c228a; }
+  .pipeline-step.teach  .icon-box { background: #ebe8f3; color: #3c228a; }
+  .pipeline-step.soft   { border-top: 3px solid #b87b00; }
+  .pipeline-step.soft   .icon-box { background: #fff5dd; color: #b87b00; }
+  .pipeline-step.dp     { border-top: 3px solid #cb2022; }
+  .pipeline-step.dp     .icon-box { background: #fdecec; color: #cb2022; }
+  .pipeline-step.distil { border-top: 3px solid #b87b00; }
+  .pipeline-step.distil .icon-box { background: #fff5dd; color: #b87b00; }
+  .pipeline-step.upload { border-top: 3px solid #6d6e71; }
+  .pipeline-step.upload .icon-box { background: #f1f3f4; color: #6d6e71; }
+  .pipeline-step.aggr   { border-top: 3px solid #1b8e3d; }
+  .pipeline-step.aggr   .icon-box { background: #e6f6ec; color: #1b8e3d; }
+  .pipeline-step.ledger { border-top: 3px solid #cb2022; }
+  .pipeline-step.ledger .icon-box { background: #fdecec; color: #cb2022; }
+  .pipeline-step.broad  { border-top: 3px solid #6d6e71; }
+  .pipeline-step.broad  .icon-box { background: #f1f3f4; color: #6d6e71; }
+  .pipeline-step.meta   { border-top: 3px solid #1a4ea0; }
+  .pipeline-step.meta   .icon-box { background: #e8f1fd; color: #1a4ea0; }
+
+  /* connector arrows row */
+  .pipeline-arrows {
+    margin-top: -2px;
+    height: 26px;
+    display: grid;
+    grid-template-columns: 110px repeat(9, 1fr) 110px;
+    gap: 6px;
+    position: relative;
+  }
+  .arrow-cell {
+    position: relative;
     display: flex; align-items: center; justify-content: center;
   }
-  .layer h3 { font-size: 18px; font-weight: 700; color: var(--ink-strong); }
-  .layer .path {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--ink-muted); padding: 5px 9px;
-    background: var(--luminate-light); border-radius: 5px;
-    display: inline-block; margin-bottom: 14px;
+  .arrow-cell .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; color: var(--ink-faint);
+    background: white; padding: 1px 6px; border-radius: 4px;
+    border: 1px solid var(--line-subtle);
+    position: relative; z-index: 2;
   }
-  .layer p { font-size: 13px; line-height: 1.55; color: var(--ink); margin-bottom: 12px; }
-  .layer ul { list-style: none; }
-  .layer ul li {
-    font-size: 12.5px; line-height: 1.55; padding-left: 14px; position: relative;
-    color: var(--ink); margin: 6px 0;
+  .arrow-cell::before {
+    content: '';
+    position: absolute; top: 50%; left: -3px; right: -3px;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--luminate-medium) 0 6px, transparent 6px 10px);
+    opacity: 0.55;
+    z-index: 1;
   }
-  .layer ul li::before {
-    content: '◆'; color: var(--luminate-primary);
-    position: absolute; left: 0; top: 4px; font-size: 9px;
+  .arrow-cell::after {
+    content: '▸';
+    position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+    font-size: 14px; color: var(--luminate-medium); opacity: 0.7;
+    z-index: 1;
   }
-  .layer ul li strong { color: var(--ink-strong); font-weight: 600; }
 
-  .infra-row {
-    margin-top: 36px;
+  /* round indicator */
+  .pipeline-round-banner {
+    margin-top: 18px;
+    padding: 14px 22px;
+    background: linear-gradient(90deg, rgba(60,34,138,0.05) 0%, rgba(60,34,138,0.02) 50%, rgba(60,34,138,0.05) 100%);
+    border: 1px dashed var(--luminate-medium);
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 12.5px; color: var(--luminate-dark);
+  }
+  .pipeline-round-banner .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700;
+    color: white;
+    background: linear-gradient(135deg, #13014a, #3c228a);
+    padding: 4px 10px; border-radius: 5px;
+  }
+  .pipeline-round-banner .formula { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-strong); }
+
+  /* ─────────────────────────────────────────────────────────────
+     SWIMLANE: Round t — Sequence-style flow
+     ───────────────────────────────────────────────────────────── */
+  .swimlane {
+    margin-top: 8px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: 180px 1fr 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: white;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(19,1,74,0.04), 0 20px 50px -22px rgba(19,1,74,0.18);
+  }
+  .lane-header {
+    padding: 18px 18px 14px;
+    background: linear-gradient(180deg, #fafbfd 0%, white 100%);
+    border-bottom: 2px solid var(--luminate-primary);
+    border-right: 1px solid var(--line-subtle);
+  }
+  .lane-header:last-child { border-right: none; }
+  .lane-header .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.14em; color: var(--ink-muted);
+    text-transform: uppercase; font-weight: 600;
+  }
+  .lane-header .nm {
+    font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-top: 2px;
+  }
+  .lane-header .desc {
+    font-size: 11.5px; color: var(--ink-muted); margin-top: 4px; line-height: 1.4;
+  }
+
+  .lane-cell {
+    border-right: 1px solid var(--line-subtle);
+    border-bottom: 1px solid var(--line-subtle);
+    padding: 12px 16px;
+    min-height: 64px;
+    position: relative;
+    font-size: 12.5px; color: var(--ink); line-height: 1.5;
+  }
+  .lane-cell:nth-child(4n) { border-right: none; }
+  .lane-cell.step-label {
+    background: linear-gradient(180deg, #fafbfd 0%, #f8f9fb 100%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; font-weight: 600; color: var(--luminate-primary);
+    letter-spacing: 0.05em;
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 3px;
+  }
+  .lane-cell.step-label .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--luminate-primary); color: white;
+    font-size: 10.5px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .lane-cell.step-label .lbl {
+    color: var(--ink-strong); font-size: 11px;
+  }
+  .lane-cell.step-label .sub {
+    color: var(--ink-muted); font-size: 9.5px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: none; letter-spacing: 0;
+  }
+  .lane-cell.active {
+    background: linear-gradient(180deg, rgba(60,34,138,0.04) 0%, rgba(60,34,138,0.01) 100%);
+  }
+  .lane-cell.dim { color: var(--ink-faint); }
+  .lane-cell .op {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 4px;
+  }
+  .lane-cell .op .ic {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--luminate-light); color: var(--luminate-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .lane-cell .op .nm {
+    font-size: 13px; font-weight: 600; color: var(--ink-strong);
+  }
+  .lane-cell .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-muted);
+    background: var(--surface-2); padding: 4px 8px;
+    border-radius: 5px; margin-top: 6px;
+    display: inline-block;
+    border: 1px solid var(--line-subtle);
+  }
+  .lane-cell .tag-row {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;
+  }
+  .lane-cell .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; padding: 2px 7px; border-radius: 4px;
+    background: var(--surface-3); color: var(--ink-muted);
+    border: 1px solid var(--line-subtle);
+  }
+  .lane-cell .tag.red { background: #fdecec; color: var(--red); border-color: rgba(203,32,34,0.2); }
+  .lane-cell .tag.green { background: #e6f6ec; color: var(--green); border-color: rgba(27,142,61,0.2); }
+  .lane-cell .tag.amber { background: #fff5dd; color: var(--amber); border-color: rgba(184,123,0,0.2); }
+  .lane-cell .tag.blue { background: #e8f1fd; color: var(--blue); border-color: rgba(26,78,160,0.2); }
+  .lane-cell .tag.purple { background: var(--luminate-light); color: var(--luminate-primary); border-color: rgba(98,69,183,0.2); }
+
+  .lane-cell .arrow-side {
+    position: absolute; right: -5px; top: 50%; transform: translateY(-50%);
+    width: 10px; height: 10px;
+    border-top: 2px solid var(--luminate-primary);
+    border-right: 2px solid var(--luminate-primary);
+    transform: translateY(-50%) rotate(45deg);
+    opacity: 0.6; z-index: 2; background: white;
+  }
+  .lane-cell .arrow-down {
+    position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+    width: 10px; height: 10px;
+    border-top: 2px solid var(--luminate-primary);
+    border-right: 2px solid var(--luminate-primary);
+    transform: translateX(-50%) rotate(135deg);
+    opacity: 0.5; z-index: 2; background: white;
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     PACKAGE INDEX  (the "what each package owns" grid)
+     ───────────────────────────────────────────────────────────── */
+  .pkg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .pkg-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(19,1,74,0.04), 0 8px 24px -10px rgba(19,1,74,0.12);
+    position: relative;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .pkg-card.flag::after {
+    content: 'HOOK A';
+    position: absolute; top: 14px; right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--red); background: #fdecec; padding: 3px 7px; border-radius: 4px;
+    border: 1px solid rgba(203,32,34,0.2);
+  }
+  .pkg-card.flagb::after {
+    content: 'HOOK B';
+    position: absolute; top: 14px; right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--blue); background: #e8f1fd; padding: 3px 7px; border-radius: 4px;
+    border: 1px solid rgba(26,78,160,0.2);
+  }
+  .pkg-card .pkg-head {
+    display: flex; align-items: center; gap: 11px;
+    padding-bottom: 6px;
+  }
+  .pkg-card .pkg-ic {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));
+    color: white; font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px -4px rgba(60,34,138,0.4);
+  }
+  .pkg-card .pkg-name {
+    font-size: 15px; font-weight: 700; color: var(--ink-strong);
+    line-height: 1.2;
+  }
+  .pkg-card .pkg-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; color: var(--ink-muted); margin-top: 2px;
+  }
+  .pkg-card .pkg-desc {
+    font-size: 12.5px; line-height: 1.55; color: var(--ink);
+  }
+  .pkg-card .pkg-list {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 10px 12px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border: 1px solid var(--line-subtle);
+  }
+  .pkg-card .pkg-list .item {
+    font-size: 11.5px; line-height: 1.4;
+    color: var(--ink);
+    padding-left: 12px; position: relative;
+  }
+  .pkg-card .pkg-list .item::before {
+    content: '▪'; position: absolute; left: 0; top: 1px;
+    color: var(--luminate-primary); font-size: 10px;
+  }
+  .pkg-card .pkg-list .item strong {
+    color: var(--ink-strong); font-weight: 600;
+  }
+  .pkg-card .pkg-list .item code {
+    font-size: 10.5px; padding: 1px 4px;
+    background: white; border-radius: 3px;
+    border: 1px solid var(--line-subtle); color: var(--luminate-primary);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     CROSS-CUTTING INFRA STRIP
+     ───────────────────────────────────────────────────────────── */
+  .infra-strip {
+    margin-top: 22px;
+    padding: 22px 26px;
+    background: linear-gradient(135deg, #fafbfd 0%, #ebe8f3 60%, #fafbfd 100%);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr 1fr 1fr;
     gap: 18px;
+    align-items: center;
   }
-  .infra-cell {
-    background: white; border: 1px solid var(--line); border-radius: 12px;
-    padding: 16px 18px; box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  .infra-title {
+    border-right: 1px dashed var(--luminate-medium);
+    padding-right: 18px;
   }
-  .infra-cell .h {
-    font-size: 13px; font-weight: 700; color: var(--ink-strong);
-    margin-bottom: 4px; display: flex; gap: 8px; align-items: center;
+  .infra-title .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em;
+    color: var(--luminate-primary); background: white;
+    padding: 4px 8px; border-radius: 4px;
+    border: 1px solid var(--luminate-medium);
+    text-transform: uppercase;
   }
-  .infra-cell .b { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
-  .ic-tag {
-    font-family: 'JetBrains Mono', monospace; font-size: 10px;
-    background: var(--surface-3); padding: 2px 7px; border-radius: 4px;
-    border: 1px solid var(--line-subtle); color: var(--ink-muted);
+  .infra-title h3 {
+    font-size: 18px; font-weight: 700; color: var(--ink-strong);
+    margin-top: 10px; letter-spacing: -0.01em;
+  }
+  .infra-title p {
+    font-size: 11.5px; color: var(--ink-muted);
+    margin-top: 4px; line-height: 1.45;
+  }
+  .infra-card {
+    background: white; border-radius: 11px;
+    padding: 14px 15px;
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 3px rgba(19,1,74,0.04);
+  }
+  .infra-card .head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .infra-card .head .ic {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--luminate-light); color: var(--luminate-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .infra-card .head .nm { font-size: 13px; font-weight: 700; color: var(--ink-strong); }
+  .infra-card .head .tg {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    color: var(--ink-faint); margin-left: auto;
+    background: var(--surface-3); padding: 2px 6px; border-radius: 4px;
+  }
+  .infra-card .body { font-size: 11.5px; color: var(--ink-muted); line-height: 1.5; }
+
+  /* ─────────────────────────────────────────────────────────────
+     PHASE LEGEND
+     ───────────────────────────────────────────────────────────── */
+  .phase-legend {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    margin-top: 14px;
+    padding: 10px 16px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .phase-legend .li {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11.5px; color: var(--ink-muted); font-weight: 500;
+  }
+  .phase-legend .sw {
+    width: 12px; height: 12px; border-radius: 3px;
   }
 </style>
 </head>
@@ -85,173 +493,684 @@
 
   <div class="title-block">
     <div class="left">
-      <h1>FedRF-Distill — System Overview</h1>
-      <div class="subtitle">Layered architecture: every package, what it owns, what it does</div>
+      <h1>FedRF-Distill — System Architecture</h1>
+      <div class="subtitle">End-to-end flow: raw rows ▸ soft labels ▸ DP-noisy ▸ surrogate ▸ aggregate ▸ broadcast ▸ refined model</div>
     </div>
-    <div class="brand-pill">DIAGRAM 01 / 16</div>
+    <div class="brand-pill">DIAGRAM 01 / 18</div>
   </div>
 
-  <div class="layer-grid">
+  <!-- ═════════════════════════════════════════════════════════════
+       SECTION 1 — END-TO-END PIPELINE RIBBON
+       ═════════════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="pill">§1 · Pipeline</span>
+    <h2>End-to-end transformation ribbon</h2>
+    <span class="sub">9 stages · 1 round · K parallel clients</span>
+  </div>
 
-    <!-- Layer 1: Core -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">⌬</div>
-        <h3>Core</h3>
+  <div class="pipeline-wrap">
+    <div class="pipeline-row">
+
+      <div class="pipeline-endcap">
+        <div class="icon">🗃</div>
+        <div class="lbl">Raw rows</div>
+        <div class="sub">X<sub>k</sub> ∈ ℝ<sup>n×d</sup></div>
       </div>
-      <span class="path">fedrf_distill.core</span>
-      <p>The contract layer. Every other package talks to <em>protocols</em> defined here — never to concrete classes — so plug-replacement happens for free.</p>
-      <ul>
-        <li><strong>Protocols</strong> — ModelAdapter, Distiller, DP, Aggregator, Meta, Partitioner, Client, Coordinator</li>
-        <li><strong>Types</strong> — ClientID, FeatureMatrix, SoftLabels, ClientUpdate, GlobalArtifact, PrivacyBudget</li>
-        <li><strong>Exceptions</strong> — single root <code>FedRFDistillError</code> with typed leaves</li>
-      </ul>
+
+      <div class="pipeline-step teach">
+        <div class="step-num">1</div>
+        <div class="icon-row">
+          <div class="icon-box">∮</div>
+          <div><div class="name">Teach</div><div class="pkg">.models</div></div>
+        </div>
+        <div class="desc">Fit a deep RF/XGB/LGBM/CatBoost teacher locally on raw rows.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">X<sub>k</sub>,&nbsp;y<sub>k</sub></span>
+          <span class="arr">▸ out</span> <span class="var">𝒯<sub>k</sub></span> <span class="type">: ModelAdapter</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step soft">
+        <div class="step-num">2</div>
+        <div class="icon-row">
+          <div class="icon-box">⏃</div>
+          <div><div class="name">Soft-label</div><div class="pkg">.distillation</div></div>
+        </div>
+        <div class="desc">Temperature scaling + floor; logits become a probability vector.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">𝒯<sub>k</sub>,&nbsp;X<sub>k</sub></span>
+          <span class="arr">▸ out</span> <span class="var">P<sub>k</sub><sup>(T)</sup></span> <span class="type">∈ Δ<sup>K-1</sup></span>
+        </div>
+      </div>
+
+      <div class="pipeline-step dp">
+        <div class="step-num">3</div>
+        <div class="icon-row">
+          <div class="icon-box">⛨</div>
+          <div><div class="name">Privatize</div><div class="pkg">.privacy</div></div>
+        </div>
+        <div class="desc">Inject Laplace / Gaussian noise; clip-renormalise; ledger ε,δ.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">P<sub>k</sub><sup>(T)</sup>,&nbsp;ε,&nbsp;δ</span>
+          <span class="arr">▸ out</span> <span class="var">P̃<sub>k</sub></span> <span class="type">: (ε,δ)-DP</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step distil">
+        <div class="step-num">4</div>
+        <div class="icon-row">
+          <div class="icon-box">🌳</div>
+          <div><div class="name">Distil</div><div class="pkg">.distillation</div></div>
+        </div>
+        <div class="desc">Compress (X, P̃) into a depth-h surrogate tree ≈ 5–15 KB.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">X<sub>k</sub>,&nbsp;P̃<sub>k</sub></span>
+          <span class="arr">▸ out</span> <span class="var">S<sub>k</sub></span> <span class="type">: SurrogateTree</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step upload">
+        <div class="step-num">5</div>
+        <div class="icon-row">
+          <div class="icon-box">📤</div>
+          <div><div class="name">Upload</div><div class="pkg">.client</div></div>
+        </div>
+        <div class="desc">Pickle adapter + qualified class path; send ClientUpdate.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">S<sub>k</sub>,&nbsp;n<sub>k</sub>,&nbsp;ε<sub>k</sub></span>
+          <span class="arr">▸ out</span> <span class="var">U<sub>k</sub></span> <span class="type">: ClientUpdate</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step aggr">
+        <div class="step-num">6</div>
+        <div class="icon-row">
+          <div class="icon-box">∑</div>
+          <div><div class="name">Aggregate</div><div class="pkg">.aggregation</div></div>
+        </div>
+        <div class="desc">Average on proxy → redistil; or weighted; or vote.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">{U<sub>k</sub>}<sub>k=1..K</sub>,&nbsp;X<sub>proxy</sub></span>
+          <span class="arr">▸ out</span> <span class="var">G</span> <span class="type">: GlobalArtifact</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step ledger">
+        <div class="step-num">7</div>
+        <div class="icon-row">
+          <div class="icon-box">Σ</div>
+          <div><div class="name">Account</div><div class="pkg">.privacy</div></div>
+        </div>
+        <div class="desc">Compose ε across t rounds; halt if cumulative &gt; target.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">{ε<sub>k</sub>,δ<sub>k</sub>}<sub>t</sub></span>
+          <span class="arr">▸ out</span> <span class="var">(ε<sub>cum</sub>,δ<sub>cum</sub>)</span> <span class="type">: PrivacyBudget</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step broad">
+        <div class="step-num">8</div>
+        <div class="icon-row">
+          <div class="icon-box">📡</div>
+          <div><div class="name">Broadcast</div><div class="pkg">.coordinator</div></div>
+        </div>
+        <div class="desc">Push G to every client over the same protocol.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">G,&nbsp;t,&nbsp;ε<sub>cum</sub></span>
+          <span class="arr">▸ out</span> <span class="var">→ K clients</span>
+        </div>
+      </div>
+
+      <div class="pipeline-step meta">
+        <div class="step-num">9</div>
+        <div class="icon-row">
+          <div class="icon-box">↻</div>
+          <div><div class="name">Refine</div><div class="pkg">.meta</div></div>
+        </div>
+        <div class="desc">Stack G's proba columns onto X<sub>k</sub>; fit refined local model.</div>
+        <div class="io">
+          <span class="arr">▸ in</span>  <span class="var">X<sub>k</sub>,&nbsp;y<sub>k</sub>,&nbsp;G</span>
+          <span class="arr">▸ out</span> <span class="var">M<sub>k</sub></span> <span class="type">: StackedAdapter</span>
+        </div>
+      </div>
+
+      <div class="pipeline-endcap">
+        <div class="icon">🎯</div>
+        <div class="lbl">Refined</div>
+        <div class="sub">M<sub>k</sub> ∀k</div>
+      </div>
+
     </div>
 
-    <!-- Layer 2: Models -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">∮</div>
-        <h3>Models</h3>
-      </div>
-      <span class="path">fedrf_distill.models</span>
-      <p>Uniform adapter API over four major tree frameworks — the foundation for <strong>Hook B (cross-framework heterogeneity)</strong>.</p>
-      <ul>
-        <li><strong>BaseModelAdapter</strong> — refit guard, binary→2D reshape, safe pickling</li>
-        <li><strong>Adapters</strong> — sklearn RF/DT, XGBoost, LightGBM, CatBoost</li>
-        <li><strong>Factory</strong> — string-keyed registry + auto-discovery of optional backends</li>
-      </ul>
+    <!-- arrows row with edge labels -->
+    <div class="pipeline-arrows">
+      <div class="arrow-cell"></div>
+      <div class="arrow-cell"><span class="lbl">𝒯<sub>k</sub></span></div>
+      <div class="arrow-cell"><span class="lbl">P<sub>k</sub><sup>(T)</sup></span></div>
+      <div class="arrow-cell"><span class="lbl">P̃<sub>k</sub></span></div>
+      <div class="arrow-cell"><span class="lbl">S<sub>k</sub></span></div>
+      <div class="arrow-cell"><span class="lbl">U<sub>k</sub></span></div>
+      <div class="arrow-cell"><span class="lbl">G</span></div>
+      <div class="arrow-cell"><span class="lbl">ε<sub>cum</sub></span></div>
+      <div class="arrow-cell"><span class="lbl">G</span></div>
+      <div class="arrow-cell"><span class="lbl">M<sub>k</sub></span></div>
+      <div class="arrow-cell"></div>
     </div>
 
-    <!-- Layer 3: Distillation -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">⏃</div>
-        <h3>Distillation</h3>
-      </div>
-      <span class="path">fedrf_distill.distillation</span>
-      <p>Turn a heavy teacher into a 10 KB student by mimicking its soft labels.</p>
-      <ul>
-        <li><strong>SoftLabelGenerator</strong> — temperature scaling, label floor</li>
-        <li><strong>SurrogateDistiller</strong> — two strategies: argmax+weight, multi-output regression</li>
-        <li>Wire-format: pickled adapter + qualified class path</li>
-      </ul>
+    <!-- round loop banner -->
+    <div class="pipeline-round-banner">
+      <span class="badge">↻ ROUND t</span>
+      <span>The 9-stage ribbon is repeated for <strong>t = 1 … T</strong> rounds. Steps 1–5 run <strong>once per client in parallel</strong>; steps 6–8 run once on the coordinator; step 9 runs on each client after broadcast.</span>
+      <span class="formula" style="margin-left:auto;">\(\Phi:\;\mathcal{D}\times\Theta\;\to\;\{M_k\}_{k=1}^{K}\)</span>
+    </div>
+  </div>
+
+  <!-- phase color legend -->
+  <div class="phase-legend">
+    <div class="li"><span class="sw" style="background:#3c228a;"></span>Teach</div>
+    <div class="li"><span class="sw" style="background:#b87b00;"></span>Soft-label / Distil</div>
+    <div class="li"><span class="sw" style="background:#cb2022;"></span>Privacy <span class="tag" style="font-family:monospace;font-size:9px;color:#cb2022;margin-left:4px;">HOOK A</span></div>
+    <div class="li"><span class="sw" style="background:#6d6e71;"></span>Wire / Network</div>
+    <div class="li"><span class="sw" style="background:#1b8e3d;"></span>Aggregate</div>
+    <div class="li"><span class="sw" style="background:#1a4ea0;"></span>Meta-refine</div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════════
+       SECTION 2 — SWIMLANES: Round t messaging
+       ═════════════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="pill">§2 · Swimlanes</span>
+    <h2>Round t: who does what, who sees what</h2>
+    <span class="sub">Three actors · single round timeline · ⪯ ordered</span>
+  </div>
+
+  <div class="swimlane">
+    <!-- header row -->
+    <div class="lane-header">
+      <div class="lbl">⌚ Step</div>
+      <div class="nm">Timeline</div>
+      <div class="desc">Phase boundary (sync barrier)</div>
+    </div>
+    <div class="lane-header">
+      <div class="lbl">◐ Client × K</div>
+      <div class="nm">FederatedClient</div>
+      <div class="desc">Holds private data + teacher + DP. Runs in parallel for k = 1..K.</div>
+    </div>
+    <div class="lane-header">
+      <div class="lbl">⌖ Coordinator</div>
+      <div class="nm">FederatedCoordinator</div>
+      <div class="desc">Owns proxy + aggregator + accountant. Has veto power.</div>
+    </div>
+    <div class="lane-header">
+      <div class="lbl">▶ Runner</div>
+      <div class="nm">ExperimentRunner</div>
+      <div class="desc">Composition root: YAML → wired components → driver loop.</div>
     </div>
 
-    <!-- Layer 4: Privacy -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">⛨</div>
-        <h3>Privacy <span class="chip purple" style="font-size:10px;margin-left:6px;">HOOK A</span></h3>
+    <!-- Phase A: LOCAL TRAIN -->
+    <div class="lane-cell step-label">
+      <span class="num">1-2</span>
+      <span class="lbl">LOCAL TRAIN</span>
+      <span class="sub">parallel · per client</span>
+    </div>
+    <div class="lane-cell active">
+      <div class="op"><span class="ic">∮</span><span class="nm">teacher.fit(X<sub>k</sub>, y<sub>k</sub>)</span></div>
+      <div>Train deep tree ensemble on private rows. Soft-label via temperature T and floor ε<sub>floor</sub>.</div>
+      <div class="tag-row">
+        <span class="tag purple">SklearnRF</span><span class="tag purple">XGBoost</span><span class="tag purple">LightGBM</span><span class="tag purple">CatBoost</span>
       </div>
-      <span class="path">fedrf_distill.privacy</span>
-      <p>Formal (ε, δ)-DP on every soft-label release. Carries an audit ledger and runs empirical attacks for the paper.</p>
-      <ul>
-        <li><strong>Mechanisms</strong> — Laplace (pure ε), Gaussian (ε,δ), Null (control)</li>
-        <li><strong>Accountants</strong> — Basic composition, Rényi DP</li>
-        <li><strong>Threat model</strong> — adversary × asset × guarantee</li>
-        <li><strong>Attack</strong> — Yeom-style MIA with TPR-at-low-FPR</li>
-      </ul>
+      <div class="arrow-side"></div>
+    </div>
+    <div class="lane-cell dim">— idle — waiting on all K updates</div>
+    <div class="lane-cell dim">— observe — emits start-of-round event for trace.</div>
+
+    <!-- Phase B: DP + DISTIL -->
+    <div class="lane-cell step-label">
+      <span class="num">3-4</span>
+      <span class="lbl">DP + DISTIL</span>
+      <span class="sub">per client · privacy gate</span>
+    </div>
+    <div class="lane-cell active">
+      <div class="op"><span class="ic">⛨</span><span class="nm">privatize(P<sub>k</sub><sup>(T)</sup>, ε, δ)</span></div>
+      <div>Add Laplace or Gaussian noise with sensitivity Δ. Clip-then-renormalise back to Δ<sup>K-1</sup>.</div>
+      <div class="meta">▸ then SurrogateDistiller.fit(X, P̃) → S<sub>k</sub></div>
+      <div class="tag-row">
+        <span class="tag red">Hook A · DP</span>
+        <span class="tag amber">depth-h tree</span>
+      </div>
+      <div class="arrow-side"></div>
+    </div>
+    <div class="lane-cell dim">— idle —</div>
+    <div class="lane-cell dim">— wait for upload barrier —</div>
+
+    <!-- Phase C: UPLOAD -->
+    <div class="lane-cell step-label">
+      <span class="num">5</span>
+      <span class="lbl">UPLOAD</span>
+      <span class="sub">wire format only</span>
+    </div>
+    <div class="lane-cell">
+      <div class="op"><span class="ic">📤</span><span class="nm">return ClientUpdate</span></div>
+      <div>Serialise S<sub>k</sub> with safe-pickle. Attach n<sub>k</sub>, spent ε<sub>k</sub>, classes<sub>k</sub>.</div>
+      <div class="meta">≤ MAX_BLOB_BYTES · framework-tagged</div>
+      <div class="arrow-side"></div>
+    </div>
+    <div class="lane-cell active">
+      <div class="op"><span class="ic">📥</span><span class="nm">collect_updates({U<sub>k</sub>})</span></div>
+      <div>Safe-deserialise. Reject blobs whose qualified class path isn't an allow-listed ModelAdapter.</div>
+      <div class="tag-row">
+        <span class="tag">Schema check</span><span class="tag">classes_ align</span>
+      </div>
+      <div class="arrow-side"></div>
+    </div>
+    <div class="lane-cell dim">— records round_t.uploads_done —</div>
+
+    <!-- Phase D: AGGREGATE + ACCOUNT -->
+    <div class="lane-cell step-label">
+      <span class="num">6-7</span>
+      <span class="lbl">AGGREGATE</span>
+      <span class="sub">+ ACCOUNT</span>
+    </div>
+    <div class="lane-cell dim">— idle —</div>
+    <div class="lane-cell active">
+      <div class="op"><span class="ic">∑</span><span class="nm">aggregate({S<sub>k</sub>}, X<sub>proxy</sub>) → G</span></div>
+      <div>Default: proxy redistillation (row-wise barycentre on proxy → fresh depth-h tree).</div>
+      <div class="meta">▸ ProxyRedistil | ConfidenceWeighted | MajorityVote</div>
+      <div class="op" style="margin-top:8px;"><span class="ic">Σ</span><span class="nm">accountant.record(t, {ε<sub>k</sub>,δ<sub>k</sub>})</span></div>
+      <div>Returns cumulative (ε,δ); raises PrivacyBudgetExhausted if &gt; budget.</div>
+      <div class="tag-row">
+        <span class="tag green">novel default</span>
+        <span class="tag red">veto power</span>
+      </div>
+      <div class="arrow-side"></div>
+    </div>
+    <div class="lane-cell">
+      <div class="op"><span class="ic">📊</span><span class="nm">eval(G, X<sub>test</sub>, y<sub>test</sub>)</span></div>
+      <div>Server-side metrics: accuracy, F1-macro, OvR AUC, KL fidelity to ensemble.</div>
+      <div class="arrow-side"></div>
     </div>
 
-    <!-- Layer 5: Aggregation -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">∑</div>
-        <h3>Aggregation</h3>
+    <!-- Phase E: BROADCAST -->
+    <div class="lane-cell step-label">
+      <span class="num">8</span>
+      <span class="lbl">BROADCAST</span>
+      <span class="sub">wire · 1 → K</span>
+    </div>
+    <div class="lane-cell dim">— idle until receive —</div>
+    <div class="lane-cell active">
+      <div class="op"><span class="ic">📡</span><span class="nm">broadcast(G, t, ε<sub>cum</sub>)</span></div>
+      <div>Same wire format as ClientUpdate — recursion works: next round's G can re-enter step 4.</div>
+      <div class="arrow-side"></div>
+    </div>
+    <div class="lane-cell dim">— logs round_t.broadcast_done —</div>
+
+    <!-- Phase F: META REFINE -->
+    <div class="lane-cell step-label">
+      <span class="num">9</span>
+      <span class="lbl">META REFINE</span>
+      <span class="sub">per client · stacking</span>
+    </div>
+    <div class="lane-cell active">
+      <div class="op"><span class="ic">↻</span><span class="nm">apply_global(G)</span></div>
+      <div>StackingMetaLearner augments X<sub>k</sub> with G.predict_proba and refits a local RF.</div>
+      <div class="meta">▸ M<sub>k</sub> = StackedAdapter(M<sub>k</sub><sup>raw</sup>, G)</div>
+      <div class="tag-row">
+        <span class="tag blue">drop-in</span>
+        <span class="tag blue">no FedAvg needed</span>
       </div>
-      <span class="path">fedrf_distill.aggregation</span>
-      <p>Merge K client surrogates into one global surrogate.</p>
-      <ul>
-        <li><strong>Proxy re-distillation</strong> (default, novel) — average on proxy, then distil again</li>
-        <li><strong>Confidence-weighted</strong> — FedAvg-style sample weighting</li>
-        <li><strong>Majority vote</strong> — discrete-label baseline</li>
-      </ul>
+      <div class="arrow-side"></div>
+    </div>
+    <div class="lane-cell dim">— idle —</div>
+    <div class="lane-cell">
+      <div class="op"><span class="ic">📝</span><span class="nm">append RoundResult to CSV</span></div>
+      <div>One row per (round, client, dataset, partition, framework, seed).</div>
+      <div class="arrow-side"></div>
     </div>
 
-    <!-- Layer 6: Meta -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">↻</div>
-        <h3>Meta-learning</h3>
+    <!-- Final loop indicator -->
+    <div class="lane-cell step-label" style="border-bottom:none;">
+      <span class="num" style="background:linear-gradient(135deg,#13014a,#3c228a);">↻</span>
+      <span class="lbl">LOOP t → t+1</span>
+      <span class="sub">if t &lt; T and ε<sub>cum</sub> ≤ budget</span>
+    </div>
+    <div class="lane-cell" style="border-bottom:none;">→ next round reuses refined M<sub>k</sub> as new teacher (optional).</div>
+    <div class="lane-cell" style="border-bottom:none;">→ proxy is shared across rounds; only new noise per release.</div>
+    <div class="lane-cell" style="border-bottom:none;">→ return List[RoundResult] when loop exits cleanly.</div>
+  </div>
+
+  <!-- ═════════════════════════════════════════════════════════════
+       SECTION 3 — PACKAGE INDEX (what each module owns)
+       ═════════════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="pill">§3 · Modules</span>
+    <h2>Package index — protocols, types, hooks</h2>
+    <span class="sub">9 packages · 1 contract layer · 2 extension hooks</span>
+  </div>
+
+  <div class="pkg-grid">
+
+    <div class="pkg-card">
+      <div class="pkg-head">
+        <div class="pkg-ic">⌬</div>
+        <div>
+          <div class="pkg-name">Core</div>
+          <div class="pkg-path">fedrf_distill.core</div>
+        </div>
       </div>
-      <span class="path">fedrf_distill.meta</span>
-      <p>Each client refines its local model using the broadcast global surrogate.</p>
-      <ul>
-        <li><strong>StackingMetaLearner</strong> — augment X_local with G.predict_proba</li>
-        <li><strong>StackedAdapter</strong> — auto-augments at predict-time (drop-in)</li>
-      </ul>
+      <div class="pkg-desc">The contract layer. Every other package talks to <em>protocols</em> defined here — never to concrete classes — so plug-replacement happens for free.</div>
+      <div class="pkg-list">
+        <div class="item"><strong>Protocols</strong> — <code>ModelAdapter</code>, <code>Distiller</code>, <code>DP</code>, <code>Aggregator</code>, <code>Meta</code>, <code>Partitioner</code>, <code>Client</code>, <code>Coordinator</code></div>
+        <div class="item"><strong>Types</strong> — <code>ClientID</code>, <code>FeatureMatrix</code>, <code>SoftLabels</code>, <code>ClientUpdate</code>, <code>GlobalArtifact</code>, <code>PrivacyBudget</code></div>
+        <div class="item"><strong>Exceptions</strong> — single root <code>FedRFDistillError</code> with typed leaves</div>
+      </div>
     </div>
 
-    <!-- Layer 7: Client -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">◐</div>
-        <h3>Client</h3>
+    <div class="pkg-card flagb">
+      <div class="pkg-head">
+        <div class="pkg-ic">∮</div>
+        <div>
+          <div class="pkg-name">Models</div>
+          <div class="pkg-path">fedrf_distill.models</div>
+        </div>
       </div>
-      <span class="path">fedrf_distill.client</span>
-      <p>Holds local data + teacher + DP. One method per protocol step:</p>
-      <ul>
-        <li><code>local_train()</code> → ClientUpdate</li>
-        <li><code>apply_global(artifact)</code> — refines via meta-learner</li>
-        <li><code>evaluate_local(X, y)</code> → metrics dict</li>
-      </ul>
+      <div class="pkg-desc">Uniform adapter API over four major tree frameworks — the foundation for <strong>cross-framework heterogeneity</strong>.</div>
+      <div class="pkg-list">
+        <div class="item"><strong>BaseModelAdapter</strong> — refit guard, binary→2D reshape, safe pickling</div>
+        <div class="item"><strong>Adapters</strong> — sklearn RF/DT, XGBoost, LightGBM, CatBoost</div>
+        <div class="item"><strong>Factory</strong> — string-keyed registry + auto-discovery of optional backends</div>
+      </div>
     </div>
 
-    <!-- Layer 8: Coordinator -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">⌖</div>
-        <h3>Coordinator</h3>
+    <div class="pkg-card">
+      <div class="pkg-head">
+        <div class="pkg-ic">⏃</div>
+        <div>
+          <div class="pkg-name">Distillation</div>
+          <div class="pkg-path">fedrf_distill.distillation</div>
+        </div>
       </div>
-      <span class="path">fedrf_distill.coordinator</span>
-      <p>Owns the proxy + aggregator + accountant. Refuses to continue when the total privacy budget would be exceeded.</p>
-      <ul>
-        <li><code>round(updates, t, budget)</code> → GlobalArtifact</li>
-        <li>Maintains <em>privacy ledger</em> across rounds</li>
-        <li>Raises <code>PrivacyBudgetExhausted</code> on overshoot</li>
-      </ul>
+      <div class="pkg-desc">Turn a heavy teacher into a 10 KB student by mimicking its soft labels.</div>
+      <div class="pkg-list">
+        <div class="item"><strong>SoftLabelGenerator</strong> — temperature scaling, label floor</div>
+        <div class="item"><strong>SurrogateDistiller</strong> — argmax+weight (Mode A) | multi-output L2 (Mode B)</div>
+        <div class="item">Wire-format: pickled adapter + qualified class path</div>
+      </div>
     </div>
 
-    <!-- Layer 9: Orchestration -->
-    <div class="layer purple">
-      <div class="layer-head">
-        <div class="layer-icon">▶</div>
-        <h3>Orchestration</h3>
+    <div class="pkg-card flag">
+      <div class="pkg-head">
+        <div class="pkg-ic">⛨</div>
+        <div>
+          <div class="pkg-name">Privacy</div>
+          <div class="pkg-path">fedrf_distill.privacy</div>
+        </div>
       </div>
-      <span class="path">fedrf_distill.orchestration</span>
-      <p>The composition root. YAML → typed config → wired components → round loop.</p>
-      <ul>
-        <li><strong>ExperimentRunner</strong> — end-to-end driver returning RoundResult[]</li>
-        <li>Wires every protocol implementation from <code>ExperimentConfig</code></li>
-      </ul>
+      <div class="pkg-desc">Formal (ε, δ)-DP on every soft-label release. Carries an audit ledger and runs empirical attacks for the paper.</div>
+      <div class="pkg-list">
+        <div class="item"><strong>Mechanisms</strong> — Laplace (pure ε), Gaussian (ε,δ), Null (control)</div>
+        <div class="item"><strong>Accountants</strong> — Basic composition, Rényi-DP</div>
+        <div class="item"><strong>Threat model</strong> — adversary × asset × guarantee</div>
+        <div class="item"><strong>Attack</strong> — Yeom-style MIA, TPR-at-low-FPR</div>
+      </div>
+    </div>
+
+    <div class="pkg-card">
+      <div class="pkg-head">
+        <div class="pkg-ic">∑</div>
+        <div>
+          <div class="pkg-name">Aggregation</div>
+          <div class="pkg-path">fedrf_distill.aggregation</div>
+        </div>
+      </div>
+      <div class="pkg-desc">Merge K client surrogates into one global surrogate. All three implement <code>AggregatorProtocol</code>.</div>
+      <div class="pkg-list">
+        <div class="item"><strong>ProxyRedistillation</strong> (default, novel) — average on proxy, then distil again</div>
+        <div class="item"><strong>ConfidenceWeighted</strong> — FedAvg-style sample weighting</div>
+        <div class="item"><strong>MajorityVote</strong> — discrete-label baseline</div>
+      </div>
+    </div>
+
+    <div class="pkg-card">
+      <div class="pkg-head">
+        <div class="pkg-ic">↻</div>
+        <div>
+          <div class="pkg-name">Meta-learning</div>
+          <div class="pkg-path">fedrf_distill.meta</div>
+        </div>
+      </div>
+      <div class="pkg-desc">Each client refines its local model using the broadcast global surrogate — sidesteps FedAvg for trees.</div>
+      <div class="pkg-list">
+        <div class="item"><strong>StackingMetaLearner</strong> — augment X<sub>local</sub> with <code>G.predict_proba</code></div>
+        <div class="item"><strong>StackedAdapter</strong> — auto-augments at predict-time (drop-in)</div>
+        <div class="item">Falls back gracefully if G underperforms on this client</div>
+      </div>
+    </div>
+
+    <div class="pkg-card">
+      <div class="pkg-head">
+        <div class="pkg-ic">◐</div>
+        <div>
+          <div class="pkg-name">Client</div>
+          <div class="pkg-path">fedrf_distill.client</div>
+        </div>
+      </div>
+      <div class="pkg-desc">Holds local data + teacher + DP. One method per protocol step — protocols-in, protocols-out.</div>
+      <div class="pkg-list">
+        <div class="item"><code>local_train()</code> → <code>ClientUpdate</code></div>
+        <div class="item"><code>apply_global(artifact)</code> — refines via meta-learner</div>
+        <div class="item"><code>evaluate_local(X, y)</code> → metrics dict</div>
+      </div>
+    </div>
+
+    <div class="pkg-card flag">
+      <div class="pkg-head">
+        <div class="pkg-ic">⌖</div>
+        <div>
+          <div class="pkg-name">Coordinator</div>
+          <div class="pkg-path">fedrf_distill.coordinator</div>
+        </div>
+      </div>
+      <div class="pkg-desc">Owns the proxy + aggregator + accountant. Refuses to continue when the total privacy budget would be exceeded.</div>
+      <div class="pkg-list">
+        <div class="item"><code>round(updates, t, budget)</code> → <code>GlobalArtifact</code></div>
+        <div class="item">Maintains the <em>privacy ledger</em> across rounds</div>
+        <div class="item">Raises <code>PrivacyBudgetExhausted</code> on overshoot</div>
+      </div>
+    </div>
+
+    <div class="pkg-card">
+      <div class="pkg-head">
+        <div class="pkg-ic">▶</div>
+        <div>
+          <div class="pkg-name">Orchestration</div>
+          <div class="pkg-path">fedrf_distill.orchestration</div>
+        </div>
+      </div>
+      <div class="pkg-desc">The composition root. YAML → typed config → wired components → round loop.</div>
+      <div class="pkg-list">
+        <div class="item"><strong>ExperimentRunner</strong> — end-to-end driver returning <code>List[RoundResult]</code></div>
+        <div class="item">Pure builders <code>_build_*</code> from string keys → objects</div>
+        <div class="item">Only place in the codebase that knows every concrete class</div>
+      </div>
     </div>
 
   </div>
 
-  <!-- Infra row: supporting modules -->
-  <div class="infra-row">
-    <div class="infra-cell">
-      <div class="h">📦 <span>Config</span><span class="ic-tag">pydantic v2</span></div>
-      <div class="b">ExperimentConfig + 8 sub-schemas. Frozen, validated, YAML-friendly.</div>
+  <!-- ═════════════════════════════════════════════════════════════
+       SECTION 4 — CROSS-CUTTING INFRA
+       ═════════════════════════════════════════════════════════════ -->
+  <div class="infra-strip">
+    <div class="infra-title">
+      <span class="pill">§4 · Infra</span>
+      <h3>Cross-cutting modules</h3>
+      <p>Pure helpers used everywhere — no business logic, no protocol implementations.</p>
     </div>
-    <div class="infra-cell">
-      <div class="h">🗂 <span>Data</span><span class="ic-tag">10 loaders</span></div>
-      <div class="b">UCI, OpenML, Kaggle. Cached to <code>~/.cache/fedrf_distill/</code> as <code>.npz</code>.</div>
+    <div class="infra-card">
+      <div class="head"><span class="ic">📦</span><span class="nm">Config</span><span class="tg">pydantic v2</span></div>
+      <div class="body">ExperimentConfig + 8 sub-schemas. Frozen, validated, YAML-friendly.</div>
     </div>
-    <div class="infra-cell">
-      <div class="h">📐 <span>Metrics</span><span class="ic-tag">numpy-only</span></div>
-      <div class="b">Accuracy, F1-macro, OvR AUC, KL fidelity — no sklearn import.</div>
+    <div class="infra-card">
+      <div class="head"><span class="ic">🗂</span><span class="nm">Data</span><span class="tg">10 loaders</span></div>
+      <div class="body">UCI, OpenML, Kaggle. Cached to <code>~/.cache/fedrf_distill/</code> as <code>.npz</code>.</div>
     </div>
-    <div class="infra-cell">
-      <div class="h">🔧 <span>Utils</span><span class="ic-tag">serialisation, seeds, timers</span></div>
-      <div class="b">Safe deserialiser refuses non-adapter classes. Deterministic seeding.</div>
+    <div class="infra-card">
+      <div class="head"><span class="ic">📐</span><span class="nm">Metrics</span><span class="tg">numpy-only</span></div>
+      <div class="body">Accuracy, F1-macro, OvR AUC, KL fidelity — no sklearn import path.</div>
+    </div>
+    <div class="infra-card">
+      <div class="head"><span class="ic">🔧</span><span class="nm">Utils</span><span class="tg">safe pickle · seeds · timers</span></div>
+      <div class="body">Safe deserialiser refuses non-adapter classes. Deterministic seeding.</div>
     </div>
   </div>
 
-  <div class="legend">
-    <div class="legend-item"><div class="legend-swatch" style="background: linear-gradient(135deg, var(--luminate-primary), var(--luminate-medium));"></div>Public API surface</div>
-    <div class="legend-item"><div class="legend-swatch" style="background: var(--surface-3); border: 1px solid var(--line);"></div>Supporting / infra</div>
+  <!-- ═══════════════════════════════════════════════════════════════
+       SECTION 5 — MATHEMATICAL FOUNDATION (unchanged)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="dark-math" style="margin-top:44px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">∫</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">The system is a function composition</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <!-- WHAT -->
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — mathematics</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          The entire stack is one composable map. Each package owns one arrow. Per client \(k\), per round \(t\):
+        </div>
+        <div class="math-display">
+          $$\begin{aligned}
+          X_k &amp; \xrightarrow{\text{teacher.fit}} \mathcal{T}_k \\
+          \mathcal{T}_k &amp; \xrightarrow{\text{predict\_proba}} P_k \in \mathbb{R}^{n\times K} \\
+          P_k &amp; \xrightarrow{\text{soft}_T,\text{floor}} P_k^{(T)} \\
+          P_k^{(T)} &amp; \xrightarrow{\mathrm{DP}(\varepsilon,\delta)} \tilde{P}_k \\
+          (X_k, \tilde{P}_k) &amp; \xrightarrow{\text{distil}} S_k \\
+          \{S_k\}_{k=1}^{K} &amp; \xrightarrow{\text{aggregate}} G \\
+          (X_k, G) &amp; \xrightarrow{\text{stacking}} M_k
+          \end{aligned}$$
+        </div>
+        <div class="math-display">
+          $$\Phi : \mathcal{D} \times \Theta \to \mathcal{G}, \qquad M_k = \mathrm{stack}(S_k, G)$$
+        </div>
+      </div>
+
+      <!-- WHY -->
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — motivation</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Tree ensembles have no weight tensor</strong> to mean — FedAvg is impossible. We need a representation that <em>does</em> compose: the <strong>probability simplex</strong>.<br><br>
+          Every package above exists to move data into that simplex (distillation), protect it there (DP), combine it there (aggregation), and project it back (stacking). The package boundary <em>is</em> the type boundary.<br><br>
+          <strong>Protocols, not classes</strong>: structural typing means any new tree backend, any new DP scheme, any new aggregator drops in without touching the runner.
+        </div>
+      </div>
+
+      <!-- MINDSET -->
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — design philosophy</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>I1 · Soft labels are the lingua franca.</strong> Raw rows never cross the wire.<br><br>
+          <strong>I2 · DP is post-processing-stable.</strong> Add noise once, inherit the guarantee forever.<br><br>
+          <strong>I3 · Compositionality &gt; centralisation.</strong> Each layer is a pure function of typed inputs — easy to test, easy to swap.<br><br>
+          <strong>I4 · Heterogeneity is a feature.</strong> Clients pick their own teacher (Hook B); the wire format is framework-agnostic by virtue of the adapter protocol.<br><br>
+          <strong>I5 · The accountant has veto power.</strong> Privacy budget is the only kill-switch the coordinator obeys.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · what every symbol above means ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · END-TO-END COMPOSITION Φ</div>
+        <h3>Every symbol used in the system-level composition above — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Indices &amp; population</div>
+      <div class="nsym">\(k\)</div>
+        <div class="ndef">Client index, \(k \in \{1,\dots,K\}\). One participant in the federation.</div>
+        <div class="nsrc"><code>FederatedClient.client_id</code>; enumerated by <code>Coordinator.clients</code>.</div>
+      <div class="nsym">\(K\)</div>
+        <div class="ndef">Total number of clients in the round. Drives the outer product \(\{S_k\}_{k=1}^{K}\).</div>
+        <div class="nsrc"><code>cfg.federation.n_clients</code>; <code>len(coordinator.clients)</code>.</div>
+      <div class="nsym">\(t\)</div>
+        <div class="ndef">Round index, \(t \in \{1,\dots,R\}\). Each round runs the full Φ pipeline once.</div>
+        <div class="nsrc"><code>Coordinator.run(n_rounds)</code> loop counter; stamped on <code>RoundLedger.round_id</code>.</div>
+
+      <div class="notation-section-row">Local data &amp; teacher (X → 𝒯)</div>
+      <div class="nsym">\(X_k\)</div>
+        <div class="ndef">Private feature matrix on client \(k\); shape \((n, d)\). Never leaves the client.</div>
+        <div class="nsrc"><code>FederatedClient.X_local</code> — set from a <code>Partitioner</code> shard in <code>partitioners.py</code>.</div>
+      <div class="nsym">\(n, d\)</div>
+        <div class="ndef">Row count and feature dimensionality of \(X_k\) (\(d\) is global, \(n\) is per-client).</div>
+        <div class="nsrc"><code>X_k.shape</code>; \(n\) is the <code>n_samples</code> field on <code>ClientUpdate</code>.</div>
+      <div class="nsym">\(\mathcal{T}_k\)</div>
+        <div class="ndef">Local teacher model fit on \((X_k, y_k)\) — a tree ensemble (RF, XGBoost, LightGBM, …).</div>
+        <div class="nsrc"><code>self.teacher = self.teacher_factory(); self.teacher.fit(...)</code> in <code>client/client.py::local_train</code>.</div>
+
+      <div class="notation-section-row">Soft labels &amp; temperature (𝒯 → P → P^(T))</div>
+      <div class="nsym">\(P_k \in \mathbb{R}^{n \times K}\)</div>
+        <div class="ndef">Raw teacher posteriors over \(K\) classes on the client's own rows. Row-stochastic.</div>
+        <div class="nsrc"><code>self.teacher.predict_proba(self.X_local)</code> inside <code>distillation/soft_labels.py</code>.</div>
+      <div class="nsym">\(T\)</div>
+        <div class="ndef">Distillation temperature. \(T=1\) reproduces the teacher's posterior; \(T \to \infty\) yields the uniform distribution (max entropy).</div>
+        <div class="nsrc"><code>cfg.distillation.temperature</code>; applied by <code>SoftLabelGenerator.apply_temperature</code>.</div>
+      <div class="nsym">\(P_k^{(T)}\)</div>
+        <div class="ndef">Temperature-softened soft labels with optional probability floor — same shape as \(P_k\), softer entropy.</div>
+        <div class="nsrc">Output of <code>soft\_T(\cdot)</code>; computed as <code>softmax(log P / T)</code> then floored / renormalised.</div>
+
+      <div class="notation-section-row">Differential privacy (P^(T) → P̃)</div>
+      <div class="nsym">\(\mathrm{DP}(\varepsilon, \delta)\)</div>
+        <div class="ndef">The DP mechanism — Laplace, Gaussian, or null — that injects calibrated noise into \(P_k^{(T)}\).</div>
+        <div class="nsrc"><code>privacy/mechanisms.py</code>; selected by <code>_build_dp_mechanism(cfg)</code>.</div>
+      <div class="nsym">\(\varepsilon, \delta\)</div>
+        <div class="ndef">Per-round privacy budget. \(\varepsilon\) bounds the log-divergence of neighbouring outputs; \(\delta\) the failure mass.</div>
+        <div class="nsrc"><code>cfg.dp.target_epsilon / n_rounds</code>, <code>cfg.dp.target_delta</code>; tracked by <code>PrivacyAccountant</code>.</div>
+      <div class="nsym">\(\tilde{P}_k\)</div>
+        <div class="ndef">Privatised soft labels — the only random object in the pipeline. Same shape as \(P_k\), still row-stochastic after clip/renormalise.</div>
+        <div class="nsrc"><code>dp_mechanism.privatize(P_T, eps, delta)</code> — returned with provenance to <code>FederatedClient.local_train</code>.</div>
+
+      <div class="notation-section-row">Distillation, aggregation, stacking (S, G, M)</div>
+      <div class="nsym">\(S_k\)</div>
+        <div class="ndef">Per-client surrogate tree (~10 KB) fit on \((X_k, \tilde{P}_k)\). The only object that goes on the wire.</div>
+        <div class="nsrc"><code>S_k = self.distiller.distill(X_local, P_tilde, classes)</code> in <code>distillation/surrogate.py</code>.</div>
+      <div class="nsym">\(\{S_k\}_{k=1}^{K}\)</div>
+        <div class="ndef">The collection of all surrogate trees received by the coordinator this round.</div>
+        <div class="nsrc"><code>updates: list[ClientUpdate]</code> arriving at <code>Coordinator.run_round</code>.</div>
+      <div class="nsym">\(G\)</div>
+        <div class="ndef">Global surrogate distilled from the averaged predictions of \(\{S_k\}\) on the public proxy set.</div>
+        <div class="nsrc"><code>aggregation/proxy_redistillation.py::ProxyRedistillationAggregator.aggregate</code>.</div>
+      <div class="nsym">\(M_k\)</div>
+        <div class="ndef">Client \(k\)'s refined local model. A stacked ensemble that uses \(G\)'s predictions as extra features alongside \(S_k\).</div>
+        <div class="nsrc"><code>meta/stacking.py::StackingMetaLearner.refine(X_k, y_k, G, teacher_factory)</code>.</div>
+
+      <div class="notation-section-row">The composition operator</div>
+      <div class="nsym">\(\Phi\)</div>
+        <div class="ndef">The end-to-end pipeline as a typed function: data &amp; config → global artifact. \(\Phi = \mathrm{stack} \circ \mathrm{aggregate} \circ \mathrm{distil} \circ \mathrm{DP} \circ \mathrm{soft}_T \circ \mathrm{teacher}\).</div>
+        <div class="nsrc">Realised by <code>Coordinator.run</code>; each arrow is one package boundary.</div>
+      <div class="nsym">\(\mathcal{D}\)</div>
+        <div class="ndef">The space of per-client datasets \((X_k, y_k)\) — the input type of \(\Phi\).</div>
+        <div class="nsrc">Produced by <code>partitioners.py</code> (IID / Dirichlet / label-skew).</div>
+      <div class="nsym">\(\Theta\)</div>
+        <div class="ndef">The configuration / hyperparameter space (teacher choice, \(T\), \(\varepsilon\), depth, …).</div>
+        <div class="nsrc"><code>config/schemas.py::FederationConfig</code>; injected once at construction.</div>
+      <div class="nsym">\(\mathcal{G}\)</div>
+        <div class="ndef">The space of global artifacts — wrapped surrogates implementing the adapter protocol.</div>
+        <div class="nsrc"><code>GlobalArtifact</code> dataclass; consumed by clients for stacking.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Invariant.</strong> \(\Phi\) is a pure composition of typed arrows, so swapping any single arrow (teacher backend, DP mechanism, aggregator, meta-learner) preserves the rest of the pipeline. The DP arrow is the only randomised one — every later object inherits \((\varepsilon, \delta)\)-DP by post-processing.
+    </div>
   </div>
 
 </div>

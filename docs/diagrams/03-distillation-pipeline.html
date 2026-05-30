@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1000px; }
 
@@ -80,7 +116,7 @@
       <h1>Knowledge Distillation Pipeline</h1>
       <div class="subtitle">Teacher RF → soft labels → DP → surrogate DT — with intermediate shapes</div>
     </div>
-    <div class="brand-pill">DIAGRAM 03 / 16</div>
+    <div class="brand-pill">DIAGRAM 03 / 18</div>
   </div>
 
   <div class="pipe">
@@ -130,18 +166,18 @@
     <div class="formula-grid">
       <div class="formula-card">
         <div class="name">Temperature scaling</div>
-        <div class="eq">pᵢ(T) = pᵢ<sup>1/T</sup> / Σⱼ pⱼ<sup>1/T</sup></div>
-        <div class="note">T &gt; 1 smooths the distribution to preserve "dark knowledge"; T = 1 is the identity.</div>
+        <div class="eq">$$p_i^{(T)} = \frac{p_i^{1/T}}{\sum_j p_j^{1/T}}$$</div>
+        <div class="note">\(T &gt; 1\) smooths the distribution to preserve "dark knowledge"; \(T = 1\) is the identity.</div>
       </div>
       <div class="formula-card">
         <div class="name">Laplace mechanism</div>
-        <div class="eq">η ∼ Lap(0, Δ₁/ε), Δ₁ ≤ 2</div>
-        <div class="note">Pure ε-DP. Δ₁ bound because one row of P swaps at most 2 mass in L1.</div>
+        <div class="eq">$$\eta \sim \mathrm{Lap}\!\left(0,\, \tfrac{\Delta_1}{\varepsilon}\right),\; \Delta_1 \le 2$$</div>
+        <div class="note">Pure \(\varepsilon\)-DP. \(\Delta_1\) bound because one row of \(P\) swaps at most 2 mass in \(L_1\).</div>
       </div>
       <div class="formula-card">
         <div class="name">Gaussian mechanism</div>
-        <div class="eq">σ ≥ Δ₂·√(2·ln(1.25/δ))/ε</div>
-        <div class="note">(ε, δ)-DP. L2 sensitivity Δ₂ ≤ √2. Composes tightly under Rényi-DP.</div>
+        <div class="eq">$$\sigma \ge \frac{\Delta_2\sqrt{2\ln(1.25/\delta)}}{\varepsilon}$$</div>
+        <div class="note">\((\varepsilon, \delta)\)-DP. \(L_2\) sensitivity \(\Delta_2 \le \sqrt{2}\). Composes tightly under Rényi-DP.</div>
       </div>
     </div>
   </div>
@@ -149,6 +185,140 @@
   <div class="legend">
     <div class="legend-item"><div class="legend-swatch" style="background: var(--luminate-light); border: 1px dashed var(--luminate-medium);"></div>Tensor shape</div>
     <div class="legend-item"><div class="legend-swatch" style="background: var(--luminate-primary);"></div>Pipeline step</div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · INFORMATION-THEORETIC VIEW OF DISTILLATION ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">𝒦𝓛</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Why distillation works — Hinton-Vinyals view</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — the KD loss</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          The student minimises a convex combination of cross-entropy on hard labels and KL-divergence from the teacher's soft distribution.
+        </div>
+        <div class="math-display">
+          $$p_T(i,k) = \frac{\exp(z_k/T)}{\sum_j \exp(z_j/T)}$$
+        </div>
+        <div class="math-display">
+          $$\mathcal{L}_{\mathrm{KD}}(\theta_S) = (1-\lambda)\,\mathrm{CE}(p_S, y) + \lambda\, T^2\, \mathrm{KL}\!\left(p_T^{\,\text{teacher}}\,\|\,p_T^{\,\text{student}}\right)$$
+        </div>
+        <div class="math-display">
+          $$\mathrm{KL}(P\,\|\,Q) = \sum_k P(k)\, \log\frac{P(k)}{Q(k)}$$
+        </div>
+        <div style="font-size:12px; color:#9bdc7c; margin-top:8px; font-family:'JetBrains Mono', monospace;">
+          # Limits: \(T\to 1\): argmax (hard) &nbsp;·&nbsp; \(T\to\infty\): uniform (max entropy)
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — soft labels carry "dark knowledge"</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          A hard label says "this is a 7." A soft label says <em>"this is a 7, but it's also slightly a 1 and not at all a 0."</em> Those off-target probabilities encode the teacher's <strong>similarity structure</strong> over the class manifold.<br><br>
+          Mathematically: <code>H(P) ≥ H(argmax(P))</code> — soft labels have <em>strictly more entropy</em>, so they transmit more information per row. The student converges with the same data but to a <em>smoother</em> decision surface.<br><br>
+          <strong>For DP this matters doubly</strong>: noise on soft labels degrades information gracefully; noise on a hard label flips classes outright.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — privacy first, compression second</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>We don't compress to save bandwidth</strong> — we compress because <em>a smaller decision boundary leaks less</em>. The depth-6 student is a 10 KB summary that throws away over-fitted memorisation of training rows.<br><br>
+          <strong>The DP step is mandatory between teacher and student.</strong> Skipping it lets the student over-fit to noiseless soft labels, which is provably less private than the original raw-data baseline.<br><br>
+          <strong>The proxy dataset is NOT private.</strong> It's a public test set we use to render comparable predictions across clients — distillation happens privately on each client's own (X, P̃).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · KD loss / soft-label algebra ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · KNOWLEDGE-DISTILLATION LOSS</div>
+        <h3>Every symbol appearing in the Hinton-Vinyals KD objective above — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Logits &amp; temperature softening</div>
+      <div class="nsym">\(z_k\)</div>
+        <div class="ndef">Teacher's pre-softmax score (logit) for class \(k\) on a given row. For tree ensembles we take <code>log(predict_proba)</code> as a stand-in.</div>
+        <div class="nsrc"><code>distillation/soft_labels.py::_logits_from_proba</code> — clips \(P_k\) above \(\epsilon_{\min}\) then logs it.</div>
+      <div class="nsym">\(T\)</div>
+        <div class="ndef">Distillation temperature. \(T = 1\) recovers the teacher's posterior; \(T \to \infty\) drives toward the uniform distribution (maximum entropy); \(T \to 0^+\) collapses to argmax (hard label).</div>
+        <div class="nsrc"><code>cfg.distillation.temperature</code>; consumed by <code>SoftLabelGenerator.apply_temperature</code>.</div>
+      <div class="nsym">\(p_T(i, k)\)</div>
+        <div class="ndef">Tempered softmax probability for row \(i\), class \(k\). Each row sums to 1 — lives on the simplex \(\Delta^{K-1}\).</div>
+        <div class="nsrc">Computed as <code>softmax(z/T, axis=-1)</code> in <code>distillation/soft_labels.py</code>.</div>
+      <div class="nsym">\(i\)</div>
+        <div class="ndef">Row index inside the client's training set \((1 \le i \le n_k)\).</div>
+        <div class="nsrc">Implicit batch index in <code>numpy</code> / sklearn calls.</div>
+      <div class="nsym">\(j, k\)</div>
+        <div class="ndef">Class indices in the sum \(\sum_j \exp(z_j / T)\). \(K = |\mathcal{C}|\) is the number of classes.</div>
+        <div class="nsrc"><code>self.teacher.classes_</code> on the client; carried into <code>ClientUpdate.classes</code>.</div>
+
+      <div class="notation-section-row">The KD objective</div>
+      <div class="nsym">\(\mathcal{L}_{\mathrm{KD}}(\theta_S)\)</div>
+        <div class="ndef">Total student loss as a function of student parameters \(\theta_S\). A convex combination of hard-label CE and soft-label KL.</div>
+        <div class="nsrc"><code>distillation/surrogate.py::SurrogateDistiller.distill</code> — for tree students this is approximated by re-fitting on \((X, \tilde{P})\) targets.</div>
+      <div class="nsym">\(\theta_S\)</div>
+        <div class="ndef">Student model parameters — for a depth-\(d\) tree, the split thresholds and leaf probability vectors.</div>
+        <div class="nsrc">Internal state of the fitted surrogate (<code>S_k.tree_</code> in sklearn).</div>
+      <div class="nsym">\(\lambda\)</div>
+        <div class="ndef">Mixing weight between hard-label CE and soft-label KL. \(\lambda = 0\) ignores the teacher; \(\lambda = 1\) is pure distillation.</div>
+        <div class="nsrc"><code>cfg.distillation.kd_weight</code>; default 1.0 in privacy-first mode.</div>
+      <div class="nsym">\(T^2\)</div>
+        <div class="ndef">Gradient-magnitude correction. Soft-label gradients shrink as \(1/T^2\); multiplying by \(T^2\) keeps the two loss terms on the same scale.</div>
+        <div class="nsrc">Hard-coded inside the KL-term computation per Hinton &amp; Vinyals (2015).</div>
+      <div class="nsym">\(\mathrm{CE}(p_S, y)\)</div>
+        <div class="ndef">Cross-entropy between the student's prediction and the one-hot hard label.</div>
+        <div class="nsrc">Used only when ground-truth \(y\) is provided to the distiller; otherwise this term is dropped.</div>
+      <div class="nsym">\(p_S\)</div>
+        <div class="ndef">Student's predicted distribution for the row — output of \(S_k\) on \(x_i\).</div>
+        <div class="nsrc"><code>S_k.predict_proba(X_local)</code>.</div>
+      <div class="nsym">\(y\)</div>
+        <div class="ndef">Hard label vector on the client. Only used if <code>kd_weight &lt; 1</code>.</div>
+        <div class="nsrc"><code>FederatedClient.y_local</code>.</div>
+
+      <div class="notation-section-row">KL divergence &amp; entropy</div>
+      <div class="nsym">\(\mathrm{KL}(P \,\|\, Q)\)</div>
+        <div class="ndef">Kullback–Leibler divergence — the information cost of using \(Q\) when the truth is \(P\). Asymmetric, non-negative, zero iff \(P = Q\).</div>
+        <div class="nsrc">In the tree-student approximation, KL minimisation reduces to fitting \(S_k\) on the teacher's soft-label targets directly.</div>
+      <div class="nsym">\(P, Q\)</div>
+        <div class="ndef">Two distributions over \(K\) classes. In the KD term: \(P = p_T^{\text{teacher}}\), \(Q = p_T^{\text{student}}\).</div>
+        <div class="nsrc">Both live on \(\Delta^{K-1}\); rows of \(\tilde{P}_k\) and \(S_k(X_k)\) respectively.</div>
+      <div class="nsym">\(H(P)\)</div>
+        <div class="ndef">Shannon entropy of \(P\). \(H(P) \ge H(\arg\max P)\) — soft labels strictly carry more bits per row than hard labels.</div>
+        <div class="nsrc">Measured for diagnostics in <code>distillation/diagnostics.py::soft_label_entropy</code>.</div>
+      <div class="nsym">\(p_T^{\text{teacher}}, p_T^{\text{student}}\)</div>
+        <div class="ndef">Tempered posteriors from teacher and student, both at the same temperature \(T\) so the KL is meaningful.</div>
+        <div class="nsrc">Teacher: privatised \(\tilde{P}_k\). Student: <code>S_k.predict_proba</code> at distil time.</div>
+
+      <div class="notation-section-row">Inputs that flow in from earlier stages</div>
+      <div class="nsym">\(\tilde{P}_k\)</div>
+        <div class="ndef">The DP-noised soft-label targets used as the KL teacher distribution. The only randomised object in the pipeline.</div>
+        <div class="nsrc">Output of <code>privacy/mechanisms.py::privatize</code>; passed to <code>SurrogateDistiller.distill</code>.</div>
+      <div class="nsym">\(X_k\)</div>
+        <div class="ndef">The client's private feature matrix — used as the support over which the soft-label/KL is averaged.</div>
+        <div class="nsrc"><code>FederatedClient.X_local</code>.</div>
+      <div class="nsym">\(S_k\)</div>
+        <div class="ndef">The student — a small (depth ≈ 6) tree that emerges as the minimiser of \(\mathcal{L}_{\mathrm{KD}}\).</div>
+        <div class="nsrc">Return value of <code>SurrogateDistiller.distill</code>; serialised to the wire.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> The KL term is what makes distillation a <em>statistical</em> operation rather than a structural one — that's why students fit on \((X_k, \tilde{P}_k)\) can come from any tree backend and still encode the teacher's class-similarity geometry. DP noise on soft labels degrades information gracefully; the same noise on hard labels would flip classes outright.
+    </div>
   </div>
 
 </div>

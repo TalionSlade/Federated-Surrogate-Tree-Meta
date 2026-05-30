@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1080px; }
 
@@ -118,7 +154,7 @@
       <h1>Cross-Framework Heterogeneity (Hook B)</h1>
       <div class="subtitle">Every client may pick its own tree backend — yet upload a wire-compatible ClientUpdate</div>
     </div>
-    <div class="brand-pill">DIAGRAM 04 / 16</div>
+    <div class="brand-pill">DIAGRAM 04 / 18</div>
   </div>
 
   <div class="clients-row">
@@ -213,6 +249,130 @@
         <div class="key">framework: str</div>
         <div class="val">Audit field declaring which backend ran locally. Coordinator may log a mixed-framework heatmap per round.</div>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · THE INTERCHANGEABILITY THEOREM ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">⇆</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Why mixed backends still aggregate</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — the adapter interface as a category</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          Each backend is an object in the category <strong>Tree</strong>. Adapters are morphisms into the shared codomain — the probability simplex \(\Delta^{K-1}\):
+        </div>
+        <div class="math-display">
+          $$A : \mathbb{R}^{d} \;\longrightarrow\; \Delta^{K-1}$$
+          $$\sum_{j=1}^{K} A(x)_j = 1,\quad A(x)_j \ge 0$$
+        </div>
+        <div style="font-size:11.5px; color:#9bdc7c; margin:8px 0 4px 0; font-family:'JetBrains Mono', monospace;">
+          # Interchangeability theorem
+        </div>
+        <div class="math-display">
+          $$\forall\, A, B : \mathbb{R}^d \to \Delta^{K-1},\quad \mathrm{aggregate}(\{A, B\})\ \text{is well-defined}$$
+        </div>
+        <div style="font-size:11.5px; color:#9bdc7c; margin:8px 0 4px 0; font-family:'JetBrains Mono', monospace;">
+          # Communication bound
+        </div>
+        <div class="math-display">
+          $$|\text{wire}| \;\le\; |\mathrm{pickle}(A)| \;\le\; \text{depth} \cdot n_{\text{leaves}} \cdot 8\ \text{B} \;\approx\; 10\ \text{KB}$$
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — different backends are fine</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Tree weights are not parameters in a shared space.</strong> sklearn's split thresholds, XGBoost's leaf values, LightGBM's leaf-wise structure, CatBoost's ordered boosting — these objects have <em>no common arithmetic</em>. FedAvg-style mean is meaningless.<br><br>
+          What <em>is</em> common is the output: a probability vector summing to 1. Two clients running totally different backends can both project onto the same simplex.<br><br>
+          <strong>Aggregation happens in the simplex</strong> — that's why ProxyRedistillationAggregator works regardless of who-trained-what.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — protocols &gt; inheritance</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Inheritance binds you to the framework you started with.</strong> We use Python's <code>typing.Protocol</code> — structural typing — so anything that <em>walks like a tree</em> is a tree.<br><br>
+          <strong>The safe-deserialiser is the trust boundary.</strong> Coordinator imports the class path before unpickling, refuses anything that doesn't implement <code>ModelAdapterProtocol</code>. This prevents arbitrary-code-execution through a malicious pickle.<br><br>
+          <strong>Bandwidth is the wire format's only metric.</strong> Pickle is small enough for tree weights; future formats (ONNX, native JSON) plug into the same protocol.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · adapter category &amp; wire bound ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · INTERCHANGEABILITY ALGEBRA</div>
+        <h3>Every symbol used in the interchangeability theorem above — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Domain &amp; codomain — the simplex</div>
+      <div class="nsym">\(\mathbb{R}^{d}\)</div>
+        <div class="ndef">The feature space — the domain of any adapter. \(d\) is the global feature dimension shared by all clients.</div>
+        <div class="nsrc"><code>proxy_X.shape[1]</code>; validated in <code>Coordinator._validate_feature_dim</code>.</div>
+      <div class="nsym">\(d\)</div>
+        <div class="ndef">Number of features per row — constant across all clients and the proxy set (Hook A invariant).</div>
+        <div class="nsrc"><code>cfg.data.n_features</code>; enforced by <code>partitioners.py</code>.</div>
+      <div class="nsym">\(\Delta^{K-1}\)</div>
+        <div class="ndef">The \((K-1)\)-dimensional probability simplex: vectors with non-negative entries summing to 1. The canonical codomain that all backends share.</div>
+        <div class="nsrc">Enforced by <code>BaseModelAdapter.predict_proba</code> contract; row-normalised in <code>privacy/mechanisms.py</code>.</div>
+      <div class="nsym">\(K\)</div>
+        <div class="ndef">Number of classes — the dimension of the output simplex.</div>
+        <div class="nsrc"><code>len(adapter.classes_)</code>; carried on <code>ClientUpdate.classes</code>.</div>
+      <div class="nsym">\(j\)</div>
+        <div class="ndef">Class index in \(\sum_{j=1}^{K} A(x)_j = 1\).</div>
+        <div class="nsrc">Implicit column index in <code>numpy</code> proba arrays.</div>
+      <div class="nsym">\(x\)</div>
+        <div class="ndef">A single feature row in \(\mathbb{R}^d\) — the input to an adapter.</div>
+        <div class="nsrc">Row of <code>proxy_X</code> or <code>X_local</code>.</div>
+
+      <div class="notation-section-row">Adapters as morphisms</div>
+      <div class="nsym">\(A, B\)</div>
+        <div class="ndef">Two adapter instances, possibly wrapping different backends (sklearn, XGBoost, LightGBM, CatBoost). As morphisms \(\mathbb{R}^d \to \Delta^{K-1}\) they are interchangeable.</div>
+        <div class="nsrc"><code>SklearnTreeAdapter</code>, <code>XGBoostAdapter</code>, <code>LightGBMAdapter</code>, <code>CatBoostAdapter</code> in <code>adapters/</code>; all satisfy <code>ModelAdapterProtocol</code>.</div>
+      <div class="nsym">\(A(x)\)</div>
+        <div class="ndef">The adapter applied to a single row — yields a probability vector in \(\Delta^{K-1}\).</div>
+        <div class="nsrc"><code>adapter.predict_proba(x.reshape(1,-1))[0]</code>.</div>
+      <div class="nsym">\(A(x)_j\)</div>
+        <div class="ndef">The \(j\)-th coordinate of \(A(x)\) — the predicted probability of class \(j\).</div>
+        <div class="nsrc">Column-indexed entry of <code>predict_proba</code> output.</div>
+      <div class="nsym">\(\mathrm{aggregate}(\{A, B\})\)</div>
+        <div class="ndef">The proxy-redistillation aggregator. Because all adapters map into the same simplex, averaging their predictions on a public proxy set is well-defined regardless of backend.</div>
+        <div class="nsrc"><code>aggregation/proxy_redistillation.py::ProxyRedistillationAggregator.aggregate(updates, proxy_X, classes)</code>.</div>
+
+      <div class="notation-section-row">Wire-size bound</div>
+      <div class="nsym">\(|\text{wire}|\)</div>
+        <div class="ndef">Size in bytes of the on-the-wire payload — the serialised surrogate adapter sent from client to coordinator.</div>
+        <div class="nsrc"><code>len(ClientUpdate.surrogate_blob)</code>; logged by <code>Coordinator._record_wire_size</code>.</div>
+      <div class="nsym">\(|\mathrm{pickle}(A)|\)</div>
+        <div class="ndef">Size of the safely-pickled adapter — the upper bound for <code>|wire|</code> before optional compression.</div>
+        <div class="nsrc"><code>protocols/safe_serde.py::safe_dumps(adapter)</code>.</div>
+      <div class="nsym">\(\text{depth}\)</div>
+        <div class="ndef">Maximum depth of the surrogate tree. Bounded small (≈6) to keep the wire payload tiny and to throw away over-fitting.</div>
+        <div class="nsrc"><code>cfg.distillation.surrogate_max_depth</code>; passed to the student tree constructor.</div>
+      <div class="nsym">\(n_{\text{leaves}}\)</div>
+        <div class="ndef">Number of leaves in the surrogate. Upper-bounded by \(2^{\text{depth}}\); each leaf stores a length-\(K\) probability vector.</div>
+        <div class="nsrc"><code>S_k.tree_.n_leaves</code> in sklearn-backed students.</div>
+      <div class="nsym">8 B</div>
+        <div class="ndef">Bytes per double-precision float — the per-cell cost of a leaf probability entry.</div>
+        <div class="nsrc">Numpy <code>float64</code> dtype assumption used for the back-of-envelope.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Invariant.</strong> Because every backend is forced through the adapter morphism into the shared simplex \(\Delta^{K-1}\), the aggregator never sees backend-specific internals — only probability vectors. That is the interchangeability theorem: \(A\) and \(B\) are equivalent up to their image in \(\Delta^{K-1}\), so mixed-backend federations are mathematically identical to uniform-backend ones.
     </div>
   </div>
 

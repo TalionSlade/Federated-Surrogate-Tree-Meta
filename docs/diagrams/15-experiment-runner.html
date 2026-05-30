@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1640px; min-height: 1080px; }
 
@@ -108,7 +144,7 @@
       <h1>ExperimentRunner — config → metrics</h1>
       <div class="subtitle">A single Pydantic config drives the entire federation. Pure-function builders translate strings into Protocol instances.</div>
     </div>
-    <div class="brand-pill">DIAGRAM 15 / 16</div>
+    <div class="brand-pill">DIAGRAM 15 / 18</div>
   </div>
 
   <div class="pipeline">
@@ -298,6 +334,141 @@
         <div class="name">build_proxy_dataset</div>
         <div class="desc">enum source → held_out / synthetic_uniform / public_X</div>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · RUNNER AS A COMPOSITION ROOT ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">▶</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Config → wiring → round loop is a single function</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — runner type signature</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          The runner is one map from a frozen typed config to a list of $\mathrm{RoundResult}$. Every intermediate is derived deterministically:
+        </div>
+        <div class="math-display">$\mathrm{ExperimentRunner.run}\;:\;\mathrm{ExperimentConfig}\;\longrightarrow\;\mathrm{List}[\mathrm{RoundResult}]$</div>
+        <div class="math-display">$\begin{aligned}
+\mathrm{seed} &\leftarrow \mathrm{set\_global\_seed}(\mathrm{cfg.random\_state}) \\
+\mathcal{D} &\leftarrow \mathrm{load\_dataset}(\mathrm{cfg.data.name}) \\
+\{X_k,y_k\}_{k=1}^{K} &\leftarrow \mathrm{partitioner.partition}(X,y,K) \\
+\{c_k\}_{k=1}^{K} &\leftarrow \mathrm{build\_clients}(\mathrm{cfg},\,\{X_k,y_k\}) \\
+\Gamma &\leftarrow \mathrm{build\_coordinator}(\mathrm{cfg},\,\mathcal{C},\,d)
+\end{aligned}$</div>
+        <div class="math-display">$\begin{aligned}
+\forall\, t \in \{1,\dots,T\}:\quad U_t &\leftarrow \{c_k.\mathrm{local\_train}()\}_{k=1}^{K} \\
+\mathcal{A}_t &\leftarrow \Gamma.\mathrm{round}(U_t,\,t,\,B) \\
+&\quad \forall\, c_k:\ c_k.\mathrm{apply\_global}(\mathcal{A}_t) \\
+m_t &\leftarrow \mathrm{eval}(G_t,\,X_{\mathrm{test}},\,y_{\mathrm{test}})
+\end{aligned}$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># Deterministic: same config ⇒ same results</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — composition root pattern</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>One place in the codebase knows about every concrete class.</strong> Everywhere else, code talks to protocols. This is the composition-root pattern from Mark Seemann.<br><br>
+          <strong>Pure builders (_build_*)</strong> are total functions from string keys to objects. They're easy to test in isolation, easy to mock, and have no side effects.<br><br>
+          <strong>Hook B (mixed frameworks) lives here.</strong> If <code>frameworks_per_client</code> is set, the runner instantiates a different teacher per client — without touching the round loop.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — YAML drives everything</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>An ExperimentConfig is the entire experiment.</strong> No CLI flags, no environment variables, no hidden state. YAML in, results out.<br><br>
+          <strong>Pydantic v2 validation rejects malformed configs <em>before</em> the runner starts.</strong> Type errors at parse-time, not at round 5.<br><br>
+          <strong>The runner is stateless across runs.</strong> Two ExperimentRunner instances with the same config produce bit-identical RoundResult lists — that's how the benchmark sweep reproduces.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · what every symbol above means ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · RUNNER COMPOSITION ROOT</div>
+        <h3>Every symbol in the type signature and the aligned round-loop algebra — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Top-level type signature</div>
+      <div class="nsym">\(\mathrm{ExperimentConfig}\)</div>
+        <div class="ndef">Frozen pydantic v2 model describing the entire run — data, partitioner, dp, distillation, aggregation, meta, federation, seeds.</div>
+        <div class="nsrc"><code>orchestration.config.ExperimentConfig</code>; loaded from YAML by <code>ExperimentRunner.from_yaml</code>.</div>
+      <div class="nsym">\(\mathrm{ExperimentRunner.run}\)</div>
+        <div class="ndef">The single entry-point: a pure function from config to a list of round results. Deterministic given seed.</div>
+        <div class="nsrc"><code>orchestration/runner.py::ExperimentRunner.run(self) -> list[RoundResult]</code>.</div>
+      <div class="nsym">\(\mathrm{RoundResult}\)</div>
+        <div class="ndef">Per-round dataclass: round id, global accuracy, per-client metrics, ε/δ ledger row, wall-clock.</div>
+        <div class="nsrc"><code>orchestration.result.RoundResult</code>; appended once per round inside the loop.</div>
+
+      <div class="notation-section-row">Bootstrap algebra (one-shot)</div>
+      <div class="nsym">\(\mathrm{cfg.random\_state}\)</div>
+        <div class="ndef">Master seed propagated to NumPy, Python, and every estimator. Sole randomness source.</div>
+        <div class="nsrc"><code>set_global_seed(cfg.random_state)</code> at the top of <code>run()</code>.</div>
+      <div class="nsym">\(\mathcal{D}\)</div>
+        <div class="ndef">Raw dataset \((X, y)\) before partitioning — the pre-federation reference table.</div>
+        <div class="nsrc"><code>load_dataset(cfg.data.name)</code> in <code>data/loaders.py</code>.</div>
+      <div class="nsym">\(\{X_k, y_k\}_{k=1}^{K}\)</div>
+        <div class="ndef">Per-client shards produced by the chosen partitioner (IID, label-skew Dirichlet, quantity-skew, feature-skew).</div>
+        <div class="nsrc"><code>partitioner.partition(X, y, K)</code> in <code>data/partitioners.py</code>.</div>
+      <div class="nsym">\(K\)</div>
+        <div class="ndef">Number of federated clients; cardinality of the shard collection.</div>
+        <div class="nsrc"><code>cfg.federation.n_clients</code>.</div>
+      <div class="nsym">\(c_k\)</div>
+        <div class="ndef">A constructed <code>FederatedClient</code> bound to shard \((X_k, y_k)\), a teacher factory, a DP mechanism, and a distiller.</div>
+        <div class="nsrc"><code>build_clients(cfg, shards)</code>; returns <code>list[FederatedClient]</code>.</div>
+      <div class="nsym">\(\mathcal{C}\)</div>
+        <div class="ndef">Global class list — the canonical class ordering shared by every estimator and aggregator.</div>
+        <div class="nsrc"><code>np.unique(y)</code>; passed to <code>build_coordinator</code> for class-aligned proba columns.</div>
+      <div class="nsym">\(d\)</div>
+        <div class="ndef">Feature dimensionality threaded into the coordinator builder (needed for proxy synthesis).</div>
+        <div class="nsrc"><code>X.shape[1]</code>.</div>
+      <div class="nsym">\(\Gamma\)</div>
+        <div class="ndef">The coordinator — wires together aggregator, accountant, proxy dataset, and meta-learner factory.</div>
+        <div class="nsrc"><code>build_coordinator(cfg, classes, d)</code> in <code>orchestration/runner.py</code>.</div>
+
+      <div class="notation-section-row">Round-loop algebra</div>
+      <div class="nsym">\(t\)</div>
+        <div class="ndef">Round index, ranging \(1\dots T\). Used as the accountant's row key.</div>
+        <div class="nsrc">Loop variable in <code>for t in range(1, cfg.federation.n_rounds + 1):</code>.</div>
+      <div class="nsym">\(T\)</div>
+        <div class="ndef">Total number of federated rounds. Determines per-round budget split \(\varepsilon/T\).</div>
+        <div class="nsrc"><code>cfg.federation.n_rounds</code>.</div>
+      <div class="nsym">\(U_t\)</div>
+        <div class="ndef">Collection of <code>ClientUpdate</code>s for round \(t\) — one per client, each containing its surrogate blob, \(n_k\), and per-client ε.</div>
+        <div class="nsrc"><code>updates = [c.local_train() for c in clients]</code>.</div>
+      <div class="nsym">\(B\)</div>
+        <div class="ndef">Per-round privacy budget \(\varepsilon/T\) passed to the coordinator so it can verify the accountant.</div>
+        <div class="nsrc"><code>cfg.dp.target_epsilon / cfg.federation.n_rounds</code>.</div>
+      <div class="nsym">\(\mathcal{A}_t\)</div>
+        <div class="ndef">Aggregated broadcast artefact for round \(t\) — wraps the global \(G_t\), accountant snapshot, and metadata.</div>
+        <div class="nsrc"><code>coordinator.round(updates, t, B)</code> returns a <code>GlobalArtifact</code>.</div>
+      <div class="nsym">\(G_t\)</div>
+        <div class="ndef">Global surrogate at round \(t\); the model evaluated on the held-out test set for the round's accuracy row.</div>
+        <div class="nsrc"><code>artifact.model</code> from <code>GlobalArtifact</code>.</div>
+      <div class="nsym">\(m_t\)</div>
+        <div class="ndef">Per-round metric tuple (accuracy, F1, AUC, ε_cum). The summary value stored in <code>RoundResult</code>.</div>
+        <div class="nsrc"><code>eval(G_t, X_test, y_test)</code>; written to <code>RoundResult.metrics</code>.</div>
+      <div class="nsym">\(X_{\mathrm{test}}, y_{\mathrm{test}}\)</div>
+        <div class="ndef">Federation-wide held-out split — never seen by any client, used only for centralised evaluation of \(G_t\).</div>
+        <div class="nsrc"><code>cfg.data.test_split</code>; carved out before partitioning in <code>load_dataset</code>.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> The runner is a <em>composition root</em>: the one place that knows every concrete class. The bootstrap algebra runs once, the round-loop algebra runs \(T\) times, and the entire function is deterministic — same <code>ExperimentConfig</code>, bit-identical <code>List[RoundResult]</code>.
     </div>
   </div>
 

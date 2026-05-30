@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1700px; min-height: 1380px; }
 
@@ -65,7 +101,7 @@
       <h1>Sequence Diagram — One Federation Round</h1>
       <div class="subtitle">UML sequence across Client_k, Coordinator, Aggregator, Accountant — DP highlighted in red</div>
     </div>
-    <div class="brand-pill">DIAGRAM 16 / 16</div>
+    <div class="brand-pill">DIAGRAM 16 / 18</div>
   </div>
 
   <div class="seq-wrap">
@@ -222,6 +258,145 @@
     <div class="legend-item"><div class="legend-swatch" style="background: var(--luminate-light); border: 1px solid var(--luminate-medium);"></div>Client-side activation</div>
     <div class="legend-item"><div class="legend-swatch" style="background: #fff5dd; border: 1px solid var(--amber);"></div>Server-side activation</div>
     <div class="legend-item"><div class="legend-swatch" style="background: #fdecec; border: 1px solid var(--red);"></div>DP component (Hook A)</div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · LIFELINE ALGEBRA & MESSAGE PASSING ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:48px; height:48px; border-radius:14px; background:rgba(255,255,255,0.13); display:flex; align-items:center; justify-content:center; font-size:22px;">⏱</div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2.5px; color:#b9aef0; text-transform:uppercase; font-weight:600;">Mathematical foundation</div>
+        <div style="font-size:22px; font-weight:700; margin-top:2px;">A round is a partially-ordered set of typed messages</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <!-- WHAT -->
+      <div style="background:rgba(255,255,255,0.07); border-radius:14px; padding:22px; border:1px solid rgba(255,255,255,0.1);">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <span style="color:#ffb380; font-size:20px; font-weight:700;">▌</span>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; color:#ffb380; font-weight:700;">WHAT</div>
+        </div>
+        <div style="font-size:14px; color:#e8e3ff; line-height:1.7; margin-bottom:14px;">
+          Each arrow is a message $m_t : \mathrm{actor}_i \to \mathrm{actor}_j$ with a payload type and an optional return $r_t$. The lifeline is a partial order $\preceq$ over messages (causal precedence).
+        </div>
+        <div class="math-display">$\begin{aligned}
+m_1 &: \mathrm{Client} \to \mathrm{Self} &&\mathrm{teacher.fit}:(X,y)\to\checkmark \\
+m_2 &: \mathrm{Client} \to \mathrm{Self} &&\mathrm{predict\_proba}: X \to P\in\Delta^{K-1} \\
+m_3 &: \mathrm{Client} \to \mathrm{DP} &&\mathrm{privatize}:(P,\varepsilon,\delta) \to \tilde{P} \\
+m_4 &: \mathrm{Client} \to \mathrm{Distiller} &&\mathrm{distill}:(X,\tilde{P})\to S \\
+m_5 &: \mathrm{Client} \to \mathrm{Coord} &&\mathrm{upload}: \mathrm{ClientUpdate}\to\checkmark \\
+m_6 &: \mathrm{Coord} \to \mathrm{Aggregator} &&\mathrm{aggregate}: [S_k] \to G \\
+m_7 &: \mathrm{Coord} \to \mathrm{Acct} &&\mathrm{record}:(t,[\varepsilon_k,\delta_k])\to(\varepsilon_c,\delta_c) \\
+m_8 &: \mathrm{Coord} \to \mathrm{Client}_K &&\mathrm{broadcast}: G \to \checkmark \\
+m_9 &: \mathrm{Client} \to \mathrm{Meta} &&\mathrm{refine}:(X,y,G)\to M_k
+\end{aligned}$</div>
+        <div class="math-display">$m_1 \preceq m_2 \preceq m_3 \preceq m_4 \preceq m_5,\quad \forall k.\ m_5^k \preceq m_6 \preceq m_7 \preceq m_8,\quad m_8 \preceq m_9$</div>
+      </div>
+
+      <!-- WHY -->
+      <div style="background:rgba(255,255,255,0.07); border-radius:14px; padding:22px; border:1px solid rgba(255,255,255,0.1);">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <span style="color:#9bdc7c; font-size:20px; font-weight:700;">▌</span>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; color:#9bdc7c; font-weight:700;">WHY</div>
+        </div>
+        <div style="font-size:14px; color:#e8e3ff; line-height:1.75;">
+          <p style="margin:0 0 14px 0;"><strong style="color:#fff;">Sequence diagrams reify time.</strong> Object diagrams show <em>which</em> objects exist; sequence diagrams show <em>when</em> they speak — and "when" is the only thing that gates DP composition.</p>
+          <p style="margin:0 0 14px 0;"><strong style="color:#fff;">Why visualise the round, not the whole experiment?</strong> Because the round is the unit of privacy accounting: every red arrow (DP component) maps to exactly one row in the ledger, every amber arrow (server) is a non-privacy operation, and the cumulative <span style="font-family:'JetBrains Mono',monospace; color:#fff;">(ε_cum, δ_cum)</span> grows only across red arrows.</p>
+          <p style="margin:0;"><strong style="color:#fff;">Why explicit return arrows?</strong> A return type that doesn't match the caller's expectation is the most common federation bug — surfacing <span style="font-family:'JetBrains Mono',monospace; color:#fff;">→ P̃</span> and <span style="font-family:'JetBrains Mono',monospace; color:#fff;">→ S</span> on the wire makes adapter type-mismatches a diagram-time error, not a run-time crash.</p>
+        </div>
+      </div>
+
+      <!-- MINDSET -->
+      <div style="background:rgba(255,255,255,0.07); border-radius:14px; padding:22px; border:1px solid rgba(255,255,255,0.1);">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <span style="color:#ff9bcd; font-size:20px; font-weight:700;">▌</span>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; color:#ff9bcd; font-weight:700;">MINDSET</div>
+        </div>
+        <div style="font-size:14px; color:#e8e3ff; line-height:1.75;">
+          <p style="margin:0 0 14px 0;"><strong style="color:#fff;">Explicit data flow over hidden state.</strong> If you can't draw it on a lifeline, it's invisible to audits. Hidden global mutations — singletons, side-effects, shared scratchpads — break the message-passing invariant and corrupt the accountant.</p>
+          <p style="margin:0 0 14px 0;"><strong style="color:#fff;">Phases are <em>contracts</em>, not suggestions.</strong> The five phases (LOCAL TRAIN → UPLOAD → AGGREGATE → BROADCAST → META REFINE) admit no overlap: phase boundaries are synchronisation barriers. Asynchronous variants must coarsen, never reorder.</p>
+          <p style="margin:0;"><strong style="color:#fff;">Privacy lives on the wire.</strong> Every byte that crosses a process boundary needs an answer to "what is its sensitivity Δ?" The red privatize() arrow is the only place sensitivity is bounded — everything downstream is post-processing and therefore free.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px; padding:18px 22px; background:rgba(255,255,255,0.05); border-radius:12px; border-left:3px solid #ff9bcd; font-family:'JetBrains Mono',monospace; font-size:13px; color:#e8e3ff; line-height:1.7;">
+      <span style="color:#ff9bcd;">∎</span>  <strong style="color:#fff;">Round invariant:</strong>  the round is correct iff <span style="color:#fff;">{m₃, m₇}</span> (the only red arrows) form a privacy-consistent prefix: ε_cum after m₇ ≤ target_budget, and m₃ has been applied to every probability vector that later leaves Client_k.
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · what every symbol above means ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · ROUND LIFELINE ALGEBRA</div>
+        <h3>Every symbol in the nine-message sequence and the partial-order constraint — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Lifeline scaffolding</div>
+      <div class="nsym">\(m_t\)</div>
+        <div class="ndef">The \(t\)-th typed message in the round (\(t \in \{1,\dots,9\}\)) — a directed arrow with a payload type and an optional return.</div>
+        <div class="nsrc">Implicit in the call graph traversed by <code>FederatedClient.local_train</code>, <code>Coordinator.round</code>, and <code>StackingMetaLearner.refine</code>.</div>
+      <div class="nsym">\(\mathrm{actor}_i \to \mathrm{actor}_j\)</div>
+        <div class="ndef">Directed channel from sender to receiver — Client, DP mechanism, Distiller, Coordinator, Aggregator, Accountant, MetaLearner.</div>
+        <div class="nsrc">Method dispatch in <code>orchestration/runner.py</code>; never serialised.</div>
+      <div class="nsym">\(r_t\)</div>
+        <div class="ndef">Optional return value sent back along the dashed arrow (\(P, \tilde P, S, \mathcal{A}, M_k\)).</div>
+        <div class="nsrc">Return types annotated on each protocol method (e.g. <code>privatize(...) -> np.ndarray</code>).</div>
+      <div class="nsym">\(\checkmark\)</div>
+        <div class="ndef">Acknowledgement (Unit / None) return — the message had a side-effect but no payload.</div>
+        <div class="nsrc">Methods with <code>-> None</code> in the protocol signatures.</div>
+
+      <div class="notation-section-row">Per-message payloads</div>
+      <div class="nsym">\(X, y\)</div>
+        <div class="ndef">Client \(k\)'s private feature matrix and label vector consumed by <code>teacher.fit</code> in \(m_1\).</div>
+        <div class="nsrc"><code>self.X_local</code>, <code>self.y_local</code> on <code>FederatedClient</code>.</div>
+      <div class="nsym">\(P\)</div>
+        <div class="ndef">Raw teacher posteriors emitted by \(m_2\); row in \(\Delta^{K-1}\).</div>
+        <div class="nsrc"><code>P = self.teacher.predict_proba(self.X_local)</code>.</div>
+      <div class="nsym">\(\tilde P\)</div>
+        <div class="ndef">Privatised soft labels — the return of \(m_3\); the only noised object on the wire.</div>
+        <div class="nsrc"><code>self.dp_mechanism.privatize(P, ε, δ)</code> in <code>privacy/mechanisms.py</code>.</div>
+      <div class="nsym">\(\varepsilon, \delta\)</div>
+        <div class="ndef">Per-round privacy budget pair passed as the second/third args to \(m_3\) and recorded in \(m_7\).</div>
+        <div class="nsrc"><code>cfg.dp.target_epsilon/n_rounds</code> and <code>cfg.dp.target_delta</code>.</div>
+      <div class="nsym">\(S\)</div>
+        <div class="ndef">Per-client surrogate tree — return of \(m_4\); payload of \(m_5\).</div>
+        <div class="nsrc"><code>self.distiller.distill(X, P̃, classes)</code>; wrapped in <code>ClientUpdate.surrogate_blob</code>.</div>
+      <div class="nsym">\(\mathrm{ClientUpdate}\)</div>
+        <div class="ndef">Wire dataclass uploaded in \(m_5\) — contains \(S_k\), \(n_k\), per-client \((\varepsilon_k, \delta_k)\), and a tag.</div>
+        <div class="nsrc"><code>protocol.client_update.ClientUpdate</code>.</div>
+      <div class="nsym">\([S_k]\)</div>
+        <div class="ndef">List of all client surrogates received this round — input to the aggregator in \(m_6\).</div>
+        <div class="nsrc"><code>updates: list[ClientUpdate]</code> on the coordinator.</div>
+      <div class="nsym">\(G\)</div>
+        <div class="ndef">Global model — return of \(m_6\), broadcast payload of \(m_8\), feature provider in \(m_9\).</div>
+        <div class="nsrc"><code>aggregator.aggregate(updates, proxy_X, classes)</code>; wrapped as <code>GlobalArtifact</code>.</div>
+      <div class="nsym">\(\varepsilon_c, \delta_c\)</div>
+        <div class="ndef">Cumulative privacy spend returned by the accountant in \(m_7\). Compared against the run budget for fail-fast termination.</div>
+        <div class="nsrc"><code>accountant.record(t, per_client_eps).cumulative()</code> in <code>privacy/accountant.py</code>.</div>
+      <div class="nsym">\(M_k\)</div>
+        <div class="ndef">Refined client model — return of \(m_9\); locally retained, never re-broadcast.</div>
+        <div class="nsrc"><code>StackingMetaLearner.refine(X, y, G, teacher_factory)</code>.</div>
+
+      <div class="notation-section-row">Partial-order constraint</div>
+      <div class="nsym">\(\preceq\)</div>
+        <div class="ndef">Causal precedence — \(m_a \preceq m_b\) means \(m_a\) must complete before \(m_b\) starts. The lifeline is a partial order, not a total order, because client-side messages can interleave across \(k\).</div>
+        <div class="nsrc">Enforced by sequential method calls; coordinator awaits all <code>m_5^k</code> via the synchronous <code>round()</code> barrier before \(m_6\).</div>
+      <div class="nsym">\(m_5^k\)</div>
+        <div class="ndef">Client-\(k\) instance of the upload message \(m_5\). The "for all \(k\)" quantifier makes the barrier explicit.</div>
+        <div class="nsrc">One <code>upload()</code> call per client; gathered into <code>updates</code> at the top of <code>Coordinator.round</code>.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> The lifeline is a contract about <em>when</em> things happen — the only invariant that matters for DP composition. The two red arrows \(m_3\) (privatize) and \(m_7\) (record) form the privacy-consistent prefix: every byte that leaves Client_k has been through \(m_3\); every round contributes exactly one row to the accountant via \(m_7\).
+    </div>
   </div>
 
 </div>

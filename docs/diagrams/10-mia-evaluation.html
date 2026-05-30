@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1080px; }
 
@@ -77,7 +113,7 @@
       <h1>Empirical Privacy — Membership Inference Attack</h1>
       <div class="subtitle">Yeom-style MIA on the per-client surrogate. Empirical complement to the analytic (ε, δ) bound.</div>
     </div>
-    <div class="brand-pill">DIAGRAM 10 / 16</div>
+    <div class="brand-pill">DIAGRAM 10 / 18</div>
   </div>
 
   <div class="flow">
@@ -212,6 +248,130 @@
     <div class="legend-item"><div class="legend-swatch" style="background: var(--green);"></div>Privacy-safe</div>
     <div class="legend-item"><div class="legend-swatch" style="background: var(--amber);"></div>Moderate leakage</div>
     <div class="legend-item"><div class="legend-swatch" style="background: var(--red);"></div>High leakage</div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · MIA AS HYPOTHESIS TESTING ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">𝓗</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">MIA is a Neyman-Pearson hypothesis test</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — Yeom 2018 score function</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          For row $(x,y)$, the adversary computes a score and thresholds it. Bounded by DP &amp; the trade-off curve:
+        </div>
+        <div class="math-display">$\mathrm{score}(x,y) = \mathrm{surrogate.predict\_proba}(x)[y]$</div>
+        <div class="math-display">$\begin{aligned}
+H_0 &:\ (x,y) \notin \mathcal{D}_{\mathrm{train}} \\
+H_1 &:\ (x,y) \in \mathcal{D}_{\mathrm{train}} \\
+\hat{H} &= H_1 \;\Longleftrightarrow\; \mathrm{score} > \tau
+\end{aligned}$</div>
+        <div class="math-display">$\begin{aligned}
+\mathrm{TPR}(\tau) &= \Pr[\mathrm{score} > \tau \mid H_1] \\
+\mathrm{FPR}(\tau) &= \Pr[\mathrm{score} > \tau \mid H_0] \\
+\mathrm{adv} &= \max_{\tau}(\mathrm{TPR} - \mathrm{FPR}) \\
+\mathrm{AUC} &= \int \mathrm{TPR}\,d(\mathrm{FPR})
+\end{aligned}$</div>
+        <div class="math-display">$\mathrm{TPR} \;\le\; e^{\varepsilon}\cdot \mathrm{FPR} + \delta$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># Tight curve: Kairouz-Oh-Viswanath 2015</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — empirics ≠ analytics</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          The analytic (ε, δ)-DP bound is a <em>worst-case</em> over all adversaries. <strong>Real adversaries are weaker</strong> — the Yeom score is just one of many possible tests.<br><br>
+          An empirical MIA tells you <em>how much of the worst case</em> the real attack achieves. For small ε the gap is huge: the analytic bound says "could leak", the empirical attack says "doesn't leak in practice".<br><br>
+          Reporting both is the gold standard for a privacy paper. The first is sound; the second is informative.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — TPR@low-FPR matters more than AUC</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>AUC is the wrong headline.</strong> An adversary cares about a specific operating point — e.g. "if I'm willing to flag 1% of non-members as members, how many real members do I catch?"<br><br>
+          The framework reports TPR@1%FPR by default. This is the same metric used by Carlini et al. 2022 — the modern privacy-leak yardstick.<br><br>
+          <strong>An attack that beats random by 1pp on AUC may still catch zero rows at 1%FPR.</strong> Don't be misled by the average; pay attention to the low-FPR regime.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · MIA AS HYPOTHESIS TEST ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · YEOM SCORE · TPR / FPR / AUC</div>
+        <h3>Every symbol in the MIA hypothesis test — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Probe row &amp; score</div>
+      <div class="nsym">\((x,y)\)</div>
+        <div class="ndef">A single probe row — features \(x\) and a true label \(y\). May or may not be in the client's training set.</div>
+        <div class="nsrc"><code>evaluation/mia.py:MembershipInferenceAttack.run()</code> — iterates over (member, non-member) probes.</div>
+      <div class="nsym">\(\mathrm{surrogate.predict\_proba}(x)[y]\)</div>
+        <div class="ndef">The surrogate's confidence on the true class for the probe row — the Yeom 2018 likelihood-style score.</div>
+        <div class="nsrc"><code>score = surrogate.predict_proba(x_probe)[true_class]</code> inside <code>MembershipInferenceAttack._score()</code>.</div>
+      <div class="nsym">\(\mathrm{score}(x,y)\)</div>
+        <div class="ndef">Scalar attack statistic; high values suggest membership (model is over-confident on training rows).</div>
+        <div class="nsrc">Returned by <code>_score()</code>; collected into <code>scores_member</code> and <code>scores_nonmember</code> arrays.</div>
+
+      <div class="notation-section-row">Hypothesis test</div>
+      <div class="nsym">\(H_0\)</div>
+        <div class="ndef">Null hypothesis: \((x,y)\) is a non-member of the training set.</div>
+        <div class="nsrc">Implicit; non-member probes drawn from <code>X_holdout</code> in <code>evaluation/mia.py</code>.</div>
+      <div class="nsym">\(H_1\)</div>
+        <div class="ndef">Alternative hypothesis: \((x,y)\) is in the training set.</div>
+        <div class="nsrc">Member probes drawn directly from <code>X_local</code> on each client.</div>
+      <div class="nsym">\(\mathcal{D}_{\mathrm{train}}\)</div>
+        <div class="ndef">Client \(k\)'s private training set — what the adversary tries to identify membership of.</div>
+        <div class="nsrc"><code>FederatedClient.X_local, y_local</code>.</div>
+      <div class="nsym">\(\hat{H}\)</div>
+        <div class="ndef">Adversary's decision — \(H_1\) iff score exceeds the threshold.</div>
+        <div class="nsrc">Boolean array <code>scores &gt; tau</code> inside <code>_roc_curve()</code>.</div>
+      <div class="nsym">\(\tau\)</div>
+        <div class="ndef">Decision threshold — swept across the score range to trace the ROC.</div>
+        <div class="nsrc"><code>numpy.linspace(scores.min(), scores.max(), num=N)</code> in <code>_roc_curve()</code>.</div>
+
+      <div class="notation-section-row">Trade-off metrics</div>
+      <div class="nsym">\(\mathrm{TPR}(\tau)\)</div>
+        <div class="ndef">True-positive rate at threshold \(\tau\) — fraction of true members flagged as members.</div>
+        <div class="nsrc"><code>tpr = (scores_member &gt; tau).mean()</code>.</div>
+      <div class="nsym">\(\mathrm{FPR}(\tau)\)</div>
+        <div class="ndef">False-positive rate — fraction of non-members wrongly flagged as members.</div>
+        <div class="nsrc"><code>fpr = (scores_nonmember &gt; tau).mean()</code>.</div>
+      <div class="nsym">\(\mathrm{adv}\)</div>
+        <div class="ndef">Yeom advantage — \(\max_\tau (\mathrm{TPR}-\mathrm{FPR})\). The single best operating point.</div>
+        <div class="nsrc"><code>MIAResult.advantage = (tpr - fpr).max()</code>.</div>
+      <div class="nsym">\(\mathrm{AUC}\)</div>
+        <div class="ndef">Area under the ROC curve — global discriminative ability across all thresholds.</div>
+        <div class="nsrc"><code>sklearn.metrics.roc_auc_score(labels, scores)</code> → <code>MIAResult.auc</code>.</div>
+      <div class="nsym">\(\mathrm{TPR@1\%FPR}\)</div>
+        <div class="ndef">Low-FPR operating point (Carlini 2022 yardstick) — TPR at FPR \(\le 0.01\).</div>
+        <div class="nsrc"><code>MIAResult.tpr_at_1pct_fpr</code>; the framework's default headline metric.</div>
+
+      <div class="notation-section-row">DP bound on the attack</div>
+      <div class="nsym">\(\varepsilon,\ \delta\)</div>
+        <div class="ndef">The very same DP parameters used to noise the soft labels — set the upper bound on TPR.</div>
+        <div class="nsrc"><code>cfg.dp.target_epsilon</code> / <code>target_delta</code>; reported alongside MIA results.</div>
+      <div class="nsym">\(\mathrm{TPR}\le e^{\varepsilon}\,\mathrm{FPR}+\delta\)</div>
+        <div class="ndef">Kairouz-Oh-Viswanath trade-off bound — the analytic worst case for any adversary.</div>
+        <div class="nsrc">Plotted as the dashed envelope in the ROC chart; verified empirically by <code>tests/test_mia_dp_bound.py</code>.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> The analytic bound \(\mathrm{TPR}\le e^{\varepsilon}\mathrm{FPR}+\delta\) is worst-case over all adversaries; the empirical Yeom MIA is just one (weak) realisation. Reporting both — the bound and the measured TPR@1%FPR — is the gold standard for a privacy claim.
+    </div>
   </div>
 
 </div>

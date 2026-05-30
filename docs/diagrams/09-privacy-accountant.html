@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1600px; min-height: 1080px; }
 
@@ -89,7 +125,7 @@
       <h1>Privacy Accountant</h1>
       <div class="subtitle">Two composition strategies. Pick basic for clarity; pick RDP for tight Gaussian bounds.</div>
     </div>
-    <div class="brand-pill">DIAGRAM 09 / 16</div>
+    <div class="brand-pill">DIAGRAM 09 / 18</div>
   </div>
 
   <div class="two-col">
@@ -207,6 +243,125 @@ where μᵢ = σᵢ / Δ₂
           At the same per-round σ, RDP fits <strong>~2.5×</strong> more federation rounds inside the same (ε, δ) budget — a decisive win for long training runs.
         </p>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · COMPOSITION THEOREMS ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">Σ</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Composition: T(ε) vs √T(ε)</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — the three composition results</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          Composing $T$ identical $(\varepsilon,\delta)$-DP mechanisms yields different bounds depending on the analysis:
+        </div>
+        <div class="math-display">$\varepsilon_T = T\varepsilon,\quad \delta_T = T\delta \qquad \text{(Basic, Dwork 2006)}$</div>
+        <div class="math-display">$\varepsilon_T = \sqrt{2T\ln(1/\delta')}\,\varepsilon + T\varepsilon(e^{\varepsilon}-1),\quad \delta_T = T\delta + \delta' \qquad \text{(Advanced)}$</div>
+        <div class="math-display">$\varepsilon_T(\alpha) = \dfrac{T\,\alpha}{2\mu^2},\quad \varepsilon_{\mathrm{DP}} = \min_{\alpha}\!\left[\varepsilon_T(\alpha) + \dfrac{\ln(1/\delta)}{\alpha-1}\right] \qquad \text{(RDP)}$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># Asymptotic: $\varepsilon_T \sim \sqrt{T}\,\varepsilon$ ⇒ ~2.5× more rounds</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — keep a ledger</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Privacy is non-renewable.</strong> Every <code>privatize</code> call subtracts from the budget. The ledger is the only persistent state that survives across rounds — it has to be append-only and auditable.<br><br>
+          <strong>The accountant decides when to stop.</strong> The coordinator's <code>round()</code> consults <code>cumulative()</code> before each release; if the cumulative budget would exceed the target, it raises <code>PrivacyBudgetExhausted</code> and the experiment halts cleanly.<br><br>
+          This is the only error in the framework that <em>cannot</em> be caught and continued.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — pick the accountant for the noise</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Basic composition</strong> is mechanism-agnostic — it works for anything. Use it when you don't know the mechanism (rare) or you want a clean upper bound for the paper.<br><br>
+          <strong>RDP</strong> is Gaussian-specialised — it exploits the subgaussian tail to give a tight bound that scales as √T. Use it whenever the mechanism is Gaussian and you want many rounds.<br><br>
+          <strong>Never claim a bound you can't compute.</strong> If a future mechanism doesn't fit either accountant, ship it with a new accountant — don't fudge an old one.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · COMPOSITION ACCOUNTING ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · BASIC · ADVANCED · RDP</div>
+        <h3>Every symbol in the composition theorems — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Per-call &amp; cumulative budgets</div>
+      <div class="nsym">\(\varepsilon\)</div>
+        <div class="ndef">Per-mechanism-call privacy loss — the budget consumed at one <code>privatize()</code>.</div>
+        <div class="nsrc"><code>cfg.dp.target_epsilon / n_rounds</code>; logged per call into the accountant ledger.</div>
+      <div class="nsym">\(\delta\)</div>
+        <div class="ndef">Per-call failure probability.</div>
+        <div class="nsrc"><code>cfg.dp.target_delta</code>; row in <code>ledger.csv</code>.</div>
+      <div class="nsym">\(T\)</div>
+        <div class="ndef">Total number of composed mechanism calls (rounds × clients).</div>
+        <div class="nsrc"><code>len(accountant.ledger)</code> at any point; equals <code>n_rounds * K</code> after a full run.</div>
+      <div class="nsym">\(\varepsilon_T,\ \delta_T\)</div>
+        <div class="ndef">Cumulative privacy spend after \(T\) calls — what the ledger reports as the headline.</div>
+        <div class="nsrc">Returned by <code>BasicCompositionAccountant.cumulative()</code> / <code>RDPAccountant.cumulative()</code> in <code>privacy/accountant.py</code>.</div>
+      <div class="nsym">\(\delta'\)</div>
+        <div class="ndef">Slack parameter introduced by advanced composition — a small extra failure probability bought to reduce \(\varepsilon_T\).</div>
+        <div class="nsrc">Hyperparameter inside the closed-form helper in <code>privacy/accountant.py</code>; typically \(10^{-6}\).</div>
+
+      <div class="notation-section-row">Basic composition (Dwork 2006)</div>
+      <div class="nsym">\(\varepsilon_T = T\varepsilon\)</div>
+        <div class="ndef">Linear sum of per-call \(\varepsilon\) — mechanism-agnostic, always sound, often loose.</div>
+        <div class="nsrc"><code>BasicCompositionAccountant.cumulative()</code>: <code>sum(record.epsilon for record in self.ledger)</code>.</div>
+      <div class="nsym">\(\delta_T = T\delta\)</div>
+        <div class="ndef">Linear sum of per-call \(\delta\).</div>
+        <div class="nsrc">Same accountant — <code>sum(record.delta for record in self.ledger)</code>.</div>
+
+      <div class="notation-section-row">Advanced composition</div>
+      <div class="nsym">\(\sqrt{2T\ln(1/\delta')}\,\varepsilon\)</div>
+        <div class="ndef">Subgaussian-style \(\sqrt{T}\)-scaling first-order term — the lead saving over basic.</div>
+        <div class="nsrc">Closed form in <code>AdvancedCompositionAccountant._compute()</code>.</div>
+      <div class="nsym">\(T\varepsilon(e^{\varepsilon}-1)\)</div>
+        <div class="ndef">Second-order correction — vanishes as \(\varepsilon\to 0\), dominates for large per-call \(\varepsilon\).</div>
+        <div class="nsrc">Second additive term in the same closed form.</div>
+
+      <div class="notation-section-row">Rényi DP (Mironov 2017)</div>
+      <div class="nsym">\(\alpha\)</div>
+        <div class="ndef">Rényi order — a real \(&gt;1\) at which Rényi divergence is computed; \(\alpha\to\infty\) recovers max-divergence (pure DP).</div>
+        <div class="nsrc">Swept on a grid in <code>RDPAccountant._best_alpha()</code> (typically <code>[2, 4, 8, 16, 32, 64, 128]</code>).</div>
+      <div class="nsym">\(\mu\)</div>
+        <div class="ndef">Gaussian noise multiplier \(\mu = \sigma/\Delta_2\) — the dimensionless ratio of std-dev to sensitivity.</div>
+        <div class="nsrc">Computed once per mechanism instantiation from <code>self.sensitivity</code> and the calibrated \(\sigma\).</div>
+      <div class="nsym">\(\varepsilon_T(\alpha) = T\alpha/(2\mu^2)\)</div>
+        <div class="ndef">RDP loss after \(T\) Gaussian-mechanism compositions at order \(\alpha\).</div>
+        <div class="nsrc"><code>RDPAccountant._rdp_at(alpha)</code>; the \(T\alpha/(2\mu^2)\) form is exact for Gaussian.</div>
+      <div class="nsym">\(\varepsilon_{\mathrm{DP}}\)</div>
+        <div class="ndef">Best \((\varepsilon,\delta)\)-DP bound obtained by minimising over \(\alpha\) — the headline RDP report.</div>
+        <div class="nsrc"><code>RDPAccountant.cumulative()</code> — <code>min over alpha of (eps_T(alpha) + log(1/delta)/(alpha-1))</code>.</div>
+      <div class="nsym">\(\ln(1/\delta)/(\alpha-1)\)</div>
+        <div class="ndef">RDP-to-DP conversion term — penalises low orders, vanishes as \(\alpha\to\infty\).</div>
+        <div class="nsrc">Added to \(\varepsilon_T(\alpha)\) before the min in <code>cumulative()</code>.</div>
+
+      <div class="notation-section-row">Budget enforcement</div>
+      <div class="nsym">\(\varepsilon_{\mathrm{target}}\)</div>
+        <div class="ndef">User-declared total privacy budget — the contract that cannot be exceeded.</div>
+        <div class="nsrc"><code>cfg.dp.target_epsilon</code>; checked in <code>FederatedCoordinator.round()</code> before every release.</div>
+      <div class="nsym">\(\varepsilon_{\mathrm{cum}} &gt; \varepsilon_{\mathrm{target}}\)</div>
+        <div class="ndef">Exhaustion condition — when crossed, the experiment halts.</div>
+        <div class="nsrc">Raises <code>PrivacyBudgetExhausted</code> from <code>privacy/exceptions.py</code>; the only unrecoverable error in the framework.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Invariant.</strong> Basic composition is mechanism-agnostic and always sound but linear in \(T\); RDP is Gaussian-specialised and sub-linear (\(\sqrt{T}\)) — at the same per-call noise, RDP buys ≈2.5× more rounds inside the same target budget.
     </div>
   </div>
 

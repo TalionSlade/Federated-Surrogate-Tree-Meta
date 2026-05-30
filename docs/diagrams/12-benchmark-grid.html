@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1700px; min-height: 1180px; }
 
@@ -120,7 +156,7 @@
       <h1>10-Dataset Benchmark Grid</h1>
       <div class="subtitle">Every claim in the paper is averaged across these 10 globally-recognised tabular datasets</div>
     </div>
-    <div class="brand-pill">DIAGRAM 12 / 16</div>
+    <div class="brand-pill">DIAGRAM 12 / 18</div>
   </div>
 
   <div class="ds-grid">
@@ -328,6 +364,140 @@
     --frameworks all-sklearn mixed-4 all-xgb \
     --seeds 3 --rounds 5 \
     --out results/benchmark_sweep.csv</div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · STATISTICAL DESIGN OF THE SWEEP ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">𝔼</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Cartesian product is a factorial experimental design</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — sample size math</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          A 4-factor full-factorial $\times$ seeds $\times$ rounds = the entire study. Variance decomposition lets us attribute drift to each factor:
+        </div>
+        <div class="math-display">$|\mathcal{D}| \cdot |\mathcal{P}| \cdot |\mathcal{M}| \cdot |\mathcal{F}| \cdot |S| \cdot |T| \;=\; 10 \cdot 4 \cdot 4 \cdot 3 \cdot 3 \cdot 5 \;=\; 7{,}200\ \text{round-evaluations}$</div>
+        <div class="math-display">$\overline{\mathrm{acc}} = \dfrac{1}{S}\sum_{s=1}^{S}\mathrm{acc}(\mathrm{seed}=s),\quad \mathrm{std} = \sqrt{\dfrac{\mathrm{Var}_s(\mathrm{acc})}{S}}$</div>
+        <div class="math-display">$\mathrm{SS}_{\mathrm{total}} = \mathrm{SS}_{\mathcal{D}} + \mathrm{SS}_{\mathcal{P}} + \mathrm{SS}_{\mathcal{M}} + \mathrm{SS}_{\mathcal{F}} + \mathrm{SS}_{\mathrm{inter}} + \mathrm{SS}_{\mathrm{resid}}$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># $F$-test per factor; $\alpha = 0.05$. Wall-clock budget: ~6h on M3 Max</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — full factorial &gt; ad-hoc tuning</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Without a sweep you can't decompose error.</strong> Is FedRF-Distill bad on a dataset because of the data, the partition, or the DP? Full-factorial design separates these.<br><br>
+          <strong>10 datasets give external validity.</strong> An average over diverse domains (medical, finance, physics, cyber) bounds generalisation. The paper claim "robust to non-IID" is only credible at this scale.<br><br>
+          <strong>3 seeds per cell are the bare minimum</strong> to compute a standard deviation. The benchmark is reproducible: same seed → same number.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — one CSV is the artefact</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>All science is the CSV.</strong> Plots, tables, headline numbers — every figure in the paper is a SQL query against <code>results/benchmark_sweep.csv</code>. No hidden state.<br><br>
+          <strong>Cells are independent.</strong> Each row is a self-contained reproducer (dataset, partition, DP, framework, seed, round). Bench harness rebuilds the world from scratch.<br><br>
+          <strong>Failure of one cell does not contaminate the rest.</strong> Errors get logged with a stack trace; the sweep continues.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · FACTORIAL EXPERIMENTAL DESIGN ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · CELL COUNT · ANOVA DECOMPOSITION</div>
+        <h3>Every symbol in the sweep-design formulas — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Factor sets (rows × columns of the sweep)</div>
+      <div class="nsym">\(\mathcal{D}\)</div>
+        <div class="ndef">Set of datasets — 10 in the sweep: adult, bank_marketing, breast_cancer, covertype, credit_card_fraud, diabetes, higgs, letter_recognition, mushroom, nsl_kdd.</div>
+        <div class="nsrc"><code>experiments/scripts/run_benchmark_sweep.py --datasets all</code>; loaded by <code>data/datasets.py</code>.</div>
+      <div class="nsym">\(\mathcal{P}\)</div>
+        <div class="ndef">Set of partition strategies (4): iid, dirichlet α=0.5, dirichlet α=0.1, pathological k=2.</div>
+        <div class="nsrc"><code>data/partitioners.py</code>; selected via <code>--partitions</code> flag.</div>
+      <div class="nsym">\(\mathcal{M}\)</div>
+        <div class="ndef">Set of DP mechanisms (4): null (ε=∞), laplace ε=5, gaussian ε=1, gaussian ε=0.5.</div>
+        <div class="nsrc"><code>privacy/mechanisms.py</code>; selected via <code>--dp</code> flag.</div>
+      <div class="nsym">\(\mathcal{F}\)</div>
+        <div class="ndef">Set of framework mixes (3): all-sklearn, mixed-4, all-xgb — which teacher backends each client uses.</div>
+        <div class="nsrc"><code>core/adapters/</code>; selected via <code>--frameworks</code> flag.</div>
+      <div class="nsym">\(S\)</div>
+        <div class="ndef">Set of random seeds — 3 per cell, enough to compute a std-dev.</div>
+        <div class="nsrc"><code>--seeds 3</code> CLI arg; seeds the global <code>numpy.random.Generator</code> for partitioning, DP noise, model init.</div>
+      <div class="nsym">\(T\)</div>
+        <div class="ndef">Number of federation rounds reported per run — 5 in the headline sweep.</div>
+        <div class="nsrc"><code>--rounds 5</code> CLI arg; consumed by <code>FederatedCoordinator</code>.</div>
+
+      <div class="notation-section-row">Cardinality &amp; total cost</div>
+      <div class="nsym">\(|\mathcal{D}|\cdot|\mathcal{P}|\cdot|\mathcal{M}|\cdot|\mathcal{F}|\)</div>
+        <div class="ndef">Treatment-cell count: \(10\cdot4\cdot4\cdot3=480\) — one CSV row per cell.</div>
+        <div class="nsrc">Materialised as 480 rows in <code>results/benchmark_sweep.csv</code>; one cell per (dataset, partition, DP, framework_mix).</div>
+      <div class="nsym">\(|\mathcal{D}|\cdot|\mathcal{P}|\cdot|\mathcal{M}|\cdot|\mathcal{F}|\cdot|S|\cdot|T|\)</div>
+        <div class="ndef">Total round-evaluations: \(10\cdot4\cdot4\cdot3\cdot3\cdot5=7{,}200\) federated rounds executed.</div>
+        <div class="nsrc">Logged as <code>n_round_evals</code> in the sweep manifest header.</div>
+
+      <div class="notation-section-row">Per-cell point estimate</div>
+      <div class="nsym">\(\mathrm{acc}(\mathrm{seed}=s)\)</div>
+        <div class="ndef">Test-set accuracy of the global model \(G\) at the final round for seed \(s\).</div>
+        <div class="nsrc"><code>evaluation/metrics.py:test_accuracy(G, X_test, y_test)</code>; written to <code>row.acc_seed_s</code>.</div>
+      <div class="nsym">\(\overline{\mathrm{acc}}\)</div>
+        <div class="ndef">Per-cell sample mean of accuracy across the \(S\) seeds.</div>
+        <div class="nsrc"><code>row.acc_mean = np.mean([acc_seed_s for s in seeds])</code>.</div>
+      <div class="nsym">\(\mathrm{std}\)</div>
+        <div class="ndef">Standard error of the per-cell mean: \(\sqrt{\mathrm{Var}_s(\mathrm{acc})/S}\).</div>
+        <div class="nsrc"><code>row.acc_std = np.std(per_seed_accs, ddof=1) / sqrt(S)</code>.</div>
+      <div class="nsym">\(\mathrm{Var}_s(\mathrm{acc})\)</div>
+        <div class="ndef">Within-cell variance of accuracy across seeds — the residual / noise variance.</div>
+        <div class="nsrc"><code>np.var(per_seed_accs, ddof=1)</code>.</div>
+
+      <div class="notation-section-row">ANOVA decomposition</div>
+      <div class="nsym">\(\mathrm{SS}_{\mathrm{total}}\)</div>
+        <div class="ndef">Total sum-of-squares of accuracy around the grand mean across all cells.</div>
+        <div class="nsrc"><code>analysis/anova.py:decompose()</code>; reported in the paper's variance table.</div>
+      <div class="nsym">\(\mathrm{SS}_{\mathcal{D}}\)</div>
+        <div class="ndef">Sum-of-squares attributable to the dataset factor — how much accuracy variance is "because of which dataset".</div>
+        <div class="nsrc">Marginal-means computation in <code>analysis/anova.py</code>; uses <code>statsmodels.api.stats.anova_lm</code>.</div>
+      <div class="nsym">\(\mathrm{SS}_{\mathcal{P}}\)</div>
+        <div class="ndef">Sum-of-squares attributable to the partition factor — measures non-IID robustness cost.</div>
+        <div class="nsrc">Same routine; reported as % of \(\mathrm{SS}_{\mathrm{total}}\) in the paper.</div>
+      <div class="nsym">\(\mathrm{SS}_{\mathcal{M}}\)</div>
+        <div class="ndef">Sum-of-squares attributable to the DP mechanism factor — directly quantifies "privacy tax".</div>
+        <div class="nsrc">Same routine.</div>
+      <div class="nsym">\(\mathrm{SS}_{\mathcal{F}}\)</div>
+        <div class="ndef">Sum-of-squares attributable to the framework-mix factor — tests heterogeneity sensitivity.</div>
+        <div class="nsrc">Same routine.</div>
+      <div class="nsym">\(\mathrm{SS}_{\mathrm{inter}}\)</div>
+        <div class="ndef">Interaction sums-of-squares (e.g. partition × DP) — non-additive effects.</div>
+        <div class="nsrc">Two- and three-way interaction terms from <code>anova_lm(typ=2)</code>.</div>
+      <div class="nsym">\(\mathrm{SS}_{\mathrm{resid}}\)</div>
+        <div class="ndef">Residual / seed-level sum-of-squares — irreducible noise after all factors accounted for.</div>
+        <div class="nsrc">Output of the ANOVA fit; equals \(\sum_{\text{cells}}\mathrm{Var}_s(\mathrm{acc})\,(S-1)\).</div>
+
+      <div class="notation-section-row">Inference</div>
+      <div class="nsym">\(F\)-test</div>
+        <div class="ndef">Per-factor F-statistic — ratio of factor MS to residual MS; reports whether the factor moves accuracy significantly.</div>
+        <div class="nsrc"><code>analysis/anova.py</code> reports F and p-value per factor.</div>
+      <div class="nsym">\(\alpha = 0.05\)</div>
+        <div class="ndef">Significance threshold for the F-tests.</div>
+        <div class="nsrc">Hardcoded in <code>analysis/anova.py</code>; Bonferroni-corrected when multiple factors are tested.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> The cartesian product \(|\mathcal{D}|\cdot|\mathcal{P}|\cdot|\mathcal{M}|\cdot|\mathcal{F}|\cdot|S|\cdot|T|=7{,}200\) round-evaluations are not "lots of runs" — they are a <em>factorial design</em>. The ANOVA decomposition \(\mathrm{SS}_{\mathrm{total}}=\mathrm{SS}_{\mathcal{D}}+\mathrm{SS}_{\mathcal{P}}+\mathrm{SS}_{\mathcal{M}}+\mathrm{SS}_{\mathcal{F}}+\mathrm{SS}_{\mathrm{inter}}+\mathrm{SS}_{\mathrm{resid}}\) is what turns a benchmark grid into a causal claim.
+    </div>
   </div>
 
 </div>

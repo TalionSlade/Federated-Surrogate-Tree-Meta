@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1700px; min-height: 1100px; }
   .class-grid {
@@ -70,7 +106,7 @@
       <h1>UML Class Diagram</h1>
       <div class="subtitle">Interfaces (italic, dashed), abstract classes, concrete implementations</div>
     </div>
-    <div class="brand-pill">DIAGRAM 06 / 16</div>
+    <div class="brand-pill">DIAGRAM 06 / 18</div>
   </div>
 
   <div class="class-grid" style="height: 950px;">
@@ -238,6 +274,120 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · OBJECT GRAPH AS A DAG ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">⊕</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">Object graph forms a DAG — no cycles, no surprises</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — formal dependency graph</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          Classes form a directed acyclic graph $\mathcal{G}=(V,E)$ with $V$ = classes and $E$ = composition/implementation edges. Topological depth is the construction order:
+        </div>
+        <div class="math-display">$\begin{aligned}
+0 &:\ \text{protocols (no deps)} \\
+1 &:\ \text{types, exceptions} \\
+2 &:\ \mathrm{BaseModelAdapter},\ \text{mechanisms} \\
+3 &:\ \mathrm{SklearnRF},\ \mathrm{XGBoost},\ \ldots \\
+4 &:\ \mathrm{SoftLabelGen},\ \mathrm{SurrogateDistiller} \\
+5 &:\ \mathrm{FederatedClient},\ \mathrm{Aggregator} \\
+6 &:\ \mathrm{FederatedCoordinator} \\
+7 &:\ \mathrm{ExperimentRunner}\ \text{(composition root)}
+\end{aligned}$</div>
+        <div class="math-display">$\forall\, e=(u,v) \in E:\; \mathrm{depth}(u) \ge \mathrm{depth}(v),\quad \mathcal{G}\ \text{acyclic} \Rightarrow \exists!\ \text{init order}$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace; margin-top:8px;"># $|V| \approx 30$, $|E| \approx 60$</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — the abstract base class layer</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <code>BaseModelAdapter</code> exists for one reason: <strong>to eliminate boilerplate</strong>. The refit guard, binary→2D reshape, and safe-pickling sub-protocol are <em>identical</em> across sklearn / XGBoost / LightGBM / CatBoost. Replicating them is bug-prone; inheriting them is cheap.<br><br>
+          Concrete adapters override only the two methods that genuinely differ between backends: <code>_fit_impl</code> and <code>_predict_proba_impl</code>. Five lines of code per new framework.<br><br>
+          This is the only place inheritance survives — and only for behaviour that is mechanically the same.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — favour composition over hierarchy</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          Look at <code>FederatedClient</code>: it has <em>seven</em> dependencies stored as fields. It owns none of them — they are injected by the runner from typed config.<br><br>
+          <strong>"Has-a" everywhere, "is-a" almost nowhere.</strong> The only "is-a" relationship is the protocol-implementation arrow, which is structural and reversible at runtime.<br><br>
+          <strong>Read the UML edges as a wiring diagram, not a taxonomy.</strong> They tell you what plugs into what; they do not declare ontology.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · DAG ALGEBRA OF THE OBJECT GRAPH ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · CLASS-LEVEL DAG</div>
+        <h3>Every symbol in the topological-depth formulas — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">The dependency DAG</div>
+      <div class="nsym">\(\mathcal{G}=(V,E)\)</div>
+        <div class="ndef">Directed acyclic graph of class dependencies; vertices = classes/protocols, edges = composition or implementation arrows.</div>
+        <div class="nsrc">Realised by Python <code>import</code> graph + constructor injection in <code>orchestration/runner.ExperimentRunner</code>. Verified acyclic at module load (ImportError on cycle).</div>
+      <div class="nsym">\(V\)</div>
+        <div class="ndef">Vertex set — every concrete or abstract class shown in the UML pane (\(|V|\approx 30\)).</div>
+        <div class="nsrc">Protocols in <code>core/protocols.py</code>; concretes in <code>client/</code>, <code>coordinator/</code>, <code>distillation/</code>, <code>privacy/</code>, <code>aggregation/</code>, <code>meta/</code>, <code>data/</code>.</div>
+      <div class="nsym">\(E\)</div>
+        <div class="ndef">Edge set — \((u,v)\in E\) means class \(u\) holds a field of (or implements) class \(v\) (\(|E|\approx 60\)).</div>
+        <div class="nsrc">"Has-a" edges = constructor params on each class; "is-a" edges = <code>Protocol</code> implementation declarations.</div>
+      <div class="nsym">\(e=(u,v)\)</div>
+        <div class="ndef">A single directed edge from dependent \(u\) to dependency \(v\) — read as "\(u\) needs \(v\) constructed first".</div>
+        <div class="nsrc">E.g. <code>FederatedClient → SoftLabelGenerator</code> appears as <code>self.soft_label_generator</code> field.</div>
+
+      <div class="notation-section-row">Topological depth</div>
+      <div class="nsym">\(\mathrm{depth}(v)\)</div>
+        <div class="ndef">Length of the longest path in \(\mathcal{G}\) from a source (no-dependency) vertex to \(v\). Defines construction order.</div>
+        <div class="nsrc">Implicit in the order of <code>ExperimentRunner.__init__</code> — protocols (0), exceptions (1), <code>BaseModelAdapter</code> (2), concretes (3), distiller/soft-label-gen (4), client/aggregator (5), coordinator (6), runner (7).</div>
+      <div class="nsym">\(\forall e=(u,v):\ \mathrm{depth}(u)\ge\mathrm{depth}(v)\)</div>
+        <div class="ndef">Acyclicity / monotonicity condition — every dependency is constructed before its dependent.</div>
+        <div class="nsrc">Enforced by the order of factory calls in <code>runner._build_*</code> helpers; failure would raise <code>NameError</code> at composition time.</div>
+      <div class="nsym">\(\exists!\ \text{init order}\)</div>
+        <div class="ndef">Existence and uniqueness (up to ties) of a topological ordering — guaranteed by acyclicity.</div>
+        <div class="nsrc"><code>orchestration/runner.py</code> hardcodes one such order; tests in <code>tests/test_runner_bootstrap.py</code> verify deterministic construction.</div>
+
+      <div class="notation-section-row">Concrete vertex classes (named in the depth ladder)</div>
+      <div class="nsym">\(\mathrm{BaseModelAdapter}\)</div>
+        <div class="ndef">Abstract class encapsulating refit guard, binary→2D reshape, and safe-pickling sub-protocol shared across backends.</div>
+        <div class="nsrc"><code>core/adapters/base.py:BaseModelAdapter</code> — subclasses override only <code>_fit_impl</code> and <code>_predict_proba_impl</code>.</div>
+      <div class="nsym">\(\mathrm{SklearnRF},\ \mathrm{XGBoost},\ \ldots\)</div>
+        <div class="ndef">Concrete adapters at depth 3 — one per ML backend (sklearn RF, XGBoost, LightGBM, CatBoost, sklearn DT).</div>
+        <div class="nsrc"><code>core/adapters/{sklearn_rf,xgboost,lightgbm,catboost,sklearn_dt}.py</code>.</div>
+      <div class="nsym">\(\mathrm{SoftLabelGen},\ \mathrm{SurrogateDistiller}\)</div>
+        <div class="ndef">Depth-4 building blocks: produce \(P_k\) from a teacher, and distil \(\tilde{P}_k\) into a tree \(S_k\).</div>
+        <div class="nsrc"><code>distillation/soft_labels.py:SoftLabelGenerator</code>, <code>distillation/surrogate.py:SurrogateDistiller</code>.</div>
+      <div class="nsym">\(\mathrm{FederatedClient},\ \mathrm{Aggregator}\)</div>
+        <div class="ndef">Depth-5 composites — client owns teacher+distiller+DP+meta; aggregator combines client updates on the proxy.</div>
+        <div class="nsrc"><code>client/client.py:FederatedClient</code>; <code>aggregation/{proxy_redistillation,confidence_weighted,majority_vote}.py</code>.</div>
+      <div class="nsym">\(\mathrm{FederatedCoordinator}\)</div>
+        <div class="ndef">Depth-6 — orchestrates a round: validate updates → aggregate → record privacy spend → emit <code>GlobalArtifact</code>.</div>
+        <div class="nsrc"><code>coordinator/coordinator.py:FederatedCoordinator.round()</code>.</div>
+      <div class="nsym">\(\mathrm{ExperimentRunner}\)</div>
+        <div class="ndef">Depth-7 composition root — reads config, instantiates every other vertex, drives the federation loop.</div>
+        <div class="nsrc"><code>orchestration/runner.py:ExperimentRunner</code>; entry point in <code>experiments/scripts/run_*.py</code>.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Invariant.</strong> Acyclicity of \(\mathcal{G}\) plus the depth function gives a unique safe construction order — which is precisely why dependency injection works without a framework: a single linear scan through <code>ExperimentRunner.__init__</code> builds the entire world from typed config.
+    </div>
   </div>
 
 </div>

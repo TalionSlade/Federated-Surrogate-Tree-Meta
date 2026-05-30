@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FedRF-Distill — Surrogate Tree Internals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
+<style>
+  .canvas { width: 1600px; min-height: 2100px; }
+
+  /* sklearn Tree array layout */
+  .tree-arrays {
+    margin-top: 28px;
+    background: white; border: 1px solid var(--line); border-radius: 18px;
+    padding: 28px 32px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .tree-arrays h3 { font-size: 18px; font-weight:700; color: var(--ink-strong); margin-bottom: 18px; }
+  .tree-arrays p.lead { font-size: 13.5px; color: var(--ink); line-height: 1.6; margin-bottom: 18px; max-width: 1100px; }
+
+  .arrays-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  }
+  .array-card {
+    background: var(--surface-2); border: 1px solid var(--line-subtle); border-radius: 11px;
+    padding: 14px 16px;
+  }
+  .array-card .nm {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    font-weight: 700; color: var(--luminate-primary); margin-bottom: 4px;
+  }
+  .array-card .sh {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    color: var(--ink-muted); margin-bottom: 8px;
+  }
+  .array-card p { font-size: 12px; color: var(--ink); line-height: 1.5; }
+
+  /* CART algorithm */
+  .cart {
+    margin-top: 36px;
+    display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 26px;
+  }
+  .cart-card {
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 26px 28px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .cart-card h3 { font-size: 16px; font-weight: 700; color: var(--ink-strong); margin-bottom: 12px; }
+  .cart-card p { font-size: 13px; color: var(--ink); line-height: 1.6; margin-bottom: 10px; }
+  .eq-big {
+    background: #fafbfd; border: 1px solid var(--line-subtle); border-radius: 9px;
+    padding: 16px 18px; margin: 12px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 13.5px;
+    color: var(--ink-strong); line-height: 1.9; text-align: center;
+  }
+
+  /* Tree SVG illustration */
+  .worked-ex {
+    margin-top: 36px;
+    background: white; border: 1px solid var(--line); border-radius: 18px;
+    padding: 28px 32px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .worked-ex h3 { font-size: 18px; font-weight: 700; color: var(--ink-strong); margin-bottom: 6px; }
+  .worked-ex .subline { color: var(--ink-muted); font-size: 13px; margin-bottom: 18px; }
+  .worked-ex .ex-grid {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 26px;
+  }
+  .table-mini {
+    border-collapse: collapse; width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+  }
+  .table-mini th, .table-mini td {
+    border: 1px solid var(--line-subtle); padding: 7px 10px; text-align: center;
+  }
+  .table-mini th {
+    background: var(--luminate-light); color: var(--luminate-primary); font-weight: 700;
+  }
+  .tree-svg {
+    width: 100%; height: 350px; background: var(--surface-2);
+    border: 1px solid var(--line-subtle); border-radius: 11px;
+  }
+
+  /* Split calculation */
+  .splits {
+    margin-top: 28px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-subtle); border-radius: 12px;
+    padding: 22px 26px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    line-height: 1.8; color: var(--ink-strong);
+    overflow-x: auto;
+  }
+  .splits .comm { color: var(--ink-muted); }
+  .splits .win { color: var(--green); font-weight: 700; }
+
+  /* Inference walk */
+  .infer {
+    margin-top: 36px;
+    background: white; border: 1px solid var(--line); border-radius: 16px;
+    padding: 26px 30px;
+    box-shadow: 0 1px 3px rgba(19, 1, 74, 0.04);
+  }
+  .infer h3 { font-size: 17px; font-weight: 700; color: var(--ink-strong); margin-bottom: 14px; }
+  .infer-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 22px;
+  }
+  .infer .code {
+    background: #0a0119; color: #d6e0ff;
+    border-radius: 9px; padding: 16px 18px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.75;
+    white-space: pre-wrap;
+  }
+  .infer .code .c { color: #8b95c1; }
+  .infer .code .k { color: #ff9bcd; }
+  .infer .code .g { color: #9bdc7c; }
+
+  /* Pickle blob */
+  .pickle {
+    margin-top: 36px;
+    background: linear-gradient(135deg, var(--luminate-light), #f5f3fa);
+    border: 1px solid var(--luminate-medium); border-radius: 14px;
+    padding: 24px 28px;
+  }
+  .pickle h3 { font-size: 16px; font-weight: 700; color: var(--luminate-primary); margin-bottom: 10px; }
+  .pickle .layout {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    margin-top: 14px;
+  }
+  .pickle .seg {
+    background: white; border: 1px solid var(--line); border-radius: 7px;
+    padding: 9px 7px; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pickle .seg .lbl {
+    font-size: 10px; color: var(--ink-muted); margin-bottom: 4px;
+  }
+  .pickle .seg .val {
+    font-size: 11.5px; color: var(--luminate-primary); font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="title-block">
+    <div class="left">
+      <h1>Surrogate Tree Internals</h1>
+      <div class="subtitle">CART algorithm · sklearn Tree memory layout · worked numeric split · pickle blob</div>
+    </div>
+    <div class="brand-pill">DIAGRAM 18 / 18</div>
+  </div>
+
+  <!-- ═══ TREE ARRAYS ═══ -->
+  <div class="tree-arrays">
+    <h3>Under the hood — <code>sklearn.tree._tree.Tree</code> is a struct-of-arrays</h3>
+    <p class="lead">
+      A fitted <code>DecisionTreeClassifier</code> is not an object tree in memory — it is a contiguous array-of-structures keyed by node ID (0 = root). Every fitted node populates eight parallel arrays. Understanding this layout is essential because <em>the pickle blob is essentially these arrays</em>: serialise smaller arrays, ship a smaller blob.
+    </p>
+    <div class="arrays-grid">
+      <div class="array-card">
+        <div class="nm">feature</div>
+        <div class="sh">int32 (n_nodes,)</div>
+        <p>Index of the feature tested at each internal node. <code>-2</code> at leaves.</p>
+      </div>
+      <div class="array-card">
+        <div class="nm">threshold</div>
+        <div class="sh">float64 (n_nodes,)</div>
+        <p>Split threshold τ such that <code>x[feature] ≤ τ</code> goes left, otherwise right.</p>
+      </div>
+      <div class="array-card">
+        <div class="nm">children_left</div>
+        <div class="sh">int32 (n_nodes,)</div>
+        <p>Node ID of the left child. <code>-1</code> at leaves.</p>
+      </div>
+      <div class="array-card">
+        <div class="nm">children_right</div>
+        <div class="sh">int32 (n_nodes,)</div>
+        <p>Node ID of the right child. <code>-1</code> at leaves.</p>
+      </div>
+      <div class="array-card">
+        <div class="nm">value</div>
+        <div class="sh">float64 (n_nodes, 1, k)</div>
+        <p>Weighted class-count vector at each node. Normalised at leaves to produce <code>predict_proba</code>.</p>
+      </div>
+      <div class="array-card">
+        <div class="nm">impurity</div>
+        <div class="sh">float64 (n_nodes,)</div>
+        <p>Gini (or weighted MSE) of the node's training partition <em>after</em> fitting.</p>
+      </div>
+      <div class="array-card">
+        <div class="nm">n_node_samples</div>
+        <div class="sh">int64 (n_nodes,)</div>
+        <p>Raw row count reaching the node. Different from <code>weighted_n_node_samples</code>.</p>
+      </div>
+      <div class="array-card">
+        <div class="nm">weighted_n_node_samples</div>
+        <div class="sh">float64 (n_nodes,)</div>
+        <p>Σ sample_weight reaching the node — the quantity CART actually optimises over.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CART MATH ═══ -->
+  <div class="cart">
+    <div class="cart-card">
+      <h3>CART — greedy weighted impurity minimisation</h3>
+      <p>
+        sklearn's CART builds the tree top-down: at every node, it scans <em>all</em> (feature, threshold) candidates and picks the (j★, τ★) that maximises the weighted impurity reduction Δ𝓘. This is a greedy heuristic — the resulting tree is not globally optimal, but the operation is O(n·d·log n) per level which is the only thing that runs fast enough at scale.
+      </p>
+      <div class="eq-big">
+Δ𝓘(j, τ) =
+&nbsp;&nbsp;𝓘(P) − (W<sub>L</sub>/W<sub>P</sub>)·𝓘(P<sub>L</sub>) − (W<sub>R</sub>/W<sub>P</sub>)·𝓘(P<sub>R</sub>)
+      </div>
+      <p style="margin-top:14px;">where the partitions are defined by</p>
+      <div class="eq-big">
+P<sub>L</sub> = { i ∈ P : x<sub>ij</sub> ≤ τ } &nbsp; &nbsp;
+P<sub>R</sub> = { i ∈ P : x<sub>ij</sub> &gt; τ }<br>
+W<sub>L</sub> = Σ<sub>i∈P<sub>L</sub></sub> w<sub>i</sub> &nbsp; &nbsp; W<sub>R</sub> = W<sub>P</sub> − W<sub>L</sub>
+      </div>
+      <p style="margin-top:14px;">
+        <strong>Best split chosen by:</strong> <code>(j★, τ★) = argmax<sub>(j, τ)</sub> Δ𝓘(j, τ)</code>
+      </p>
+    </div>
+
+    <div class="cart-card">
+      <h3>Gini impurity — the metric of choice</h3>
+      <p>For weighted samples in a multiclass setting, the (sample-weighted) Gini impurity of a partition P with class counts (n<sub>0</sub>, …, n<sub>k−1</sub>) and proportions p<sub>c</sub> = n<sub>c</sub>/W<sub>P</sub> is:</p>
+      <div class="eq-big">
+𝓘<sub>Gini</sub>(P) = 1 − Σ<sub>c=0</sub><sup>k−1</sup> p<sub>c</sub>²
+      </div>
+      <p style="margin-top:14px;">
+        Geometric reading: 𝓘<sub>Gini</sub>(P) is the probability that two random samples from P (drawn proportional to weight) have <em>different</em> classes. Pure node ⇒ 0. Uniform k-class node ⇒ (k−1)/k.
+      </p>
+      <p style="margin-top:14px;">
+        <strong>Why Gini over entropy?</strong> Computationally cheaper (no logs); produces nearly identical trees in practice. sklearn defaults to Gini precisely because the difference is empirically &lt; 1% accuracy in &gt; 95% of benchmarks while being 2-3× faster.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══ WORKED EXAMPLE ═══ -->
+  <div class="worked-ex">
+    <h3>Worked example — fitting a depth-2 surrogate by hand</h3>
+    <div class="subline">Toy dataset n=8, d=2, k=3 with teacher-confidence weights from P̃</div>
+    <div class="ex-grid">
+      <div>
+        <strong style="font-size:13px; color:var(--ink-strong); display:block; margin-bottom:8px;">Training table (after argmax-and-weight)</strong>
+        <table class="table-mini">
+          <thead>
+            <tr><th>i</th><th>x₁</th><th>x₂</th><th>ŷ</th><th>w</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0</td><td>1.2</td><td>3.0</td><td>A</td><td>0.92</td></tr>
+            <tr><td>1</td><td>2.0</td><td>1.5</td><td>A</td><td>0.88</td></tr>
+            <tr><td>2</td><td>1.6</td><td>2.7</td><td>A</td><td>0.81</td></tr>
+            <tr><td>3</td><td>2.8</td><td>4.0</td><td>B</td><td>0.95</td></tr>
+            <tr><td>4</td><td>3.4</td><td>3.6</td><td>B</td><td>0.90</td></tr>
+            <tr><td>5</td><td>3.0</td><td>4.2</td><td>B</td><td>0.78</td></tr>
+            <tr><td>6</td><td>4.5</td><td>1.0</td><td>C</td><td>0.85</td></tr>
+            <tr><td>7</td><td>4.8</td><td>0.7</td><td>C</td><td>0.97</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:14px; font-size:12px; color:var(--ink-muted); line-height:1.55;">
+          Total weight W = 7.06. Initial class weights:<br>
+          W<sub>A</sub> = 0.92+0.88+0.81 = 2.61<br>
+          W<sub>B</sub> = 0.95+0.90+0.78 = 2.63<br>
+          W<sub>C</sub> = 0.85+0.97 = 1.82
+        </p>
+      </div>
+
+      <div>
+        <strong style="font-size:13px; color:var(--ink-strong); display:block; margin-bottom:8px;">Resulting depth-2 tree</strong>
+        <svg class="tree-svg" viewBox="0 0 700 350" xmlns="http://www.w3.org/2000/svg">
+          <!-- Root -->
+          <rect x="280" y="20" width="160" height="60" rx="10" fill="white" stroke="#3c228a" stroke-width="2"/>
+          <text x="360" y="42" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#13014a">node 0 · root</text>
+          <text x="360" y="60" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#3c228a">x₁ ≤ 2.40 ?</text>
+          <text x="360" y="74" text-anchor="middle" font-family="Inter" font-size="10" fill="#6d6e71">Gini = 0.660</text>
+
+          <!-- Left node -->
+          <rect x="80" y="135" width="160" height="60" rx="10" fill="white" stroke="#3c228a" stroke-width="2"/>
+          <text x="160" y="157" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#13014a">node 1 · A?</text>
+          <text x="160" y="175" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#3c228a">x₂ ≤ 3.50 ?</text>
+          <text x="160" y="189" text-anchor="middle" font-family="Inter" font-size="10" fill="#6d6e71">Gini = 0.000</text>
+
+          <!-- Right node -->
+          <rect x="460" y="135" width="160" height="60" rx="10" fill="white" stroke="#3c228a" stroke-width="2"/>
+          <text x="540" y="157" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="#13014a">node 4 · B vs C</text>
+          <text x="540" y="175" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#3c228a">x₂ ≤ 2.30 ?</text>
+          <text x="540" y="189" text-anchor="middle" font-family="Inter" font-size="10" fill="#6d6e71">Gini = 0.494</text>
+
+          <!-- Leaves -->
+          <rect x="20" y="260" width="120" height="68" rx="10" fill="#ebe8f3" stroke="#6245b7"/>
+          <text x="80" y="282" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="#3c228a">leaf 2</text>
+          <text x="80" y="298" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#13014a">π = [1.00, 0.00, 0.00]</text>
+          <text x="80" y="314" text-anchor="middle" font-family="Inter" font-size="9" fill="#6d6e71">W = 2.61 (A×3)</text>
+
+          <rect x="180" y="260" width="120" height="68" rx="10" fill="#ebe8f3" stroke="#6245b7"/>
+          <text x="240" y="282" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="#3c228a">leaf 3</text>
+          <text x="240" y="298" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#13014a">π = [—, —, —]</text>
+          <text x="240" y="314" text-anchor="middle" font-family="Inter" font-size="9" fill="#6d6e71">empty (no data)</text>
+
+          <rect x="400" y="260" width="120" height="68" rx="10" fill="#ebe8f3" stroke="#6245b7"/>
+          <text x="460" y="282" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="#3c228a">leaf 5</text>
+          <text x="460" y="298" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#13014a">π = [0, 0, 1.00]</text>
+          <text x="460" y="314" text-anchor="middle" font-family="Inter" font-size="9" fill="#6d6e71">W = 1.82 (C×2)</text>
+
+          <rect x="560" y="260" width="120" height="68" rx="10" fill="#ebe8f3" stroke="#6245b7"/>
+          <text x="620" y="282" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="#3c228a">leaf 6</text>
+          <text x="620" y="298" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#13014a">π = [0, 1.00, 0]</text>
+          <text x="620" y="314" text-anchor="middle" font-family="Inter" font-size="9" fill="#6d6e71">W = 2.63 (B×3)</text>
+
+          <!-- Edges -->
+          <line x1="320" y1="80" x2="180" y2="135" stroke="#6245b7" stroke-width="2" fill="none"/>
+          <line x1="400" y1="80" x2="540" y2="135" stroke="#6245b7" stroke-width="2" fill="none"/>
+          <line x1="130" y1="195" x2="90"  y2="260" stroke="#6245b7" stroke-width="2" fill="none"/>
+          <line x1="190" y1="195" x2="220" y2="260" stroke="#6245b7" stroke-width="2" fill="none"/>
+          <line x1="510" y1="195" x2="470" y2="260" stroke="#6245b7" stroke-width="2" fill="none"/>
+          <line x1="570" y1="195" x2="610" y2="260" stroke="#6245b7" stroke-width="2" fill="none"/>
+
+          <text x="250" y="115" font-family="JetBrains Mono" font-size="10" fill="#1b8e3d">true (left)</text>
+          <text x="450" y="115" font-family="JetBrains Mono" font-size="10" fill="#cb2022">false (right)</text>
+        </svg>
+      </div>
+    </div>
+
+    <strong style="font-size:13px; color:var(--ink-strong); display:block; margin-top:20px; margin-bottom:6px;">Numeric split calculation at root</strong>
+    <div class="splits">
+<span class="comm"># Step 1: compute root Gini</span>
+p_A = 2.61 / 7.06 = 0.3697
+p_B = 2.63 / 7.06 = 0.3725
+p_C = 1.82 / 7.06 = 0.2578
+G(root) = 1 − (0.3697² + 0.3725² + 0.2578²)
+       = 1 − (0.1367 + 0.1387 + 0.0665)
+       = 1 − 0.3419 = <span class="win">0.6581</span>
+
+<span class="comm"># Step 2: scan candidate thresholds on x₁ (midpoints of sorted unique values)</span>
+<span class="comm"># candidates: 1.4, 1.8, 2.4, 2.9, 3.2, 3.95, 4.65</span>
+
+<span class="comm">try τ = 2.40 (between 2.0 and 2.8)</span>
+  P_L = {0, 1, 2}        W_L = 2.61   (all class A)
+  P_R = {3..7}           W_R = 4.45   (B×3 + C×2)
+  G(P_L) = 1 − 1.00² = 0.000                     <span class="comm"># pure</span>
+  G(P_R) = 1 − (2.63/4.45)² − (1.82/4.45)²
+         = 1 − 0.3494 − 0.1673 = 0.4833
+  ΔG = 0.6581 − (2.61/7.06)·0.000 − (4.45/7.06)·0.4833
+     = 0.6581 − 0 − 0.3046
+     = <span class="win">0.3535</span>  ← largest of all candidates ✓
+
+<span class="comm">try τ = 1.80</span>
+  P_L = {0}           W_L = 0.92  (A only)
+  P_R = {1,2,3,…,7}   W_R = 6.14
+  G(P_L) = 0.000
+  G(P_R) = 1 − (1.69/6.14)² − (2.63/6.14)² − (1.82/6.14)²
+         = 1 − 0.0758 − 0.1835 − 0.0879 = 0.6528
+  ΔG = 0.6581 − 0 − (6.14/7.06)·0.6528 = 0.0903
+
+<span class="comm">try τ = 3.95</span>
+  P_L = {0,1,2,3,4,5}  W_L = 5.24
+  P_R = {6,7}          W_R = 1.82  (pure C)
+  G(P_L) = 1 − (2.61/5.24)² − (2.63/5.24)² = 0.4998
+  G(P_R) = 0.000
+  ΔG = 0.6581 − (5.24/7.06)·0.4998 − 0 = 0.2871
+
+<span class="comm"># Best split: feature j=0 (x₁), threshold τ=2.40, ΔG = 0.3535</span>
+<span class="comm"># sklearn stores: feature[0] = 0, threshold[0] = 2.40, children_left[0] = 1, children_right[0] = 4</span>
+    </div>
+  </div>
+
+  <!-- ═══ INFERENCE ═══ -->
+  <div class="infer">
+    <h3>Inference walk — <code>predict_proba(x)</code> in O(depth)</h3>
+    <div class="infer-grid">
+      <div class="code"><span class="c"># sklearn's compiled C walk; the Python equivalent:</span>
+
+<span class="k">def</span> predict_proba_row(tree, x):
+    node = 0
+    <span class="k">while</span> tree.children_left[node] != -1:
+        <span class="k">if</span> x[tree.feature[node]] <= tree.threshold[node]:
+            node = tree.children_left[node]
+        <span class="k">else</span>:
+            node = tree.children_right[node]
+    counts = tree.value[node, 0, :]      <span class="c"># (k,)</span>
+    <span class="k">return</span> counts / counts.sum()       <span class="c"># π_ℓ</span>
+
+<span class="c"># For new point x = (3.5, 3.6):</span>
+<span class="c"># node 0:  x₁=3.5 > 2.40  → right → node 4</span>
+<span class="c"># node 4:  x₂=3.6 > 2.30  → right → leaf 6</span>
+<span class="c"># return value[6, 0, :] / sum  = [0, 1.00, 0]  → "B"</span>
+<span class="g"># Predicted: class B with confidence 1.0</span></div>
+
+      <div class="code"><span class="c"># How federation uses this: the surrogate is just</span>
+<span class="c"># a typed wrapper around the array walk above.</span>
+
+<span class="k">class</span> <span style="color:#ffb380;">SurrogateAdapter</span>:
+    <span class="k">def</span> __init__(self, tree, classes_):
+        self.tree     = tree           <span class="c"># sklearn tree</span>
+        self.classes_ = classes_       <span class="c"># global k labels</span>
+
+    <span class="k">def</span> predict_proba(self, X):       <span class="c"># (n, d) → (n, k)</span>
+        <span class="k">return</span> np.stack([
+            predict_proba_row(self.tree.tree_, x)
+            <span class="k">for</span> x <span class="k">in</span> X
+        ])
+
+    <span class="k">def</span> serialize(self) -> bytes:
+        <span class="k">return</span> pickle.dumps(self)
+
+    @classmethod
+    <span class="k">def</span> deserialize(cls, blob: bytes):
+        <span class="k">return</span> pickle.loads(blob)
+<span class="g"># conforms to ModelAdapter Protocol → wire-ready</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ PICKLE LAYOUT ═══ -->
+  <div class="pickle">
+    <h3>Wire-format anatomy — what's actually inside the ClientUpdate blob?</h3>
+    <p style="font-size:13px; color:var(--ink); line-height:1.55; margin-bottom:4px;">
+      The pickle byte stream is essentially a compact representation of the sklearn arrays plus metadata. For a depth-6 tree with 32 nodes and k=10 classes, the breakdown is typically:
+    </p>
+    <div class="layout">
+      <div class="seg"><div class="lbl">feature</div><div class="val">~128 B</div></div>
+      <div class="seg"><div class="lbl">threshold</div><div class="val">~256 B</div></div>
+      <div class="seg"><div class="lbl">children L/R</div><div class="val">~256 B</div></div>
+      <div class="seg"><div class="lbl">value (n,1,k)</div><div class="val">~2.5 KB</div></div>
+      <div class="seg"><div class="lbl">impurity</div><div class="val">~256 B</div></div>
+      <div class="seg"><div class="lbl">n_samples</div><div class="val">~256 B</div></div>
+      <div class="seg"><div class="lbl">pickle hdr</div><div class="val">~1.5 KB</div></div>
+    </div>
+    <p style="margin-top:14px; font-size:12.5px; color:var(--ink-muted); line-height:1.55;">
+      <strong>Total ≈ 5–7 KB</strong> for a real-world surrogate; up to ~15 KB at depth 8 with k=20.
+      Compare this to a Random Forest of 100 trees (~500 KB–2 MB raw) — that's the <em>compression ratio of distillation</em>: 50×–200× smaller wire payload while keeping ≥ 90% of the teacher's predictive accuracy on the local distribution.
+    </p>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">⚙</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">CART is a greedy search over a structured hypothesis class</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — the CART recurrence</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          The fit algorithm is a single recursive function with a base case (purity, depth bound, $\min\_\mathrm{samples}$) and a greedy local optimisation:
+        </div>
+        <div class="math-display">$\mathrm{build}(P, \mathrm{depth}) = \begin{cases}
+\mathrm{leaf}(\hat{\pi}(P)) & \text{if } |P| \le \min\_\mathrm{samples\_leaf} \\
+\mathrm{leaf}(\hat{\pi}(P)) & \text{if } \mathrm{depth} = \max\_\mathrm{depth} \\
+\mathrm{leaf}(\hat{\pi}(P)) & \text{if } \mathcal{I}(P) = 0 \\
+\mathrm{internal}(j^\star,\tau^\star,\, \mathrm{build}(P_L,\mathrm{d}{+}1),\, \mathrm{build}(P_R,\mathrm{d}{+}1)) & \text{otherwise}
+\end{cases}$</div>
+        <div class="math-display">$(j^\star,\tau^\star) = \arg\max_{(j,\tau)} \Delta\mathcal{I}(P, j, \tau),\quad (P_L,P_R) = \mathrm{partition}(P,j^\star,\tau^\star)$</div>
+        <div class="math-display">$\Delta\mathcal{I}(j,\tau) = \mathcal{I}(P) - \dfrac{W_L}{W_P}\,\mathcal{I}(P_L) - \dfrac{W_R}{W_P}\,\mathcal{I}(P_R)$</div>
+        <div class="math-display">$\mathcal{I}_{\mathrm{Gini}}(P) = 1 - \sum_{c=0}^{K-1} p_c^{2},\quad p_c = \dfrac{n_c}{W_P}$</div>
+        <div class="math-display">$\hat{\pi}(P) = \left(\dfrac{\sum_{i\in P} w_i\, \mathbf{1}\{y_i=c\}}{W_P}\right)_{c=0,\ldots,K-1} \in \Delta^{K-1}$</div>
+        <div style="font-size:11px; opacity:0.7; font-family:'JetBrains Mono', monospace;"># total fit: $O(n\,d\,\log n \cdot 2^{h})$</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — three properties for free</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          The CART surrogate gives us <strong>three properties simultaneously</strong> that no other simple model class delivers:<br><br>
+          <strong>1. Axis-aligned interpretability.</strong> Every internal node is a single inequality <code>x[j★] ≤ τ★</code> — auditable by a human, debuggable in three lines of Python. A DP analyst can <em>read</em> the tree and ask "is this split disclosing anything sensitive?"<br><br>
+          <strong>2. Native sample weighting.</strong> Both the Gini impurity and the leaf prediction use the same weighted denominator W<sub>P</sub>. The teacher's confidence vector P̃ ↦ (ŷ, w) is the <em>only</em> place w enters — beyond that, sklearn handles it. No retrofitting, no loss surgery.<br><br>
+          <strong>3. Bounded output space.</strong> A depth-h tree has at most 2<sup>h</sup> distinct outputs. Aggregators can <em>enumerate</em> them — the proxy redistillation step relies on this finite-image property.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — greedy is good enough</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Optimal decision-tree learning is NP-hard.</strong> Hyafil-Rivest (1976) proved it; nothing in 50 years has dethroned the result. So <em>all</em> production-grade DT learners are greedy heuristics — sklearn is no exception, neither is XGBoost, neither is LightGBM.<br><br>
+          <strong>But greediness aligns with our threat model.</strong> A globally optimal tree would over-fit to subtle interactions between features — the same interactions that fuel membership-inference attacks. A greedy myopic tree <em>can't see those interactions</em> and is therefore structurally more private by construction.<br><br>
+          <strong>The greedy split is the contract.</strong> Every (j★, τ★) becomes a row in the wire format. Designing CART around what we can <em>cheaply ship over a network</em> — not around what is statistically optimal — is the unstated discipline of federated learning.<br><br>
+          <strong>Reproducibility &gt; performance.</strong> A 0.5% accuracy gain isn't worth a non-deterministic build. <code>random_state</code> is fixed because the accountant needs to replay the round; CART must be a pure function of (X, P̃, seed, hyperparams).
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px; padding:18px 22px; background:rgba(255,255,255,0.05); border-radius:12px; border-left:3px solid #9bdc7c; font-family:'JetBrains Mono', monospace; font-size:13px; color:#e8e3ff; line-height:1.7;">
+      <span style="color:#9bdc7c;">∎</span>  <strong style="color:#fff;">Internals invariant:</strong>  for every fitted surrogate <code>tree.tree_</code>, the eight parallel arrays satisfy:
+      (1) <code>feature[i] ∈ [-2, d)</code>;
+      (2) <code>children_left[i] = -1 ⟺ children_right[i] = -1</code>;
+      (3) <code>weighted_n_node_samples[parent] = weighted_n_node_samples[left] + weighted_n_node_samples[right]</code>;
+      (4) <code>value[i]</code> is non-negative and normalises to π<sub>i</sub> ∈ Δ<sup>k−1</sup>.
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · what every symbol above means ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · CART INTERNALS</div>
+        <h3>Every symbol in the build recurrence, split gain, Gini impurity, and leaf prediction — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Build recurrence — base cases &amp; recursive step</div>
+      <div class="nsym">\(P\)</div>
+        <div class="ndef">Active row partition at the current node — a (weighted) subset of the training rows reaching this subtree. The recursion variable.</div>
+        <div class="nsrc">In sklearn's C implementation: indices in <code>sample_indices[start:end]</code> at each recursive call.</div>
+      <div class="nsym">\(\mathrm{depth}\)</div>
+        <div class="ndef">Current recursion depth — incremented on every internal-node split.</div>
+        <div class="nsrc">Tracked by sklearn's depth-first builder; bounded by <code>max_depth</code>.</div>
+      <div class="nsym">\(\mathrm{build}(P,\mathrm{depth})\)</div>
+        <div class="ndef">The recursive CART procedure — returns either a leaf or an internal node with two recursive children.</div>
+        <div class="nsrc"><code>BestFirstTreeBuilder.build</code> / <code>DepthFirstTreeBuilder.build</code> in scikit-learn's <code>_tree.pyx</code>.</div>
+      <div class="nsym">\(\mathrm{leaf}(\hat\pi(P))\)</div>
+        <div class="ndef">Terminal node storing the leaf prediction \(\hat\pi(P)\).</div>
+        <div class="nsrc"><code>Node(left=-1, right=-1, value=π)</code> in <code>tree.tree_.value</code>.</div>
+      <div class="nsym">\(\mathrm{internal}(j^\star,\tau^\star,\dots)\)</div>
+        <div class="ndef">Internal node holding the chosen feature index and threshold and two recursive child trees.</div>
+        <div class="nsrc"><code>tree.tree_.feature[i]</code>, <code>tree.tree_.threshold[i]</code>, <code>children_left[i]</code>, <code>children_right[i]</code>.</div>
+      <div class="nsym">\(\min\_\mathrm{samples\_leaf}\)</div>
+        <div class="ndef">Lower bound on \(|P|\) for a node to remain internal — first base case.</div>
+        <div class="nsrc"><code>cfg.distillation.min_samples_leaf</code>; default 1.</div>
+      <div class="nsym">\(\max\_\mathrm{depth}\)</div>
+        <div class="ndef">Maximum tree depth — second base case (\(h\) in the creation diagram).</div>
+        <div class="nsrc"><code>cfg.distillation.max_depth</code>; default 6.</div>
+
+      <div class="notation-section-row">Greedy split selection</div>
+      <div class="nsym">\(j, \tau\)</div>
+        <div class="ndef">Candidate feature index and split threshold being evaluated by the inner loop.</div>
+        <div class="nsrc">Iterated by sklearn's <code>BestSplitter</code> over presorted feature values.</div>
+      <div class="nsym">\(j^\star, \tau^\star\)</div>
+        <div class="ndef">Argmax of \(\Delta\mathcal{I}\) — the split chosen by the greedy heuristic. Becomes the row written into <code>tree_.feature/threshold</code>.</div>
+        <div class="nsrc">Return of <code>splitter.node_split</code>.</div>
+      <div class="nsym">\(\Delta\mathcal{I}(P,j,\tau)\)</div>
+        <div class="ndef">Impurity decrease for candidate split — \(\mathcal{I}(P)\) minus the weighted child impurities.</div>
+        <div class="nsrc">Computed in <code>Criterion.proxy_impurity_improvement</code>.</div>
+      <div class="nsym">\(\mathrm{partition}(P,j^\star,\tau^\star)\)</div>
+        <div class="ndef">Splitting operator producing the left/right row sets based on the chosen \((j^\star,\tau^\star)\).</div>
+        <div class="nsrc">In-place partition step inside <code>Splitter.node_split</code>.</div>
+      <div class="nsym">\(P_L, P_R\)</div>
+        <div class="ndef">Left and right child partitions after the split — recursive arguments to the next <code>build</code> call.</div>
+        <div class="nsrc">Slices of the sample-index array; \(|P_L| + |P_R| = |P|\).</div>
+
+      <div class="notation-section-row">Impurity &amp; node weights</div>
+      <div class="nsym">\(\mathcal{I}(\cdot)\)</div>
+        <div class="ndef">Generic impurity functional on a partition — Gini in our case (entropy is the alternative).</div>
+        <div class="nsrc"><code>criterion="gini"</code> passed to the sklearn estimator.</div>
+      <div class="nsym">\(\mathcal{I}_{\mathrm{Gini}}(P)\)</div>
+        <div class="ndef">Gini impurity \(1-\sum_c p_c^2\) — the probability of mis-classifying a randomly drawn row.</div>
+        <div class="nsrc"><code>Gini.node_impurity</code> in sklearn's criterion class.</div>
+      <div class="nsym">\(p_c\)</div>
+        <div class="ndef">Weighted class-\(c\) frequency in \(P\); \(p_c = n_c / W_P\).</div>
+        <div class="nsrc">Stored in <code>criterion.sum_total</code> normalised by <code>weighted_n_node_samples</code>.</div>
+      <div class="nsym">\(n_c\)</div>
+        <div class="ndef">Weighted count of class-\(c\) rows in \(P\): \(\sum_{i\in P} w_i\,\mathbf{1}\{y_i = c\}\).</div>
+        <div class="nsrc">Accumulated by <code>Criterion.update</code>.</div>
+      <div class="nsym">\(W_P, W_L, W_R\)</div>
+        <div class="ndef">Total sample weight in the parent partition and each child — used as the convex coefficients in \(\Delta\mathcal{I}\).</div>
+        <div class="nsrc"><code>tree_.weighted_n_node_samples[i]</code>.</div>
+      <div class="nsym">\(w_i\)</div>
+        <div class="ndef">Per-row sample weight — equals \(\max_j \tilde P[i,j]\) in Mode A; uniform in Mode B.</div>
+        <div class="nsrc"><code>sample_weight</code> arg to <code>fit</code>.</div>
+      <div class="nsym">\(y_i\)</div>
+        <div class="ndef">Hard pseudo-label for row \(i\) (\(\hat y_i\) from the creation diagram); the target consumed by the Gini accumulator.</div>
+        <div class="nsrc"><code>y_hat = np.argmax(P̃, axis=1)</code> in <code>SurrogateTreeDistiller</code>.</div>
+
+      <div class="notation-section-row">Leaf prediction</div>
+      <div class="nsym">\(K\)</div>
+        <div class="ndef">Number of classes — width of the leaf probability vector.</div>
+        <div class="nsrc"><code>len(classes_)</code> on the fitted estimator.</div>
+      <div class="nsym">\(\hat\pi(P)\)</div>
+        <div class="ndef">Empirical class distribution stored at the leaf — \((n_0/W_P,\dots,n_{K-1}/W_P)\); element of \(\Delta^{K-1}\).</div>
+        <div class="nsrc"><code>tree_.value[leaf_id]</code>, normalised by <code>weighted_n_node_samples</code> at <code>predict_proba</code> time.</div>
+      <div class="nsym">\(\Delta^{K-1}\)</div>
+        <div class="ndef">Probability simplex on \(K\) classes — the codomain of every \(\hat\pi(P)\) and of <code>predict_proba</code>.</div>
+        <div class="nsrc">Invariant (4) in the internals invariant footer: <code>value[i]</code> is non-negative and normalises to \(\pi_i\).</div>
+    </div>
+    <div class="np-foot">
+      <strong>Note.</strong> The four base/recursive cases plus the greedy \((j^\star,\tau^\star)\) selection plus the leaf summariser \(\hat\pi\) constitute the entire fit pipeline. Because every quantity is a deterministic function of \((X, \tilde P, \mathrm{seed}, \mathrm{hyperparams})\), the resulting <code>tree_</code> arrays are bit-reproducible — which is what the privacy accountant needs to replay a round.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

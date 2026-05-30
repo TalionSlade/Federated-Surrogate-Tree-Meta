@@ -6,6 +6,42 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false,strict:false});"></script>
+<style>
+  /* KaTeX overrides for our design language */
+  .katex { font-size: 1.05em; }
+  .math-display {
+    background: #fafbfd;
+    border: 1px solid #E3E4E5;
+    border-radius: 9px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .math-inline { color: #13014a; }
+  /* Dark theme math (inside the dark gradient panels) */
+  .dark-math .katex {
+    color: #fff !important;
+  }
+  .dark-math .math-display {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 9px;
+    padding: 16px 20px;
+    margin: 10px 0;
+  }
+  .dark-math .katex .mord,
+  .dark-math .katex .mrel,
+  .dark-math .katex .mop,
+  .dark-math .katex .mbin,
+  .dark-math .katex .mopen,
+  .dark-math .katex .mclose,
+  .dark-math .katex .mpunct {
+    color: #ffffff !important;
+  }
+</style>
 <style>
   .canvas { width: 1640px; min-height: 1080px; }
 
@@ -112,7 +148,7 @@
       <h1>Partitioners — IID and Non-IID regimes</h1>
       <div class="subtitle">Four strategies for slicing a centralised dataset into K per-client shards (rows = labels, cols = clients)</div>
     </div>
-    <div class="brand-pill">DIAGRAM 11 / 16</div>
+    <div class="brand-pill">DIAGRAM 11 / 18</div>
   </div>
 
   <div class="part-grid">
@@ -461,6 +497,140 @@ shards = sample_without_replacement(y, counts, stratified=True)</div>
         <h4>STRESS TEST</h4>
         <p>Pathological + QuantitySkew expose class-padding and tiny-shard bugs that Dirichlet smooths over.</p>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ MATHEMATICAL FOUNDATION · DIRICHLET AS A GENERATIVE MODEL OF NON-IID ═══ -->
+  <div class="dark-math" style="margin-top:48px; padding:32px 36px; background:linear-gradient(135deg, #13014a 0%, #3c228a 100%); border-radius:20px; color:white; box-shadow: 0 24px 60px -16px rgba(19,1,74,0.4);">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
+      <div style="width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:22px;">α</div>
+      <div>
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.1em; opacity:0.7; text-transform:uppercase;">Mathematical Foundation</div>
+        <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em;">A single parameter α controls "non-IID-ness"</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:22px;">
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ffce9b;">▌ WHAT — Dirichlet PDF</div>
+        <div style="font-size:13px; line-height:1.65; margin-bottom:14px; opacity:0.92;">
+          For each class $c$, draw a $K$-vector $p_c$ from a symmetric $\mathrm{Dir}(\alpha)$. Each entry is the fraction of class $c$ going to client $k$:
+        </div>
+        <div class="math-display">$f(p;\alpha) = \dfrac{\Gamma(K\alpha)}{\Gamma(\alpha)^K}\, \prod_{k=1}^{K} p_k^{\alpha-1},\quad p \in \Delta^{K-1}$</div>
+        <div class="math-display">$\forall\, c\in\mathcal{C}:\quad p_c \sim \mathrm{Dir}(\alpha\,\mathbf{1}_K),\quad \mathrm{assign}(\mathrm{idx}[c]) \propto p_c$</div>
+        <div class="math-display">$\begin{aligned}
+\alpha &\to 0    &&:\ \text{one-hot} &&\Rightarrow\ \text{pathological} \\
+\alpha &= 1      &&:\ \text{uniform} &&\Rightarrow\ \text{moderately non-IID} \\
+\alpha &= 0.5    &&:\ \text{standard} &&\Rightarrow\ \text{paper default} \\
+\alpha &\to \infty &&:\ \text{equal} &&\Rightarrow\ \text{IID}
+\end{aligned}$</div>
+        <div class="math-display">$\mathrm{KL}\!\left(p_c \;\Big\Vert\; \tfrac{1}{K}\right) \approx \psi(\alpha{+}1) - \psi\!\left(\tfrac{\alpha}{K}{+}1\right) + \log K$</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#9bdc7c;">▌ WHY — four partitioners, one sweep</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>IID</strong> is the baseline — proves the federated overhead is small.<br><br>
+          <strong>Dirichlet</strong> is the continuous knob — a sweep over α gives a smooth utility-vs-heterogeneity curve, the FL benchmark gold-standard since McMahan 2017.<br><br>
+          <strong>Pathological</strong> is a discrete worst-case — each client sees only K' classes. Tests the framework's class-padding logic.<br><br>
+          <strong>QuantitySkew</strong> orthogonalises quantity from label distribution — exposes Confidence-Weighted aggregation's strength.
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:13px; padding:22px;">
+        <div style="font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; opacity:0.75; margin-bottom:10px; color:#ff9bcd;">▌ MINDSET — simulate, don't assume</div>
+        <div style="font-size:13px; line-height:1.7; opacity:0.94;">
+          <strong>Real federations have <em>no</em> ground truth for "non-IID-ness".</strong> Banks' data, hospitals' data, mobile devices — each is its own thing. Dirichlet gives us a quantifiable axis we can sweep at low cost.<br><br>
+          <strong>Pick the same seed for the partition and the experiment.</strong> The framework requires both — same partition seed reproduces shards exactly across runs.<br><br>
+          <strong>Stratified sampling within Dirichlet draws</strong> means the marginal class distribution is preserved — only the <em>conditional</em> per-client distribution skews.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VARIABLE REFERENCE · DIRICHLET PARTITIONING ═══ -->
+  <div class="notation-panel">
+    <div class="np-header">
+      <div class="icon">𝒱</div>
+      <div>
+        <div class="meta-tag">VARIABLE REFERENCE · Dir(α) GENERATIVE MODEL OF NON-IID</div>
+        <h3>Every symbol in the Dirichlet partition formulas — what it is, where it lives, how it's computed</h3>
+      </div>
+    </div>
+    <div class="notation-table">
+      <div class="nh">Symbol</div>
+      <div class="nh">What it represents</div>
+      <div class="nh">Where it lives / how it's computed</div>
+
+      <div class="notation-section-row">Federation cardinality</div>
+      <div class="nsym">\(K\)</div>
+        <div class="ndef">Number of clients in the federation — also the dimension of each Dirichlet draw.</div>
+        <div class="nsrc"><code>cfg.federation.n_clients</code>; consumed by <code>data/partitioners.py:DirichletPartitioner.partition()</code>.</div>
+      <div class="nsym">\(\mathcal{C}\)</div>
+        <div class="ndef">Set of class labels — the partition draws one Dirichlet vector per class.</div>
+        <div class="nsrc"><code>np.unique(y)</code>; size <code>n_classes</code>.</div>
+      <div class="nsym">\(c\)</div>
+        <div class="ndef">A particular class label \(c\in\mathcal{C}\).</div>
+        <div class="nsrc">Loop variable in <code>DirichletPartitioner._partition_class()</code>.</div>
+      <div class="nsym">\(k\)</div>
+        <div class="ndef">A particular client index \(k\in\{1,\ldots,K\}\).</div>
+        <div class="nsrc">Indexes into the per-class proportion vector.</div>
+
+      <div class="notation-section-row">The Dirichlet distribution itself</div>
+      <div class="nsym">\(\alpha\)</div>
+        <div class="ndef">Symmetric Dirichlet concentration parameter — the single knob controlling non-IID-ness.</div>
+        <div class="nsrc"><code>cfg.partition.alpha</code>; defaults to 0.5 (paper default).</div>
+      <div class="nsym">\(p_c\)</div>
+        <div class="ndef">\(K\)-vector of per-class allocation fractions; entry \(k\) = share of class \(c\) going to client \(k\).</div>
+        <div class="nsrc"><code>proportions = rng.dirichlet([alpha]*n_clients)</code> inside <code>_partition_class()</code>.</div>
+      <div class="nsym">\(p_k\)</div>
+        <div class="ndef">A single coordinate of \(p_c\) — the fraction of class \(c\) going to client \(k\).</div>
+        <div class="nsrc">Single scalar; used as a sampling weight in stratified assignment.</div>
+      <div class="nsym">\(\mathbf{1}_K\)</div>
+        <div class="ndef">The all-ones \(K\)-vector — the symmetric-Dirichlet concentration tuple is \(\alpha\mathbf{1}_K\).</div>
+        <div class="nsrc">Implicit in <code>[alpha]*n_clients</code>.</div>
+      <div class="nsym">\(\Delta^{K-1}\)</div>
+        <div class="ndef">The \((K{-}1)\)-simplex — support of each \(p_c\) (non-negative entries summing to 1).</div>
+        <div class="nsrc">Verified by <code>assert np.isclose(proportions.sum(), 1.0)</code> in the partitioner.</div>
+      <div class="nsym">\(\Gamma(\cdot)\)</div>
+        <div class="ndef">The gamma function — appears in the Dirichlet PDF's normalising constant.</div>
+        <div class="nsrc">Not invoked directly; numpy's Dirichlet sampler handles it internally.</div>
+      <div class="nsym">\(f(p;\alpha)\)</div>
+        <div class="ndef">Symmetric Dirichlet PDF \(\Gamma(K\alpha)/\Gamma(\alpha)^K\prod p_k^{\alpha-1}\).</div>
+        <div class="nsrc">Reference PDF; <code>numpy.random.Generator.dirichlet</code> samples from it.</div>
+
+      <div class="notation-section-row">Regime ladder over α</div>
+      <div class="nsym">\(\alpha\to 0\)</div>
+        <div class="ndef">Concentration collapses to a one-hot — one client takes (nearly) all of class \(c\). Mimics pathological partitioning.</div>
+        <div class="nsrc">Edge of the supported range in <code>DirichletPartitioner</code>; tested with \(\alpha=0.01\) in regression tests.</div>
+      <div class="nsym">\(\alpha = 0.5\)</div>
+        <div class="ndef">FedRF-Distill paper default — standard non-IID benchmark.</div>
+        <div class="nsrc">Default in <code>configs/dirichlet_default.yaml</code>.</div>
+      <div class="nsym">\(\alpha = 1\)</div>
+        <div class="ndef">Uniform over the simplex — moderately non-IID; each client receives a different but smooth class mix.</div>
+        <div class="nsrc">Swept value in <code>experiments/scripts/run_benchmark_sweep.py</code>.</div>
+      <div class="nsym">\(\alpha\to\infty\)</div>
+        <div class="ndef">Concentration sharpens onto the centre of the simplex (\(1/K\)) — IID limit.</div>
+        <div class="nsrc">Sweep boundary; in practice realised by <code>IIDPartitioner</code> directly rather than huge \(\alpha\).</div>
+
+      <div class="notation-section-row">Distance to IID</div>
+      <div class="nsym">\(\mathrm{KL}(p_c\,\Vert\,1/K)\)</div>
+        <div class="ndef">Kullback-Leibler divergence between the per-class allocation and the uniform allocation — quantitative "non-IID-ness" axis.</div>
+        <div class="nsrc">Computed in <code>data/diagnostics.py:partition_kl_to_iid()</code> for each (class, partition) cell.</div>
+      <div class="nsym">\(\psi(\cdot)\)</div>
+        <div class="ndef">Digamma function — appears in the closed-form expectation of \(\mathrm{KL}\) for Dirichlet draws.</div>
+        <div class="nsrc"><code>scipy.special.psi</code>; used in the analytic baseline that the empirical KL is sanity-checked against.</div>
+
+      <div class="notation-section-row">From proportions to shards</div>
+      <div class="nsym">\(\mathrm{idx}[c]\)</div>
+        <div class="ndef">Index set of rows in \((X,y)\) with label \(c\) — the pool stratified-sampled into clients.</div>
+        <div class="nsrc"><code>idx_c = np.flatnonzero(y == c)</code> inside <code>_partition_class()</code>.</div>
+      <div class="nsym">\(\mathrm{assign}(\mathrm{idx}[c])\)</div>
+        <div class="ndef">Per-class assignment of indices to clients, proportional to \(p_c\).</div>
+        <div class="nsrc"><code>stratified_assign(idx_c, proportions, rng)</code>; respects shard-size minima.</div>
+    </div>
+    <div class="np-foot">
+      <strong>Invariant.</strong> Marginalising the per-class assignments over classes preserves the global label distribution — only the <em>conditional</em> per-client distribution skews. A single scalar \(\alpha\) thus indexes a continuous family of partitions from one-hot to uniform.
     </div>
   </div>
 
