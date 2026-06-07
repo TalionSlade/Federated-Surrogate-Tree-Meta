@@ -1,0 +1,33 @@
+{
+  "dataset": "breast_cancer",
+  "config": {
+    "dataset": "breast_cancer",
+    "n_cut": 1,
+    "temperature": 0.1,
+    "epochs": 2000,
+    "lr": 0.01,
+    "test_fraction": 0.2,
+    "seed": 42,
+    "feature_topk": 6,
+    "out": "../results"
+  },
+  "feature_subset": [
+    2,
+    7,
+    20,
+    22,
+    23,
+    27
+  ],
+  "dndt": {
+    "accuracy": 0.9385964912280702,
+    "f1_macro": 0.9343480049362403,
+    "n_leaves": 64,
+    "wall_s": 18.57,
+    "final_loss": 0.12455903738737106
+  },
+  "baselines": {
+    "sklearn_decision_tree": 0.9122807017543859,
+    "sklearn_random_forest": 0.956140350877193
+  }
+}

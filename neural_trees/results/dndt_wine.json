@@ -1,0 +1,33 @@
+{
+  "dataset": "wine",
+  "config": {
+    "dataset": "wine",
+    "n_cut": 1,
+    "temperature": 0.1,
+    "epochs": 2000,
+    "lr": 0.01,
+    "test_fraction": 0.2,
+    "seed": 42,
+    "feature_topk": 6,
+    "out": "../results"
+  },
+  "feature_subset": [
+    0,
+    5,
+    6,
+    9,
+    11,
+    12
+  ],
+  "dndt": {
+    "accuracy": 1.0,
+    "f1_macro": 1.0,
+    "n_leaves": 64,
+    "wall_s": 18.57,
+    "final_loss": 0.005802651401609182
+  },
+  "baselines": {
+    "sklearn_decision_tree": 0.9444444444444444,
+    "sklearn_random_forest": 1.0
+  }
+}

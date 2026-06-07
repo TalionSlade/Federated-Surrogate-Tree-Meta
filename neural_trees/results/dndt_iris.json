@@ -1,0 +1,26 @@
+{
+  "dataset": "iris",
+  "config": {
+    "dataset": "iris",
+    "n_cut": 1,
+    "temperature": 0.1,
+    "epochs": 1000,
+    "lr": 0.01,
+    "test_fraction": 0.2,
+    "seed": 42,
+    "feature_topk": 0,
+    "out": "../results"
+  },
+  "feature_subset": null,
+  "dndt": {
+    "accuracy": 0.9333333333333333,
+    "f1_macro": 0.9333333333333332,
+    "n_leaves": 16,
+    "wall_s": 2.38,
+    "final_loss": 0.09145236015319824
+  },
+  "baselines": {
+    "sklearn_decision_tree": 0.9333333333333333,
+    "sklearn_random_forest": 0.9
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "dataset": "wine",
+  "config": {
+    "dataset": "wine",
+    "num_layers": 2,
+    "num_trees": 64,
+    "depth": 4,
+    "epochs": 100,
+    "lr": 0.01,
+    "batch_size": 64,
+    "test_fraction": 0.2,
+    "seed": 42,
+    "out": "../results"
+  },
+  "node": {
+    "accuracy": 0.9722222222222222,
+    "f1_macro": 0.9709618874773139,
+    "n_trees_total": 128,
+    "depth": 4,
+    "wall_s": 21.33,
+    "final_loss": 0.04669199138879776
+  },
+  "baselines": {
+    "sklearn_decision_tree": 0.9444444444444444,
+    "sklearn_random_forest": 1.0
+  }
+}

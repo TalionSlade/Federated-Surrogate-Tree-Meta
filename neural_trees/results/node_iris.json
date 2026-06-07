@@ -1,0 +1,27 @@
+{
+  "dataset": "iris",
+  "config": {
+    "dataset": "iris",
+    "num_layers": 2,
+    "num_trees": 64,
+    "depth": 4,
+    "epochs": 80,
+    "lr": 0.01,
+    "batch_size": 64,
+    "test_fraction": 0.2,
+    "seed": 42,
+    "out": "../results"
+  },
+  "node": {
+    "accuracy": 0.9666666666666667,
+    "f1_macro": 0.9665831244778612,
+    "n_trees_total": 128,
+    "depth": 4,
+    "wall_s": 7.3,
+    "final_loss": 0.12772081792354584
+  },
+  "baselines": {
+    "sklearn_decision_tree": 0.9333333333333333,
+    "sklearn_random_forest": 0.9
+  }
+}
